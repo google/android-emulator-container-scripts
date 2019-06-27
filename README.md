@@ -1,12 +1,7 @@
-# Container scripts for external releases
+# Android Emulator Container Scripts
 
 This is a set of minimal scripts to run the emulator in a container for various
-systems such as Docker, for external consumption. Acloud is not used; only the
-emulator and system image zip files are needed.
-
-We do similar things as the internal facing scripts, but is meant for external
-release.  When the container images are built, they can be separately pushed to
-some location such as docker hub or even dl.google.com.
+systems such as Docker, for external consumption.
 
 # Install
 
@@ -14,6 +9,8 @@ The following Python libraries are required:
 
     urlfetch
     jinja2
+
+They can be installed via `pip install urlfetch; pip install jinja2` (or use your favorite method).
 
 # Docker
 
