@@ -115,7 +115,7 @@ def get_images_info():
     # Flatten the list of lists into a system image objects.
     infos = [SysImgInfo(item) for sublist in xml for item in sublist]
     # Filter only for x86_64 images (TODO: allow other types)
-    x64_images = filter(lambda info: info.abi == "x86_64", infos)
+    x64_images = [info for info in infos if info.abi == "x86_64"]
     return x64_images
 
 def get_emus_info():
@@ -128,8 +128,7 @@ def get_emus_info():
         response = urlfetch.get(url)
         if response.status == 200:
             xml.append(response.content)
-    xml = [filter(lambda p: "emulator" == p.attrib["path"], \
-                  ET.fromstring(x).findall('remotePackage')) for x in xml]
+    xml = [[p for p in ET.fromstring(x).findall('remotePackage') if "emulator" == p.attrib["path"]] for x in xml]
     # Flatten the list of lists into a system image objects.
     infos = [EmuInfo(item) for sublist in xml for item in sublist]
     return infos
@@ -138,8 +137,8 @@ img_infos = get_images_info()
 emu_infos = get_emus_info()
 
 for img_info in img_infos:
-    print "SYSIMG", img_info.tag, img_info.api, img_info.letter, img_info.abi, img_info.url
+    print("SYSIMG {} {} {} {} {}".format(img_info.tag, img_info.api, img_info.letter, img_info.abi, img_info.url))
 
 for emu_info in emu_infos:
-    for (hostos, url) in emu_info.urls.items():
-        print "EMU", emu_info.channel, emu_info.version, hostos, url
+    for (hostos, url) in list(emu_info.urls.items()):
+        print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
