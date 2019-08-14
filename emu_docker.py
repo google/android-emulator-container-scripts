@@ -34,39 +34,39 @@ def mkdir_p(path):
             raise
 
 if len(sys.argv) < 4:
-    print "Invalid usage. Usage: python emu_docker.py <public-emu-url> <public-sysimg-url> <docker-repo-name> [docker-src-dir (cwd by default]"
+    print("Invalid usage. Usage: python emu_docker.py <public-emu-zip> <public-sysimg-zip> <docker-repo-name> [docker-src-dir (cwd by default]")
     sys.exit(1)
 
 src_dir = os.path.join(os.getcwd(), "src")
 
-print sys.argv
+print(sys.argv)
 
 emu_zip, sysimg_zip, repo_name = sys.argv[1:5]
 
 if len(sys.argv) > 4:
     src_dir = sys.argv[4]
 
-print "Emulator zip: %s" % emu_zip
-print "Sysimg zip: %s" % sysimg_zip
-print "Repo name: %s" % repo_name
+print("Emulator zip: %s" % emu_zip)
+print("Sysimg zip: %s" % sysimg_zip)
+print("Repo name: %s" % repo_name)
 
-print "Docker src dir: %s" % src_dir
+print("Docker src dir: %s" % src_dir)
 
 mkdir_p(src_dir)
 
-print "Copying zips to docker src dir..."
+print("Copying zips to docker src dir...")
 shutil.copy2(emu_zip, src_dir)
 shutil.copy2(sysimg_zip, src_dir)
-print "Done copying"
+print("Done copying")
 
 platform_tools_dir = os.path.join(src_dir, "platform-tools")
 avd_dir_out_path = os.path.join(src_dir, "avd")
 avd_dir_avd_out_path = os.path.join(src_dir, "avd", "Pixel2.avd")
 
-print "Platform tools dir: %s" % platform_tools_dir
-print "AVD dir: %s" % avd_dir_avd_out_path
+print("Platform tools dir: %s" % platform_tools_dir)
+print("AVD dir: %s" % avd_dir_avd_out_path)
 
-print "Creating dirs..."
+print("Creating dirs...")
 
 mkdir_p(platform_tools_dir)
 mkdir_p(avd_dir_out_path)
@@ -74,14 +74,14 @@ mkdir_p(avd_dir_avd_out_path)
 
 adb_loc = find_executable("adb")
 
-print "Using adb: %s" % adb_loc
+print("Using adb: %s" % adb_loc)
 
 shutil.copy2(adb_loc, platform_tools_dir)
 
 avd_root_ini_out_path = os.path.join(avd_dir_out_path, "Pixel2.ini")
 avd_config_ini_out_path = os.path.join(avd_dir_avd_out_path, "config.ini")
 
-print "Writing config.ini and AVD info"
+print("Writing config.ini and AVD info")
 
 fh = open(avd_root_ini_out_path, 'w')
 fh.write(emu_templates.avd_root_ini_template)
@@ -91,21 +91,21 @@ fh = open(avd_config_ini_out_path, 'w')
 fh.write(emu_templates.avd_config_ini_template)
 fh.close()
 
-print "Writing launch-emulator.sh"
+print("Writing launch-emulator.sh")
 
 launch_emulator_out_path = os.path.join(src_dir, "launch-emulator.sh")
 fh = open(launch_emulator_out_path, 'w')
 fh.write(emu_templates.launch_emulator_sh_template)
 fh.close()
 
-print "Writing default.pa"
+print("Writing default.pa")
 
 default_pa_out_path = os.path.join(src_dir, "default.pa")
 fh = open(default_pa_out_path, 'w')
 fh.write(emu_templates.default_pa_template)
 fh.close()
 
-print "Writing Dockerfile"
+print("Writing Dockerfile")
 
 dockerfile_out_path = os.path.join(src_dir, "Dockerfile")
 
@@ -123,4 +123,4 @@ with open(dockerfile_out_path, 'w') as dfile:
             sysimg_zip=sysimg_zip,
             date="TEST_DATE"))
 
-print "Done setting up Dockerfile"
+print("Done setting up Dockerfile")

@@ -1,7 +1,8 @@
 # Android Emulator Container Scripts
 
 This is a set of minimal scripts to run the emulator in a container for various
-systems such as Docker, for external consumption.
+systems such as Docker, for external consumption. The scripts are compatible with
+both Python version 2 and 3.
 
 # Install
 
