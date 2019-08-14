@@ -117,27 +117,57 @@ To enable ADB access, run the following adb command, assuming no other emulators
 
     adb connect localhost:5555
 
-## gRPC/webrtc
+# Make the emulator accessible on the web
 
-We use a gRPC/webrtc service to show what is on the emulator and to interact
-with it.  This assumes that you have npm/node plus protoc 3.6+ installed and
-available, and that no other node servers are running on your machine.
+This repository also contains an example that demonstrates how you can use
+docker to make the emulator accessible through the web. This is done by
+composing the following set of docker containers:
 
-Checkout the emulator repo dir:
+- [Envoy](https://www.envoyproxy.io/), an edge and service proxy: The proxy is responsible for the following:
+    - Offer TLS (https) using a self signed certificate
+    - Redirect traffic on port 80 (http) to port 443 (https)
+    - Act as a [gRPC proxy](https://grpc.io/blog/state-of-grpc-web/) for the emulator.
+    - Redirect other requests to the Nginx component which hosts a [React](https://reactjs.org/) application.
+- [Nginx](https://www.nginx.com/), a webserver hosting a compiled React App
+- The emulator with a gRPC endpoint and a WebRTC video bridge.
 
-    https://android.googlesource.com/platform/external/qemu/+/refs/heads/emu-master-dev/android/android-grpc/docs/grpc-samples/js/
+## Important Notice!
 
+In order to run this sample and be able to interact with the emulator you must
+keep the following in mind:
 
-In the `/js` dir, issue:
+- The demo has two methods to display the emulator.
+    1. Create an image every second, which is displayed in the browser. This
+       approach will always work, but gives poor performance.
+    2. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
+       real time. This will only work if you are able to create a peer to peer connection
+       to the server hosting the emulator. This is usually not a problem when your server
+       is publicly visible, or if you are running the emulator on your own intranet.
+- There is no Authorization/Authentication. Anyone who can reach the website will be able to
+  interact with the emulator. Which means they can control the emulator and run arbitrary code
+  inside your emulator.
 
-    make deps # Uses npm and protoc 3.6+ libraries to build the client
-    make develop # Runs the service
+## Requirements
 
-and point your web browser to localhost:3000.
+- You will need to install [docker-compose](https://docs.docker.com/compose/install/)
+- You must have port 80 and 443 available. The docker containers will create an
+  internal network and expose the http and https ports.
+- You will need to create an emulator docker image, as described in the documentation above.
 
-To stop, hit Ctrl-C in the terminal where `make develop` was issued, then issue:
+## Running the emulator on the web
 
-    make stop
+Once you have taken care of the steps above you can create the containers as follows:
 
-TODO: We are also working on a more isolated solution via envoy, nginx, and `docker-compose`. See https://android.googlesource.com/platform/external/qemu/+/refs/heads/emu-master-dev/android/android-grpc/docs/grpc-samples/js/docker/
+    docker-compose -f js/docker/docker-compose.yaml build
 
+After building the containers, you can launch the emulator as follows
+
+    docker-compose -f js/docker/docker-compose.yaml up
+
+Point your browser to [localhost](http://localhost). You will likely get
+a warning due to the usage of the self signed certifcate. Once you accept the
+cert you should see the emulator in action
+
+### Modifying the demo
+
+Details on how to modify can React application can be found [here](js/README.MD)

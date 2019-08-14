@@ -1,0 +1,45 @@
+version: "3.7"
+services:
+
+  front-envoy:
+    build:
+      context: .
+      dockerfile: envoy.Dockerfile
+    networks:
+      - envoymesh
+    expose:
+      - "8080"
+      - "8001"
+      - "8443"
+    ports:
+      - "80:8080"
+      - "443:8443"
+      - "8001:8001"
+
+  emulator:
+    build:
+      context: ../../src
+      dockerfile: Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - emulator
+    privileged: true
+    shm_size: 128M
+    expose:
+      - "5556"
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docker/nginx.Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - nginx
+    expose:
+      - "80"
+
+
+networks:
+  envoymesh: {}
