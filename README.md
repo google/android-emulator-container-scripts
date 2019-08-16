@@ -171,4 +171,4 @@ cert you should see the emulator in action
 
 ### Modifying the demo
 
-Details on how to modify can React application can be found [here](js/README.MD)
+Details on how to modify can React application can be found [here](js/README.md)
