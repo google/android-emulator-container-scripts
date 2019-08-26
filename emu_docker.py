@@ -19,6 +19,7 @@ import errno
 import os
 import shutil
 import sys
+import argparse
 
 from distutils.spawn import find_executable
 
@@ -33,23 +34,27 @@ def mkdir_p(path):
         else:
             raise
 
-if len(sys.argv) < 4:
-    print("Invalid usage. Usage: python emu_docker.py <public-emu-zip> <public-sysimg-zip> <docker-repo-name> [docker-src-dir (cwd by default]")
-    sys.exit(1)
+parser = argparse.ArgumentParser(description='Given an emulator and system image zip file, generates a Docker image comprising complete environment in which the Android Emulator runs. After the Docker image is started up, interaction with the emulator is made possible via port forwarding and ADB, or gRPC and WebRTC.',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-src_dir = os.path.join(os.getcwd(), "src")
+parser.add_argument('emuzip', help='Zipfile containing the a publicly released emulator.')
+parser.add_argument('imgzip', help='Zipfile containing a public system image that should be launched.')
+parser.add_argument('--extra',
+                    help='Series of additional commands to pass on to the emulator. ' +
+                    'For example -turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\"')
+parser.add_argument('--dest', default=os.path.join(os.getcwd(), "src"), help='Destination for the generated docker files')
+parser.add_argument('--repo', default='unused', help='Docker repository name')
+args = parser.parse_args()
 
-print(sys.argv)
 
-emu_zip, sysimg_zip, repo_name = sys.argv[1:5]
-
-if len(sys.argv) > 4:
-    src_dir = sys.argv[4]
+src_dir = args.dest
+emu_zip = args.emuzip
+sysimg_zip = args.imgzip
+repo_name = args.repo
 
 print("Emulator zip: %s" % emu_zip)
 print("Sysimg zip: %s" % sysimg_zip)
 print("Repo name: %s" % repo_name)
-
 print("Docker src dir: %s" % src_dir)
 
 mkdir_p(src_dir)
@@ -93,17 +98,16 @@ fh.close()
 
 print("Writing launch-emulator.sh")
 
+launch_emulator_sh_out_template = Environment(loader=BaseLoader).from_string(emu_templates.launch_emulator_sh_template)
 launch_emulator_out_path = os.path.join(src_dir, "launch-emulator.sh")
-fh = open(launch_emulator_out_path, 'w')
-fh.write(emu_templates.launch_emulator_sh_template)
-fh.close()
+with open(launch_emulator_out_path, 'w') as fh:
+    fh.write(launch_emulator_sh_out_template.render(extra=args.extra))
 
 print("Writing default.pa")
 
 default_pa_out_path = os.path.join(src_dir, "default.pa")
-fh = open(default_pa_out_path, 'w')
-fh.write(emu_templates.default_pa_template)
-fh.close()
+with open(default_pa_out_path, 'w') as fh:
+    fh.write(emu_templates.default_pa_template)
 
 print("Writing Dockerfile")
 
