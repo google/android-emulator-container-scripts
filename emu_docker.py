@@ -39,7 +39,7 @@ parser = argparse.ArgumentParser(description='Given an emulator and system image
 
 parser.add_argument('emuzip', help='Zipfile containing the a publicly released emulator.')
 parser.add_argument('imgzip', help='Zipfile containing a public system image that should be launched.')
-parser.add_argument('--extra',
+parser.add_argument('--extra', default="",
                     help='Series of additional commands to pass on to the emulator. ' +
                     'For example -turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\"')
 parser.add_argument('--dest', default=os.path.join(os.getcwd(), "src"), help='Destination for the generated docker files')
