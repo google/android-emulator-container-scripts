@@ -4,6 +4,22 @@ This is a set of minimal scripts to run the emulator in a container for various
 systems such as Docker, for external consumption. The scripts are compatible with
 both Python version 2 and 3.
 
+# Requirements
+
+These demos are intended to be run on a linux OS. Your system must meet the following
+requirements:
+
+- A Python interpreter must be installed.
+- ADB must be available on the path. ADB comes as part of the [Android SDK](http://www.androiddocs.com/sdk/installing/index.html). Note that installing the command line tools is sufficient.
+- [Docker](https://docs.docker.com/v17.12/install/) must be installed.
+- [Docker-compose](https://docs.docker.com/compose/install/) must be installed.
+- KVM must be available. You can get access to KVM by running on "bare metal", or on a (virtual) machine that provides [nested virtualization](https://blog.turbonomic.com/blog/). If you are planning to run this in the cloud (gce/azure/aws/etc..) you first must make sure you have access to KVM. Details on how to get access to KVM on the various cloud providers can be found here:
+
+    - AWS provides [bare metal](https://aws.amazon.com/about-aws/whats-new/2019/02/introducing-five-new-amazon-ec2-bare-metal-instances/) instances that provide access to KVM.
+    - Azure: Follow these [instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/nested-virtualization) to enable nested virtualization.
+    - GCE: Follow these [instructions](https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances) to enable nested virtualization.
+
+
 # Install
 
 The following Python libraries are required:
@@ -134,17 +150,16 @@ composing the following set of docker containers:
 
 ## Important Notice!
 
-In order to run this sample and be able to interact with the emulator you must
-keep the following in mind:
+In order to run this sample and be able to interact with the emulator you must keep the following in mind:
 
 - The demo has two methods to display the emulator.
-    1. Create an image every second, which is displayed in the browser. This
-       approach will always work, but gives poor performance.
+    1. Create an image every second, which is displayed in the browser. This approach will always work, but gives poor performance.
     2. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
        real time. This will only work if you are able to create a peer to peer connection
        to the server hosting the emulator. This is usually not a problem when your server
        is publicly visible, or if you are running the emulator on your own intranet.
-- There is no Authorization/Authentication. Anyone who can reach the website will be able to
+
+- **There is no Authorization/Authentication:.** Anyone who can reach the website will be able to
   interact with the emulator. Which means they can control the emulator and run arbitrary code
   inside your emulator.
 
@@ -172,3 +187,4 @@ cert you should see the emulator in action
 ### Modifying the demo
 
 Details on how to modify can React application can be found [here](js/README.md)
+
