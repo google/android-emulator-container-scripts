@@ -79,6 +79,12 @@ class SysImgInfo(object):
         self.url = 'https://dl.google.com/android/repository/sys-img/%s/%s' % (
             self.tag, self.zip)
 
+    def download(self, dest):
+        with urlfetch.get(self.url) as r:
+            with open(dest, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
+
 
 class EmuInfo(object):
     def __init__(self, pkg):
@@ -100,6 +106,14 @@ class EmuInfo(object):
             url = archive.find('.//url').text
             hostos = archive.find('host-os').text
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
+
+
+    def download(self, hostos, dest):
+        with urlfetch.get(self.urls[hostos]) as r:
+            with open(dest, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
+
 
 def get_images_info():
     """Gets all the publicly available system images from the Android Image Repos.
@@ -133,12 +147,15 @@ def get_emus_info():
     infos = [EmuInfo(item) for sublist in xml for item in sublist]
     return infos
 
-img_infos = get_images_info()
-emu_infos = get_emus_info()
 
-for img_info in img_infos:
-    print("SYSIMG {} {} {} {} {}".format(img_info.tag, img_info.api, img_info.letter, img_info.abi, img_info.url))
 
-for emu_info in emu_infos:
-    for (hostos, url) in list(emu_info.urls.items()):
-        print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
+def list_all_downloads():
+    img_infos = get_images_info()
+    emu_infos = get_emus_info()
+
+    for img_info in img_infos:
+        print("SYSIMG {} {} {} {} {}".format(img_info.tag, img_info.api, img_info.letter, img_info.abi, img_info.url))
+
+    for emu_info in emu_infos:
+        for (hostos, url) in list(emu_info.urls.items()):
+            print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
