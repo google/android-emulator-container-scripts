@@ -15,11 +15,12 @@
 # Minimal dependency script to query a set of
 # publically available emulator and system image zip files.
 
-import multiprocessing
 import os
-import sys
-import urlfetch
 import xml.etree.ElementTree as ET
+
+import urlfetch
+from consolemenu import SelectionMenu
+from tqdm import tqdm
 
 SYSIMG_REPOS = [
     'https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml',
@@ -56,6 +57,19 @@ API_LETTER_MAPPING = {
     "29" : "Q",
 }
 
+def _download(url, dest):
+    if os.path.exists(dest):
+        print("  Skipping already downloaded file: {}".format(dest))
+        return dest
+    with urlfetch.get(url) as r:
+           with  tqdm(r, total=int(r.headers['content-length']), unit='B', unit_scale=True) as t:
+               with open(dest, 'wb') as f:
+                   for data in r:
+                       f.write(data)
+                       t.update(len(data))
+    return dest
+
+
 class SysImgInfo(object):
     def __init__(self, pkg):
         details = pkg.find('type-details')
@@ -79,11 +93,10 @@ class SysImgInfo(object):
         self.url = 'https://dl.google.com/android/repository/sys-img/%s/%s' % (
             self.tag, self.zip)
 
-    def download(self, dest):
-        with urlfetch.get(self.url) as r:
-            with open(dest, 'wb') as f:
-                for chunk in r:
-                    f.write(chunk)
+    def download(self, dest = None):
+        dest = dest or os.path.join(os.getcwd(), 'sys-img-{}-{}-{}.zip'.format(self.tag, self.api, self.letter))
+        print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
+        return _download(self.url, dest)
 
 
 class EmuInfo(object):
@@ -108,12 +121,10 @@ class EmuInfo(object):
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
 
 
-    def download(self, hostos, dest):
-        with urlfetch.get(self.urls[hostos]) as r:
-            with open(dest, 'wb') as f:
-                for chunk in r:
-                    f.write(chunk)
-
+    def download(self, hostos, dest=None):
+        dest = dest or os.path.join(os.getcwd(), 'emulator-{}.zip'.format(self.version))
+        print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
+        return _download(self.urls[hostos], dest)
 
 def get_images_info():
     """Gets all the publicly available system images from the Android Image Repos.
@@ -147,6 +158,18 @@ def get_emus_info():
     infos = [EmuInfo(item) for sublist in xml for item in sublist]
     return infos
 
+def select_image():
+    img_infos = get_images_info()
+    display = ["{} {} {} {}".format(img_info.tag, img_info.api, img_info.letter, img_info.abi) for img_info in img_infos]
+    selection = SelectionMenu.get_selection(display, title='Select the system image you wish to use:')
+    return img_infos[selection] if selection < len(img_infos) else None
+
+
+def select_emulator():
+    emu_infos = [x for x in get_emus_info() if 'linux' in x.urls]
+    display = ["EMU {} {}".format(emu_info.channel, emu_info.version) for emu_info in emu_infos]
+    selection = SelectionMenu.get_selection(display,  title='Select the emulator you wish to use:')
+    return emu_infos[selection] if selection < len(emu_infos) else None
 
 
 def list_all_downloads():

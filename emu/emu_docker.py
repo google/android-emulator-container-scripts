@@ -15,9 +15,10 @@
 # Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image.
 
 import argparse
-import os
 import logging
+import os
 import shutil
+import sys
 from distutils.spawn import find_executable
 
 from jinja2 import BaseLoader, Environment
@@ -35,13 +36,7 @@ def list_images(args):
     emu_downloads_menu.list_all_downloads()
 
 
-def create_docker_image(args):
-    '''Create a directory containing all the necessary ingredients to construct a docker image.'''
-    src_dir = args.dest
-    emu_zip = args.emuzip
-    sysimg_zip = args.imgzip
-    repo_name = args.repo
-
+def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
     logging.info("Emulator zip: %s" % emu_zip)
     logging.info("Sysimg zip: %s" % sysimg_zip)
     logging.info("Repo name: %s" % repo_name)
@@ -49,7 +44,7 @@ def create_docker_image(args):
 
     mkdir_p(src_dir)
 
-    logging.info("Copying zips to docker src dir...")
+    print("Copying zips to docker src dir: {}".format(src_dir))
     shutil.copy2(emu_zip, src_dir)
     shutil.copy2(sysimg_zip, src_dir)
     logging.info("Done copying")
@@ -92,7 +87,7 @@ def create_docker_image(args):
         loader=BaseLoader).from_string(emu_templates.launch_emulator_sh_template)
     launch_emulator_out_path = os.path.join(src_dir, "launch-emulator.sh")
     with open(launch_emulator_out_path, 'w') as fh:
-        fh.write(launch_emulator_sh_out_template.render(extra=args.extra))
+        fh.write(launch_emulator_sh_out_template.render(extra=extra))
 
     logging.info("Writing default.pa")
 
@@ -120,6 +115,25 @@ def create_docker_image(args):
                 date="TEST_DATE"))
 
     print("Created a Dockerfile in {}".format(src_dir))
+    print("to create the image run:\n")
+    print('docker build {}'.format(src_dir))
+
+
+
+def create_docker_image(args):
+    '''Create a directory containing all the necessary ingredients to construct a docker image.'''
+    create_docker(args.dest, args.emuzip, args.imgzip, args.repo, args.extra)
+
+
+def create_docker_image_interactive(args):
+    '''Interactively create a docker image by selecting the desired combination from a menu.'''
+    img = emu_downloads_menu.select_image() or sys.exit(1)
+    emu = emu_downloads_menu.select_emulator() or sys.exit(1)
+
+    img_zip = img.download()
+    emu_zip = emu.download('linux')
+    create_docker(args.dest, emu_zip, img_zip, args.repo, args.extra)
+
 
 
 def main():
@@ -151,6 +165,18 @@ def main():
         '--repo', default='unused', help='Docker repository name')
     create_parser.set_defaults(func=create_docker_image)
 
+    create_inter = subparsers.add_parser(
+        'interactive', help='Interactively select which system image and emulator binary to use when creating a docker container')
+    create_inter.add_argument('--extra', default="",
+                               help='Series of additional commands to pass on to the emulator. ' +
+                               'For example -turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\"')
+    create_inter.add_argument('--dest', default=os.path.join(
+        os.getcwd(), "src"), help='Destination for the generated docker files')
+    create_inter.add_argument(
+        '--repo', default='unused', help='Docker repository name')
+    create_inter.set_defaults(func=create_docker_image_interactive)
+
+
     args = parser.parse_args()
     lvl = logging.DEBUG if args.verbose else logging.WARNING
     logging.basicConfig(level=lvl)
@@ -158,6 +184,7 @@ def main():
         args.func(args)
     else:
         parser.print_help()
+
 
 
 if __name__ == "__main__":
