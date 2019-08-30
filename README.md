@@ -6,8 +6,7 @@ both Python version 2 and 3.
 
 # Requirements
 
-These demos are intended to be run on a linux OS. Your system must meet the following
-requirements:
+These demos are intended to be run on a linux OS. Your system must meet the following requirements:
 
 - A Python interpreter must be installed.
 - ADB must be available on the path. ADB comes as part of the [Android SDK](http://www.androiddocs.com/sdk/installing/index.html). Note that installing the command line tools is sufficient.
@@ -22,29 +21,36 @@ requirements:
 
 # Install
 
-The following Python libraries are required:
+You can install the python package as follows:
 
-    urlfetch
-    jinja2
+    python setup.py install --user
 
-They can be installed via `pip install urlfetch; pip install jinja2` (or use your favorite method).
+This should make the  executable `emu-docker` available. You can get detailed information about the usage by launching it as follows:
 
-# Docker
+    emu-docker -h
 
-We have two scripts that work together to provide emulator docker images:
+## Quick start, interactively creating a docker image
 
-    emu_docker.py
-    emu_download_menu.py
+You can interactively select which version of android and emulator you wish to use by running:
 
-`emu_docker.py` sets up a Docker image source directory with a Dockerfile that is buildable and runnable as a Docker image, given a Linux emulator zip file, a system image zip file, and a docker repo name (currently unused; any name will do).
+    emu-docker interactive
 
-`emu_download_menu.py` lists a set of publically available Android Emulator system images and emulators along with their URLs, which makes it easier to download zip files for user with `emu_docker.py`.
+You will be asked to select a system image and an emulator version, after which a docker file will be created.
+The system image and emulator will be downloaded to the current directory if needed.
+
+You can now create the docker image by running:
+
+    docker build src
+
+A Docker image ID will output; use this to launch the container:
+
+    ./run.sh <docker-image-id>
 
 ## Obtaining URLs for emulator/system image zip files
 
 Issuing:
 
-    python emu_download_menu.py
+    emu-docker list
 
 will query the currently published Android SDK and output URLs for the zip files of:
 
@@ -87,16 +93,17 @@ Example output:
 One can then use tools like `wget` or a browser to download a desired emulator
 and system image.  After the two are obtained, we can build a Docker image.
 
-## Building the Docker image: Setting up the source dir
 
 Given an emulator zip file and a system image zip file, we can build a
 directory that can be sent to `docker build` via the following invocation of
-`emu_docker.py`:
+`emu_docker`:
 
-    python emu_docker.py <emulator-zip> <system-image-zip> <docker-repo-name(unused currently)> [docker-src-dir (getcwd()/src by default)]
+     emu_docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir (getcwd()/src by default)]
 
 This places all the right elements to run a docker image, but does not build,
 run or publish yet. A Linux emulator zip file must be used.
+
+## Building the Docker image: Setting up the source dir
 
 To build the Docker image corresponding to these emulators and system images:
 
