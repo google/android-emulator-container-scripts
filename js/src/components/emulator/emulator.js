@@ -133,7 +133,6 @@ export default class Emulator extends Component {
   render() {
     const { width, height, scale, uri, refreshRate, view } = this.props
     const SpecificView = this.components[view];
-    console.log("Using: " + SpecificView + " , view: " + view)
     return (
       <div
         tabIndex="1"

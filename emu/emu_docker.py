@@ -20,6 +20,7 @@ import os
 import shutil
 import sys
 from distutils.spawn import find_executable
+from errno import ENOENT
 
 from jinja2 import BaseLoader, Environment
 
@@ -28,7 +29,9 @@ import emu.emu_templates as emu_templates
 
 
 def mkdir_p(path):
-    os.makedirs(path, exist_ok=True)
+    '''Make directories recursively if path not exists.'''
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def list_images(args):
@@ -63,6 +66,8 @@ def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
     mkdir_p(avd_dir_avd_out_path)
 
     adb_loc = find_executable("adb")
+    if adb_loc is None:
+      raise IOError(ENOENT, 'Unable to find ADB on the path!')
 
     logging.info("Using adb: %s" % adb_loc)
 

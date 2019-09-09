@@ -99,8 +99,11 @@ else
     echo "No adb key provided.. You might not be able to connect to the emulator."
 fi
 
-# We need pulse audio for the webrtc video bridge
-pulseaudio -D
+# We need pulse audio for the webrtc video bridge, let's configure it.
+export PULSE_SERVER=unix:/tmp/pulse-socket
+pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
+pactl list  || echo "pulse: Unable to connect to pulse audio, WebRTC will not work."
+tail --retry -f /tmp/pulseverbose.log | sed 's/^/pulse: /g' &
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
@@ -117,8 +120,10 @@ exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556
 default_pa_template = """
 # This is a NOP configuration for pulse audio, all audio goes nowhere!
 load-module module-null-sink sink_name=NOP sink_properties=device.description=NOP
-load-module module-native-protocol-unix auth-anonymous=1
-load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1
+# Make pulse accessible on all channels. We only have null audio, and Docker
+# should isolate our network anyways.
+load-module module-native-protocol-unix auth-anonymous=1 socket=/tmp/pulse-socket
+load-module module-native-protocol-tcp  auth-anonymous=1
 """
 
 dockerfile_template = """
