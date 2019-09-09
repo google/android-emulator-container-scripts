@@ -36,7 +36,8 @@ You can interactively select which version of android and emulator you wish to u
     emu-docker interactive
 
 You will be asked to select a system image and an emulator version, after which a docker file will be created.
-The system image and emulator will be downloaded to the current directory if needed.
+The system image and emulator will be downloaded to the current directory if needed. If you wish to interact with
+the emulator in the browser you will need to use a canary build!
 
 You can now create the docker image by running:
 
@@ -172,7 +173,7 @@ In order to run this sample and be able to interact with the emulator you must k
 
 ## Requirements
 
-- You will need to install [docker-compose](https://docs.docker.com/compose/install/)
+- You will need [docker-compose](https://docs.docker.com/compose/install/).
 - You must have port 80 and 443 available. The docker containers will create an
   internal network and expose the http and https ports.
 - You will need to create an emulator docker image, as described in the documentation above.
@@ -190,6 +191,65 @@ After building the containers, you can launch the emulator as follows
 Point your browser to [localhost](http://localhost). You will likely get
 a warning due to the usage of the self signed certifcate. Once you accept the
 cert you should see the emulator in action
+
+### Troubleshooting
+
+Here are a list of things that we have seen with potential workarounds:
+
+- **I am not seeing any video in the demo* when selecting webrtc*
+
+  1. Click the png button. This will not use webrtc but request individual
+     screenshots from the emulator. If this works you learn the following:
+
+     - The emulator is running.
+     - The gRPC endpoint is properly working.
+
+      If the button does not show the emulator then you are possibly running
+      an older emulator without gRPC support. Make sure you use the latest canary
+      build.
+
+  2. I do see video when using the png button.
+
+     - Click the `webrtc` button. Make sure no video is showing.
+     - Check the JavaScript console log.
+
+     If you only see: `handleJsepMessage: {"start":{}}` then the
+     video bridge is not running as expected. You could consult the logs for
+     more info:  `docker logs docker_emulator_1 | egrep "pulse:|video:"`
+
+    If you see something along the lines of:
+
+     ```javascript
+     handleJsepMessage: {"start":{}}
+     jsep_protocol_driver.js:124 handleJsepMessage: {"sdp":"i...
+     label:emulator_video_stream\r\n","type":"offer"}
+     jsep_protocol_driver.js:76 handlePeerConnectionTrack: connecting [object
+     RTCTrackEvent]
+     webrtc_view.js:42 Connecting video stream: [object HTMLVideoElement]:0
+     jsep_protocol_driver.js:124 handleJsepMessage:
+     {"candidate":"candidate:3808623835 1 udp 2122260223 172.20.0.4 38033 typ
+     host generation 0 ufrag kyFW network-id 1","sdpMLineIndex":0,"sdpMid":"0"}
+     jsep_protocol_driver.js:124 handleJsepMessage:
+     {"candidate":"candidate:2325047 1 udp 1686052607 104.132.0.73 59912 typ
+     srflx raddr 172.20.0.4 rport 38033 generation 0 ufrag kyFW network-id
+     1","sdpMLineIndex":0,"sdpMid":"0"}
+     webrtc_view.js:50 Automatic playback started!
+     ```
+
+     You could be in a situation where
+     a [TURN](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT)
+     is needed. This is usually only the case when you are in a restricted
+     network. You can launch the emulator `$ANDROID_SDK_ROOT/emulator/emulator
+     -help-turncfg` under linux to learn how to configure turn.
+     You can pass use `emu_docker create --help` to learn how to pass the
+     `--turncfg` flag to the emulator.
+
+
+- **Credential errors when using docker-compose from virtual within a virtual
+  environment:**
+
+  The easiest solution is not to use docker-compose from a virtual environment.
+
 
 ### Modifying the demo
 
