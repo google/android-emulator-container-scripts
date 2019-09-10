@@ -99,6 +99,13 @@ else
     echo "No adb key provided.. You might not be able to connect to the emulator."
 fi
 
+# Let's log the emulator,script and image  version.
+emulator/emulator -version | head -n 1 | sed 's/^/version: /g'
+echo 'version: launch_script: {{version}}'
+img=$ANDROID_SDK_ROOT/system-images/android
+[ -f "$img/x86_64/source.properties" ] && cat "$img/x86_64/source.properties"| sed 's/^/version: /g'
+[ -f "$img/x86/source.properties" ] && cat "$img/x86/source.properties"| sed 's/^/version: /g'
+
 # We need pulse audio for the webrtc video bridge, let's configure it.
 export PULSE_SERVER=unix:/tmp/pulse-socket
 pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
