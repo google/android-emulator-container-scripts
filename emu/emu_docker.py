@@ -26,6 +26,7 @@ from jinja2 import BaseLoader, Environment
 
 import emu.emu_downloads_menu as emu_downloads_menu
 import emu.emu_templates as emu_templates
+import emu
 
 
 def mkdir_p(path):
@@ -67,7 +68,7 @@ def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
 
     adb_loc = find_executable("adb")
     if adb_loc is None:
-      raise IOError(ENOENT, 'Unable to find ADB on the path!')
+      raise IOError(ENOENT, 'Unable to find ADB on the path! Make sure that $ANDROID_SDK_ROOT/platform-tools is on the path')
 
     logging.info("Using adb: %s" % adb_loc)
 
@@ -92,7 +93,8 @@ def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
         loader=BaseLoader).from_string(emu_templates.launch_emulator_sh_template)
     launch_emulator_out_path = os.path.join(src_dir, "launch-emulator.sh")
     with open(launch_emulator_out_path, 'w') as fh:
-        fh.write(launch_emulator_sh_out_template.render(extra=extra))
+        fh.write(launch_emulator_sh_out_template.render(extra=extra,
+                                                        version=emu.__version__))
 
     logging.info("Writing default.pa")
 
@@ -144,7 +146,7 @@ def create_docker_image_interactive(args):
 def main():
     '''Entry point that parses the argument, and invokes the proper functions.'''
 
-    parser = argparse.ArgumentParser(description='List and create emulator docker containers.',
+    parser = argparse.ArgumentParser(description='List and create emulator docker containers ({}).'.format(emu.__version__),
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-v", "--verbose", dest="verbose", action='store_true',
                         help="Set verbose logging")
