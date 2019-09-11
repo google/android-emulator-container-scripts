@@ -82,6 +82,25 @@ launch_emulator_sh_template = """#!/bin/sh
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# Let's log the emulator,script and image  version.
+emulator/emulator -version | head -n 1 | sed 's/^/version: /g'
+echo 'version: launch_script: {{version}}'
+img=$ANDROID_SDK_ROOT/system-images/android
+[ -f "$img/x86_64/source.properties" ] && cat "$img/x86_64/source.properties"| sed 's/^/version: /g'
+[ -f "$img/x86/source.properties" ] && cat "$img/x86/source.properties"| sed 's/^/version: /g'
+
+
+# Delete any leftovers from hard exits.
+rm -rf /tmp/*
+rm -rf /android-home/Pixel2.avd/*.lock
+
+# Check for core-dumps, that might be left over
+if ls core* 1> /dev/null 2>&1; then
+    echo "** WARNING ** WARNING ** WARNING **"
+    echo "Core dumps exist in this image. This means the emulator has crashed in the past."
+fi
+
 # First we place the adb secret in the right place if it exists
 mkdir -p /root/.android
 
@@ -99,27 +118,21 @@ else
     echo "No adb key provided.. You might not be able to connect to the emulator."
 fi
 
-# Let's log the emulator,script and image  version.
-emulator/emulator -version | head -n 1 | sed 's/^/version: /g'
-echo 'version: launch_script: {{version}}'
-img=$ANDROID_SDK_ROOT/system-images/android
-[ -f "$img/x86_64/source.properties" ] && cat "$img/x86_64/source.properties"| sed 's/^/version: /g'
-[ -f "$img/x86/source.properties" ] && cat "$img/x86/source.properties"| sed 's/^/version: /g'
-
 # We need pulse audio for the webrtc video bridge, let's configure it.
 export PULSE_SERVER=unix:/tmp/pulse-socket
 pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
-pactl list  || echo "pulse: Unable to connect to pulse audio, WebRTC will not work."
-tail --retry -f /tmp/pulseverbose.log | sed 's/^/pulse: /g' &
+tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
+{ pactl list | sed 's/^/pulse: /g' ; } || echo "pulse: Unable to connect to pulse audio, WebRTC will not work."
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
 
-# Log all the video bridge interactions.
+# Log all the video bridge interactions, note that his file comes into existence later on.
+echo 'video: It is safe to ignore the 2 warnings from tail. The file will come into existence soon.'
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556 -no-window -gpu swiftshader_indirect -skip-adb-auth -logcat "*:v" {{extra}}
+exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556 -no-window -gpu swiftshader_indirect -skip-adb-auth -logcat "*:v" {{extra}} "$@"
 
 # All done!
 """
@@ -145,7 +158,7 @@ LABEL maintainer="{{user}}" \\
 # pulse audio is needed due to some webrtc dependencies.
 RUN apt-get update && apt-get install -y \\
 # Needed for install / debug
-    curl unzip procps bash \\
+    unzip \\
 # Emulator & video bridge dependencies
     libc6 libdbus-1-3 libfontconfig1 libgcc1 \\
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \\
@@ -161,22 +174,25 @@ RUN mkdir -p /android/sdk/platforms && \\
     mkdir -p /android-home
 
 COPY {{emu_zip}} /android/sdk/
+RUN unzip -u -o /android/sdk/{{emu_zip}} -d /android/sdk/ && \\
+    rm /android/sdk/{{emu_zip}}
+
 COPY {{sysimg_zip}} /android/sdk/
+RUN unzip -u -o /android/sdk/{{sysimg_zip}} -d /android/sdk/system-images/android && \\
+    rm /android/sdk/{{sysimg_zip}}
+
 COPY launch-emulator.sh /android/sdk/
 COPY default.pa /android/sdk/
 COPY platform-tools /android/sdk/
 COPY avd /android-home
 COPY default.pa /etc/pulse/default.pa
 
-RUN unzip -u -o /android/sdk/{{emu_zip}} -d /android/sdk/ && \\
-    unzip -u -o /android/sdk/{{sysimg_zip}} -d /android/sdk/system-images/android && \\
-    gpasswd -a root audio && \\
+RUN gpasswd -a root audio && \\
     chmod +x /android/sdk/launch-emulator.sh
 
-# Create an initial snapshot so we will boot fast next time around.
-# Doesn't work due to not being able run privileged container
-# see: https://github.com/moby/moby/issues/1916
-# RUN cd /android/sdk && emulator/emulator @Pixel2 -verbose -quit-after-boot 300
+# Create an initial snapshot so we will boot fast next time around,
+# This is currently an experimental feature, and is not easily configurable.
+# RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
 
 # Open up adb & grpc port
 EXPOSE 5555

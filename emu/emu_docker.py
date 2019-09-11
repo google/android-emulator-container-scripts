@@ -46,6 +46,7 @@ def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
     logging.info("Repo name: %s" % repo_name)
     logging.info("Docker src dir: %s" % src_dir)
 
+    shutil.rmtree(src_dir)
     mkdir_p(src_dir)
 
     print("Copying zips to docker src dir: {}".format(src_dir))
@@ -116,9 +117,9 @@ def create_docker(src_dir, emu_zip, sysimg_zip, repo_name='unused', extra=''):
                 tag="IMAGE_TEST_TAG",
                 api="TEST_API",
                 abi="TEST_ABI",
-                emu_zip=emu_zip,
+                emu_zip=os.path.basename(emu_zip), # Fully qualified name will confuse docker.
                 emu_build_id="TEST_BUILD_ID",
-                sysimg_zip=sysimg_zip,
+                sysimg_zip=os.path.basename(sysimg_zip),
                 date="TEST_DATE"))
 
     print("Created a Dockerfile in {}".format(src_dir))
