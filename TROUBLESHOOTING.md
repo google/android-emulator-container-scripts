@@ -16,7 +16,8 @@ case it is possible that the container gets into a corrupted state.
 If this is the case you will have to delete the container:
 
 ```sh # stop the container docker stop CONTAINER_ID # removes the container
-docker rm -f  CONTAINER_ID ```
+docker rm -f  CONTAINER_ID
+```
 
 ## I am not seeing any video in the demo when selecting webrtc
 
