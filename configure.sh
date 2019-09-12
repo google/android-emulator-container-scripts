@@ -19,8 +19,13 @@ if [ "${BASH_SOURCE-}" = "$0" ]; then
 fi
 
 if [ ! -f "./venv/bin/activate" ]; then
-  which virtualenv || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
-  virtualenv venv
+  # Prefer python3 if it is available.
+  if [ which python3 ]; then
+    python3 -m venv venv
+  else
+    which virtualenv || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
+    virtualenv venv
+  fi
 fi
 
 source ./venv/bin/activate
