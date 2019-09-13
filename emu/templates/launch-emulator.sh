@@ -64,6 +64,6 @@ echo 'video: It is safe to ignore the 2 warnings from tail. The file will come i
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556 -no-window -gpu swiftshader_indirect -skip-adb-auth -logcat "*:v" {{extra}} "$@"
+exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556 -no-window -skip-adb-auth -logcat "*:v" {{extra}} "$@"
 
 # All done!

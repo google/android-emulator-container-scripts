@@ -1,0 +1,6 @@
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+
+[tool.black]
+line-length = 120

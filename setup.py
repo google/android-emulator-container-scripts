@@ -134,7 +134,7 @@ setup(
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
-    install_requires=['urlfetch', 'jinja2', 'console-menu', 'tqdm'],  # Optional
+    install_requires=['urlfetch', 'jinja2', 'console-menu', 'tqdm', 'docker'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -145,7 +145,7 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={  # Optional
-        'dev': ['check-manifest', 'versioneer'],
+        'dev': ['check-manifest', 'versioneer', 'black'],
         'test': ['coverage'],
     },
 

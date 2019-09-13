@@ -6,7 +6,53 @@ Here are a list of things that we have seen with potential workarounds:
 
 Releases before O are using an older linux kernel (3.10). This version of the
 linux kernel has some issues that are under [active
-investigation](https://issuetracker.google.com/issues/140881613).
+investigation](https://issuetracker.google.com/issues/140881613) for X86_64 images.
+
+## Exceptions when trying to create the docker container:
+
+If you see an exception along the following lines:
+
+```python
+Traceback (most recent call last):
+  File "/tmp/android-emulator-container-scripts/emu/docker_device.py", line 78, in create_container
+    logging.info(api_client.version())
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/docker-4.0.2-py3.5.egg/dn
+    return self._result(self._get(url), json=True)
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/docker-4.0.2-py3.5.egg/dr
+    return f(self, *args, **kwargs)
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/docker-4.0.2-py3.5.egg/dt
+    return self.get(url, **self._set_request_timeout(kwargs))
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/requests-2.22.0-py3.5.egt
+    return self.request('GET', url, **kwargs)
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/requests-2.22.0-py3.5.egt
+    resp = self.send(prep, **send_kwargs)
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/requests-2.22.0-py3.5.egd
+    r = adapter.send(request, **kwargs)
+  File "/tmp/android-emulator-container-scripts/venv/lib/python3.5/site-packages/requests-2.22.0-py3.5.egd
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ('Connection aborted.', PermissionError(13, 'Permission denied'))
+```
+This means you do not have permission to interact with docker. You must enable sudoless docker, follow the
+steps outlined [here](https://docs.docker.com/install/linux/linux-postinstall/)
+
+## Exception around ADB
+
+If you see an exception along the following lines:
+
+```python
+Traceback (most recent call last):
+  File "/tmp/android-emulator-container-scripts/venv/bin/emu-docker", line 11, in <module>
+    load_entry_point('emu-docker', 'console_scripts', 'emu-docker')()
+  File "/tmp/android-emulator-container-scripts/emu/emu_docker.py", line 123, in main
+    args.func(args)
+  File "/tmp/android-emulator-container-scripts/emu/emu_docker.py", line 48, in create_docker_image_intere
+    device.create_docker_file(args.extra)
+  File "/tmp/android-emulator-container-scripts/emu/docker_device.py", line 119, in create_docker_file
+    raise IOError(errno.ENOENT, "Unable to find ADB below $ANDROID_SDK_ROOT or on the path!")
+FileNotFoundError: [Errno 2] Unable to find ADB below $ANDROID_SDK_ROOT or on the path!
+```
+
+You will need to install adb.
 
 ## The container suddenly stopped and I cannot restart it.
 
@@ -15,7 +61,7 @@ case it is possible that the container gets into a corrupted state.
 
 If this is the case you will have to delete the container:
 
-```sh # stop the container docker stop CONTAINER_ID # removes the container
+```sh
 docker rm -f  CONTAINER_ID
 ```
 
@@ -67,6 +113,32 @@ If you see something along the lines of:
     `emu_docker create --help` to learn how to pass the `--turncfg` flag to the
     emulator.
 
+
+## Unable to launch docker image
+
+If you are seeing exceptions during the creation of a docker image directly from python, such as these:
+
+```python
+Traceback (most recent call last):
+  File "....python3.6/site-packages/urllib3/connectionpool.py", line 600, in urlopen
+    chunked=chunked)
+  File ".../python3.6/site-packages/urllib3/connectionpool.py", line 354, in _make_request
+    conn.request(method, url, **httplib_request_kw)
+  File "/usr/lib/python3.6/http/client.py", line 1239, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib/python3.6/http/client.py", line 1285, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.6/http/client.py", line 1234, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.6/http/client.py", line 1065, in _send_output
+    self.send(chunk)
+  File "/usr/lib/python3.6/http/client.py", line 986, in send
+    self.sock.sendall(data)
+ConnectionResetError: [Errno 104] Connection reset by peer
+```
+
+One of the possibilities is that you have not properly configured your credential helpers. Launch withe `-v` flag to
+see how docker tries to authenticate to your local service.
 
 ## Credential errors with docker-compose
 
