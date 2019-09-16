@@ -19,11 +19,18 @@ if [ "${BASH_SOURCE-}" = "$0" ]; then
 fi
 
 if [ ! -f "./venv/bin/activate" ]; then
-  which virtualenv || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
-  virtualenv venv
+  # Prefer python3 if it is available.
+  if command -v python3 &>/dev/null; then
+    echo "Using python 3"
+    python3 -m venv venv
+  else
+    echo "Using python 2"
+    command virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
+    virtualenv venv
+  fi
 fi
 
-source ./venv/bin/activate
+. ./venv/bin/activate
 python setup.py develop
 
 echo "Ready to run emu-docker!"

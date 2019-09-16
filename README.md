@@ -4,9 +4,6 @@ This is a set of minimal scripts to run the emulator in a container for various
 systems such as Docker, for external consumption. The scripts are compatible
 with both Python version 2 and 3.
 
-The container scripts can currently launch *[Android
-OREO](https://developer.android.com/about/versions/oreo)* and later versions.
-
 *Note that this is still an experimental feature!*
 
 # Requirements
@@ -18,7 +15,9 @@ following requirements:
 - ADB must be available on the path. ADB comes as part of the [Android
   SDK](http://www.androiddocs.com/sdk/installing/index.html). Note that
   installing the command line tools is sufficient.
-- [Docker](https://docs.docker.com/v17.12/install/) must be installed.
+- [Docker](https://docs.docker.com/v17.12/install/) must be installed. Make
+  sure you can run it as [non-root
+  user]((https://docs.docker.com/install/linux/linux-postinstall/))
 - [Docker-compose](https://docs.docker.com/compose/install/) must be installed.
 - KVM must be available. You can get access to KVM by running on "bare metal",
   or on a (virtual) machine that provides [nested
@@ -52,25 +51,34 @@ information about the usage by launching it as follows:
 
     emu-docker -h
 
-## Quick start, interactively creating a docker image
+## Quick start, interactively creating and running a docker image
 
 You can interactively select which version of android and emulator you wish to
 use by running:
 
-    emu-docker interactive
+    emu-docker interactive --start
 
 You will be asked to select a system image and an emulator version, after which
 a docker file will be created. The system image and emulator will be downloaded
-to the current directory if needed. If you wish to interact with the emulator in
-the browser you will need to use a canary build!
+to the current directory if needed. The script will provide you with a command
+to see the logs as well as the command to stop the container.
 
-You can now create the docker image by running:
+You can now connect to the running device using adb:
 
-    docker build src
+    adb connect localhost:5555
 
-A Docker image ID will output; use this to launch the container:
+Do not forget to stop the docker container once you are done!
 
-    ./run.sh <docker-image-id>
+If you wish to interact with the emulator via the web, and you have port 80 and
+443 available you can run:
+
+    docker-compose -f js/docker/docker-compose.yaml build
+
+After building the containers, you can launch the emulator as follows
+
+    docker-compose -f js/docker/docker-compose.yaml up
+
+The emulator should be avaiable at [http://localhost](http://localhost).
 
 ## Obtaining URLs for emulator/system image zip files
 
@@ -166,21 +174,20 @@ It does the following:
 ## adb
 
 We forward the port 5555 for adb access to the emulator running inside the
-container (TODO: make this configurable per container). Adb should automatically
-detect the devices:
+container (TODO: make this configurable per container). Adb might not automatically
+detect the device, so run:
 
+    adb connect localhost:5555
 
-```sh $ adb devices
+Your device should now show up as:
+
+```sh
+$ adb devices
 
 List of devices attached:
 emulator-5554   device
 ```
 
-
-If it does not, run the following adb command, assuming no other
-emulators/devices are connected:
-
-    adb connect localhost:5555
 
 # Make the emulator accessible on the web
 
@@ -207,7 +214,7 @@ keep the following in mind:
 - The demo has two methods to display the emulator.
     1. Create an image every second, which is displayed in the browser. This
     approach will always work, but gives poor performance.
-    2. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
+    1. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
        real time. This will only work if you are able to create a peer to peer
        connection to the server hosting the emulator. This is usually not
        a problem when your server is publicly visible, or if you are running the

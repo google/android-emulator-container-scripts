@@ -134,7 +134,7 @@ setup(
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
-    install_requires=['urlfetch', 'jinja2', 'console-menu', 'tqdm'],  # Optional
+    install_requires=['urlfetch', 'jinja2', 'console-menu', 'tqdm', 'docker'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -145,7 +145,7 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={  # Optional
-        'dev': ['check-manifest', 'versioneer'],
+        'dev': ['check-manifest', 'versioneer', 'black'],
         'test': ['coverage'],
     },
 
@@ -155,7 +155,7 @@ setup(
     # If using Python 2.6 or earlier, then these have to be included in
     # MANIFEST.in as well.
     package_data={  # Optional
-
+        'emu' : ['templates/*', 'templates/avd/*', 'templates/avd/Pixel2.avd/*']
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -163,9 +163,9 @@ setup(
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files
     #
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[
-            # ('my_data', ['data/data_file'])
-            ],  # Optional
+    data_files={
+
+    },  # Optional
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow

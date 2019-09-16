@@ -123,6 +123,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Visual Studio Code.
+.vscode/*
+
 # Files used by our scripts
 *.zip
 src/

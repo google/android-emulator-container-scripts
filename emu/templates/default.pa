@@ -1,0 +1,7 @@
+# This is a NOP configuration for pulse audio, all audio goes nowhere!
+load-module module-null-sink sink_name=NOP sink_properties=device.description=NOP
+
+# Make pulse accessible on all channels. We only have null audio, and Docker
+# should isolate our network anyways.
+load-module module-native-protocol-unix auth-anonymous=1 socket=/tmp/pulse-socket
+load-module module-native-protocol-tcp  auth-anonymous=1
