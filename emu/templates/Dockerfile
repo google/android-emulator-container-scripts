@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
 # Emulator & video bridge dependencies
     libc6 libdbus-1-3 libfontconfig1 libgcc1 \
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \
+    libnss3 libxcomposite1 libxcursor1 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat
 
 # Next we get an android image ready
