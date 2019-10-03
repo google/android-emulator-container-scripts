@@ -158,12 +158,12 @@ We provide the following run script:
 
 It does the following:
 
-    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --privileged  --publish
+    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm--publish
     5556:5556/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
-- Uses `--privileged` to have CPU acceleration
+- Uses `--device /dev/kvm to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
   host ports 5556/6555 to container ports 5556/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
