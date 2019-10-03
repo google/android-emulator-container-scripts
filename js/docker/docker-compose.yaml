@@ -24,7 +24,7 @@ services:
       envoymesh:
         aliases:
           - emulator
-    devices: /dev/kvm
+    devices: [/dev/kvm]
     shm_size: 128M
     expose:
       - "5556"
