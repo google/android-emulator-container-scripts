@@ -13,53 +13,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import PropTypes from 'prop-types';
-import React, { Component } from 'react';
-import Logcat from '../net/logcat.js'
+import PropTypes from "prop-types";
+import React, { Component } from "react";
+import Logcat from "../net/logcat.js";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemText from "@material-ui/core/ListItemText";
 
 /**
- * A very simple logcat viewer.
+ * A very simple logcat viewer. TIt displays all logcat items in a material list.
  */
 class LogcatView extends Component {
-    state = { lines: [] }
+  state = { lines: [] };
 
-    static propTypes = {
-        uri: PropTypes.string.isRequired,  // gRPC endpoint of the emulator.
-        refreshRate: PropTypes.number,
-        maxHistory: PropTypes.number,
-        classes: PropTypes.object.isRequired
+  static propTypes = {
+    uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
+    auth: PropTypes.func.isRequired, // Auth service
+    refreshRate: PropTypes.number,
+    maxHistory: PropTypes.number,
+    classes: PropTypes.object.isRequired
+  };
+
+  static defaultProps = {
+    refreshRate: 1000, // Desired refresh rate.
+    maxHistory: 512 // Number of loglines to keep.
+  };
+
+  onLogcat = loglines => {
+    const { lines } = this.state;
+    const { maxHistory } = this.props;
+    var newLines = lines.concat(loglines);
+    if (newLines.length > maxHistory) {
+      newLines = newLines.splice(newLines.length - maxHistory);
     }
 
-    static defaultProps = {
-        refreshRate: 1000,  // Desired refresh rate.
-        maxHistory: 512    // Number of loglines to keep.
-    }
+    this.setState({ lines: newLines });
+  };
 
-    onLogcat = loglines => {
-        const { lines } = this.state
-        const { maxHistory } = this.props
-        var newLines = lines.concat(loglines)
-        if (newLines.length > maxHistory) {
-            newLines = newLines.splice(newLines.length - maxHistory)
-        }
+  asItems = loglines => {
+    return loglines.map(line => (
+      <ListItem>
+        <ListItemText primary={line} />
+      </ListItem>
+    ));
+  };
 
-        this.setState({ lines: newLines })
-    }
-
-    asItems = loglines => {
-        return loglines.map(line => (<p>{line}</p>))
-    }
-
-    render() {
-        const { lines } = this.state
-        const { classes } = this.props;
-        return (
-            <div>
-                <Logcat uri={this.props.uri} onLogcat={this.onLogcat} />
-                {this.asItems(lines)}
-            </div>
-        )
-    }
+  render() {
+    const { lines } = this.state;
+    const { auth, uri } = this.props;
+    return (
+      <List dense="true">
+        {this.asItems(lines)}
+        <Logcat uri={uri} auth={auth} onLogcat={this.onLogcat} />
+      </List>
+    );
+  }
 }
 
 export default LogcatView;

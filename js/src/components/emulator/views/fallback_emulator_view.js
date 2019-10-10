@@ -15,8 +15,8 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import EmulatorPngView from "./simple_png_view.js"
-import JsepProtocolDriver from "../net/jsep_protocol_driver.js"
+import EmulatorPngView from "./simple_png_view.js";
+import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
 
 /**
  * A View that will use WebRTC if possible, and otherwise will revert to
@@ -25,6 +25,7 @@ import JsepProtocolDriver from "../net/jsep_protocol_driver.js"
 export default class EmulatorFallbackView extends Component {
   static propTypes = {
     uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator
+    auth: PropTypes.func.isRequired, // Auth service
     width: PropTypes.number,
     height: PropTypes.number,
     refreshRate: PropTypes.number
@@ -37,52 +38,77 @@ export default class EmulatorFallbackView extends Component {
   };
 
   state = {
-    fallback: true,
-  }
+    fallback: true
+  };
 
   onDisconnect = () => {
-    this.setState({ fallback: true })
-  }
+    this.setState({ fallback: true });
+  };
 
   onConnect = stream => {
-    console.log("onConnect: " + JSON.stringify(this.state))
     this.setState({ fallback: false }, () => {
-      console.log("Connecting video stream: " + this.video + ":" + this.video.readyState)
-      this.video.srcObject = stream
-      this.video.play()
-    })
-  }
+      console.log(
+        "Connecting video stream: " + this.video + ":" + this.video.readyState
+      );
+      this.video.srcObject = stream;
+      this.video.play();
+    });
+  };
 
   onCanPlay = e => {
-    console.log("Playing video stream.")
+    console.log("Playing video stream.");
     this.video.play().catch(error => {
       // Autoplay is likely disabled in chrome
       // https://developers.google.com/web/updates/2017/09/autoplay-policy-changes
       // so we should probably show something useful here.
       // We explicitly set the video stream to muted, so this shouldn't happen,
       // but is something you will have to fix once enabling audio.
-      alert("code: " + error.code + ", msg: " + error.message + ", name: " + error.nane)
-    })
-  }
+      alert(
+        "code: " +
+          error.code +
+          ", msg: " +
+          error.message +
+          ", name: " +
+          error.nane
+      );
+    });
+  };
 
   onContextMenu = e => {
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   render() {
-    const { width, height, uri, refreshRate } = this.props;
-    const { fallback } = this.state
+    const { width, height, uri, refreshRate, auth } = this.props;
+    const { fallback } = this.state;
     return (
       <div>
-        <JsepProtocolDriver uri={uri} onConnect={this.onConnect} onDisconnect={this.onDisconnect} />
-        {!fallback && <video ref={node => (this.video = node)}
-          width={width}
-          height={height}
-          onContextMenu={this.onContextMenu}
-          onCanPlay={this.onCanPlay}
-          muted="muted" />}
-        {fallback && <EmulatorPngView uri={uri} refreshRate={refreshRate} width={width} height={height} />}
+        <JsepProtocolDriver
+          uri={uri}
+          auth={auth}
+          onConnect={this.onConnect}
+          onDisconnect={this.onDisconnect}
+        />
+        {!fallback && (
+          <video
+            ref={node => (this.video = node)}
+            width={width}
+            height={height}
+            onContextMenu={this.onContextMenu}
+            onCanPlay={this.onCanPlay}
+            muted="muted"
+          />
+        )}
+        {fallback && (
+          <EmulatorPngView
+            uri={uri}
+            auth={auth}
+            refreshRate={refreshRate}
+            width={width}
+            height={height}
+          />
+        )}
       </div>
-    )
+    );
   }
 }

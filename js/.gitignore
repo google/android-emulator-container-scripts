@@ -23,5 +23,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 protoc-gen-grpc-web
-android_emulation_control/*
-src/android_emulation_control/
+src/android_emulation_control/*
+docker/certs/jwt_secrets_pub.jwks

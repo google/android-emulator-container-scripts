@@ -28,6 +28,7 @@ import * as Device from "../../../android_emulation_control/emulator_controller_
 export default class EmulatorPngView extends Component {
   static propTypes = {
     uri: PropTypes.string, // gRPC endpoint of the emulator
+    auth: PropTypes.func.isRequired, // Auth service
     width: PropTypes.number,
     height: PropTypes.number,
     refreshRate: PropTypes.number
@@ -59,25 +60,24 @@ export default class EmulatorPngView extends Component {
 
   /* Makes a grpc call to get a screenshot */
   updateView() {
+    const { auth } = this.props;
     /* eslint-disable */
     var request = new proto.google.protobuf.Empty();
     var self = this;
-    var call = this.emulatorService.getScreenshot(request, {}, function (
-      err,
-      response
-    ) {
-      if (err) {
-        console.error(
-          "Grpc: " + err.code + ", msg: " + err.message,
-          "Emulator:updateview"
-        );
-      } else {
-        // Update the image with the one we just received.
-        self.setState({
-          png: "data:image/jpeg;base64," + response.getImage_asB64()
-        });
+    var call = this.emulatorService.getScreenshot(
+      request,
+      auth.authHeader(),
+      function(err, response) {
+        if (err && err.code == 401) {
+          auth.unauthorized(err);
+        } else {
+          // Update the image with the one we just received.
+          self.setState({
+            png: "data:image/jpeg;base64," + response.getImage_asB64()
+          });
+        }
       }
-    });
+    );
   }
 
   handleDrag = e => {

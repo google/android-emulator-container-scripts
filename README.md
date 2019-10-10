@@ -188,7 +188,6 @@ List of devices attached:
 emulator-5554   device
 ```
 
-
 # Make the emulator accessible on the web
 
 This repository also contains an example that demonstrates how you can use
@@ -201,9 +200,12 @@ composing the following set of docker containers:
     - Redirect traffic on port 80 (http) to port 443 (https)
     - Act as a [gRPC proxy](https://grpc.io/blog/state-of-grpc-web/) for the
       emulator.
+    - Verifying tokens to permig access to the emulator gRPC endpoint.
     - Redirect other requests to the Nginx component which hosts
       a [React](https://reactjs.org/) application.
 - [Nginx](https://www.nginx.com/), a webserver hosting a compiled React App
+- [Token Service](js/jwt-provider/README.md) a simple token service that hands out
+  [JWT](https://en.wikipedia.org/wiki/JSON_Web_Token) tokens to grant access to the emulator.
 - The emulator with a gRPC endpoint and a WebRTC video bridge.
 
 ## Important Notice!
@@ -220,10 +222,6 @@ keep the following in mind:
        a problem when your server is publicly visible, or if you are running the
        emulator on your own intranet.
 
-- **There is no Authorization/Authentication:.** Anyone who can reach the
-  website will be able to interact with the emulator. Which means they can
-  control the emulator and run arbitrary code inside your emulator.
-
 ## Requirements
 
 - You will need [docker-compose](https://docs.docker.com/compose/install/).
@@ -237,15 +235,21 @@ keep the following in mind:
 Once you have taken care of the steps above you can create the containers as
 follows:
 
-    docker-compose -f js/docker/docker-compose.yaml build
+    ./create_web_container.sh user1,passwd1,user2,passwd2,....
 
-After building the containers, you can launch the emulator as follows
+This will do the following:
+
+- Create a virtual environment
+- Configure the token service to give acess to the passed in users.
+- Generate a public and private key pair, used to encrypt/decrypt JWT tokens
+- Create the set of containers to interact with the emulator.
+
 
     docker-compose -f js/docker/docker-compose.yaml up
 
 Point your browser to [localhost](http://localhost). You will likely get
 a warning due to the usage of the self signed certifcate. Once you accept the
-cert you should see the emulator in action
+cert you should be able to login and start using the emulator.
 
 ### Troubleshooting
 
@@ -254,4 +258,5 @@ issues.
 
 ### Modifying the demo
 
-Details on how to modify the React application can be found [here](js/README.md)
+Details on the design and how to modify the React application can be found
+[here](js/README.md)
