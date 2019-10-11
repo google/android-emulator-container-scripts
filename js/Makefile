@@ -53,7 +53,6 @@ MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 QEMU_ROOT := $(abspath $(MAKEFILE_PATH)/../../../../../..)
 CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 OUT_DIR := $(CURRENT_DIR)/src/
-WEBPROXY = $(GOPATH)/bin/grpcwebproxy
 CONTROLPB = $(OUT_DIR)/android_emulation_control/emulator_controller_pb.js
 GRPCPB = $(OUT_DIR)/android_emulation_control/emulator_controller_grpc_web_pb.js
 PROTODIR = $(CURRENT_DIR)/android_emulation_control
@@ -64,7 +63,7 @@ CPPFLAGS += -I$(PROTOHEADER) -pthread
 CXXFLAGS += -std=c++11
 LDFLAGS += -L$(PROTOLIB) -lprotoc -lprotobuf -lpthread -ldl
 
-.PHONY: build-release run-release
+.PHONY: build-release run-release develop stop
 
 all: develop
 
@@ -93,22 +92,12 @@ $(CONTROLPB) $(GRPCPB): $(PROTO) protoc-gen-grpc-web
 	@cat /tmp/emulator_controller_pb.js >>  $(CONTROLPB)
 	@cp  /tmp/emulator_controller_grpc_web_pb.js $(GRPCPB)
 
-$(WEBPROXY):
-	@rm -rf $(GOPATH)/src/grpc-web
-	@mkdir -p $(GOPATH)/src
-	@cp -r $(CURRENT_DIR)/grpc-web $(GOPATH)/src
-	cd $(GOPATH)/src/grpc-web/ && dep ensure -v && go install ./go/grpcwebproxy
 
-deps: $(WEBPROXY) $(CONTROLPB) $(GRPCPB) system-check
+deps: $(CONTROLPB) $(GRPCPB) system-check
 	@npm install
 
 develop:
-	$(WEBPROXY) \
-		--backend_addr localhost:5556 \
-		--backend_tls=false \
-		--run_tls_server=false \
-		--allow_all_origins &
-	npm start
+	./develop.sh
 
 build-release:  $(CONTROLPB) $(GRPCPB) system-check
 	 docker-compose -f docker/docker-compose.yaml build
@@ -117,7 +106,7 @@ run-release: build-release
 	 docker-compose -f docker/docker-compose.yaml up
 
 stop:
-	pkill -9 grpcwebproxy; pkill -9 npm; pkill -9 js; pkill -9 node; true
+	docker stop emu-dev-grpc-web; pkill -9 npm; pkill -9 js; pkill -9 node; true
 
 
 
