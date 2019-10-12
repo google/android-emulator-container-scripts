@@ -15,66 +15,83 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import JsepProtocolDriver from "../net/jsep_protocol_driver.js"
+import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
 
 /**
  * A view on the emulator that is using WebRTC. It will use the Jsep protocol over gRPC to
  * establish the video streams.
  */
 export default class EmulatorWebrtcView extends Component {
-
   static propTypes = {
     uri: PropTypes.string, // gRPC endpoint of the emulator
+    auth: PropTypes.func.isRequired, // Auth service
+
     width: PropTypes.number,
-    height: PropTypes.number,
+    height: PropTypes.number
   };
 
   static defaultProps = {
     width: 1080,
-    height: 1920,
+    height: 1920
   };
 
-  onDisconnect = () => {
-
-  }
+  onDisconnect = () => {};
 
   onConnect = stream => {
-    console.log("Connecting video stream: " + this.video + ":" + this.video.readyState)
-    this.video.srcObject = stream
+    console.log(
+      "Connecting video stream: " + this.video + ":" + this.video.readyState
+    );
+    this.video.srcObject = stream;
     // Kick off playing in case we already have enough data available.
-    this.video.play()
-  }
+    this.video.play();
+  };
 
   onCanPlay = e => {
-    this.video.play().then(_ => {
-      console.log("Automatic playback started!")
-    })
+    this.video
+      .play()
+      .then(_ => {
+        console.log("Automatic playback started!");
+      })
       .catch(error => {
         // Autoplay is likely disabled in chrome
         // https://developers.google.com/web/updates/2017/09/autoplay-policy-changes
         // so we should probably show something useful here.
         // We explicitly set the video stream to muted, so this shouldn't happen,
         // but is something you will have to fix once enabling audio.
-        alert("code: " + error.code + ", msg: " + error.message + ", name: " + error.nane)
-      })
-  }
+        alert(
+          "code: " +
+            error.code +
+            ", msg: " +
+            error.message +
+            ", name: " +
+            error.nane
+        );
+      });
+  };
 
   onContextMenu = e => {
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   render() {
-    const { width, height, uri } = this.props
+    const { width, height, uri, auth } = this.props;
     return (
       <div>
-        <video ref={node => (this.video = node)}
+        <video
+          ref={node => (this.video = node)}
           width={width}
           height={height}
           muted="muted"
           onContextMenu={this.onContextMenu}
-          onCanPlay={this.onCanPlay} />
-        <JsepProtocolDriver uri={uri} onConnect={this.onConnect} onDisconnect={this.onDisconnect} />
+          onCanPlay={this.onCanPlay}
+        />
+        <JsepProtocolDriver
+          uri={uri}
+          auth={auth}
+          onConnect={this.onConnect}
+          onDisconnect={this.onDisconnect}
+        />
       </div>
-    )
+    );
   }
 }

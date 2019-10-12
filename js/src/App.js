@@ -1,33 +1,56 @@
-import './App.css';
+import "./App.css";
 
-import React, { Component } from 'react';
-import Emulator from './components/emulator/emulator.js'
-import LogcatView from './components/emulator/views/logcat_view';
+import { NoAuthService, TokenAuthService } from "./service/auth_service";
+import React, { Component } from "react";
 
+import EmulatorScreen from "./components/emulator_screen";
+import LoginPage from "./components/login_page";
+import { ThemeProvider } from "@material-ui/styles";
 
-const environment = process.env.NODE_ENV || 'development'
-var URI = window.location.protocol + '//' + window.location.hostname + ':' +
-    window.location.port
-if (environment === 'development') {
-    URI = 'http://' + window.location.hostname + ':8080'
+const development =
+  !process.env.NODE_ENV || process.env.NODE_ENV === "development";
+
+var EMULATOR_GRPC =
+  window.location.protocol +
+  "//" +
+  window.location.hostname +
+  ":" +
+  window.location.port;
+if (development) {
+  EMULATOR_GRPC = "http://localhost:8080";
 }
 
 export default class App extends Component {
-    state = {
-        view: 'webrtc'
+  constructor(props) {
+    super(props);
+    if (development) {
+      this.auth = new NoAuthService({
+        onLogin: () => this.setState({ loggedIn: true }),
+        onUnauthorized: () => this.setState({ loggedIn: false })
+      });
+    } else {
+      this.auth = new TokenAuthService({
+        auth_uri: EMULATOR_GRPC + "/token",
+        onLogin: () => this.setState({ loggedIn: true }),
+        onUnauthorized: () => this.setState({ loggedIn: false })
+      });
     }
 
-    render() {
-        const { view } = this.state
-        return (
-            <div className='container'>
-                <p>Using emulator view: {view}</p>
-                <button onClick={() => this.setState({view: 'fallback'})}>Fallback</button>
-                <button onClick={() => this.setState({view: 'webrtc'})}>Webrtc</button>
-                <button onClick={() => this.setState({view: 'png'})}>Png</button>
-                <div className='leftpanel'><Emulator uri={URI} view={view} /></div>
-                <div className='rightpanel'><LogcatView uri={URI} maxHistory='15' /></div>
-            </div>
-        )
-    }
+    this.state = {
+      loggedIn: this.auth.isLoggedIn()
+    };
+  }
+
+  render() {
+    const { loggedIn } = this.state;
+    return (
+      <ThemeProvider>
+        {loggedIn ? (
+          <EmulatorScreen uri={EMULATOR_GRPC} auth={this.auth} />
+        ) : (
+          <LoginPage auth={this.auth} />
+        )}
+      </ThemeProvider>
+    );
+  }
 }

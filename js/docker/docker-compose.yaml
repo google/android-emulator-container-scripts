@@ -29,6 +29,19 @@ services:
     expose:
       - "5556"
 
+  jwt_signer:
+    build:
+      context: ../jwt-provider
+      dockerfile: Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - jwt_signer
+    expose:
+      - "8080"
+
+
+
   nginx:
     build:
       context: ..

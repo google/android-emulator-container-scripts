@@ -128,4 +128,4 @@ dmypy.json
 
 # Files used by our scripts
 *.zip
-src/
+/src

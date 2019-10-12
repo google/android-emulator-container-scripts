@@ -423,12 +423,12 @@ proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.setGps
 /**
  * @const
  * @type {!grpc.web.AbstractClientBase.MethodInfo<
- *   !proto.android.emulation.control.TouchEvent,
+ *   !proto.android.emulation.control.FingerprintEvent,
  *   !proto.google.protobuf.Empty>}
  */
-const methodInfo_EmulatorController_sendTouch = new grpc.web.AbstractClientBase.MethodInfo(
+const methodInfo_EmulatorController_sendFingerprint = new grpc.web.AbstractClientBase.MethodInfo(
   google_protobuf_empty_pb.Empty,
-  /** @param {!proto.android.emulation.control.TouchEvent} request */
+  /** @param {!proto.android.emulation.control.FingerprintEvent} request */
   function(request) {
     return request.serializeBinary();
   },
@@ -437,7 +437,7 @@ const methodInfo_EmulatorController_sendTouch = new grpc.web.AbstractClientBase.
 
 
 /**
- * @param {!proto.android.emulation.control.TouchEvent} request The
+ * @param {!proto.android.emulation.control.FingerprintEvent} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
@@ -446,32 +446,32 @@ const methodInfo_EmulatorController_sendTouch = new grpc.web.AbstractClientBase.
  * @return {!grpc.web.ClientReadableStream<!proto.google.protobuf.Empty>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.android.emulation.control.EmulatorControllerClient.prototype.sendTouch =
+proto.android.emulation.control.EmulatorControllerClient.prototype.sendFingerprint =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/android.emulation.control.EmulatorController/sendTouch',
+      '/android.emulation.control.EmulatorController/sendFingerprint',
       request,
       metadata || {},
-      methodInfo_EmulatorController_sendTouch,
+      methodInfo_EmulatorController_sendFingerprint,
       callback);
 };
 
 
 /**
- * @param {!proto.android.emulation.control.TouchEvent} request The
+ * @param {!proto.android.emulation.control.FingerprintEvent} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
  * @return {!Promise<!proto.google.protobuf.Empty>}
  *     A native promise that resolves to the response
  */
-proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.sendTouch =
+proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.sendFingerprint =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/android.emulation.control.EmulatorController/sendTouch',
+      '/android.emulation.control.EmulatorController/sendFingerprint',
       request,
       metadata || {},
-      methodInfo_EmulatorController_sendTouch);
+      methodInfo_EmulatorController_sendFingerprint);
 };
 
 
@@ -527,6 +527,61 @@ proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.sendKe
       request,
       metadata || {},
       methodInfo_EmulatorController_sendKey);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.AbstractClientBase.MethodInfo<
+ *   !proto.android.emulation.control.TouchEvent,
+ *   !proto.google.protobuf.Empty>}
+ */
+const methodInfo_EmulatorController_sendTouch = new grpc.web.AbstractClientBase.MethodInfo(
+  google_protobuf_empty_pb.Empty,
+  /** @param {!proto.android.emulation.control.TouchEvent} request */
+  function(request) {
+    return request.serializeBinary();
+  },
+  google_protobuf_empty_pb.Empty.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.android.emulation.control.TouchEvent} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.Error, ?proto.google.protobuf.Empty)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.google.protobuf.Empty>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.android.emulation.control.EmulatorControllerClient.prototype.sendTouch =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/android.emulation.control.EmulatorController/sendTouch',
+      request,
+      metadata || {},
+      methodInfo_EmulatorController_sendTouch,
+      callback);
+};
+
+
+/**
+ * @param {!proto.android.emulation.control.TouchEvent} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.google.protobuf.Empty>}
+ *     A native promise that resolves to the response
+ */
+proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.sendTouch =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/android.emulation.control.EmulatorController/sendTouch',
+      request,
+      metadata || {},
+      methodInfo_EmulatorController_sendTouch);
 };
 
 

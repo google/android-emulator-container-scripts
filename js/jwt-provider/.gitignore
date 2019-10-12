@@ -1,0 +1,3 @@
+passwd
+jwt_secrets_priv.jwks
+jwt_secrets_pub.jwks

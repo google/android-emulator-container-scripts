@@ -41,8 +41,15 @@ static_resources:
             - name: local_service
               domains: ["*"]
               routes:
+                # This is the emulator endpoint for grpc requests.
               - match: { prefix: "/android.emulation.control.EmulatorController" }
                 route: { cluster: emulator_service_grpc }
+
+                # This is the JWT token provider, responsible for handing our secure tokens.
+              - match: { prefix: "/token" }
+                route: { cluster: jwt_signer }
+
+                # The rest will be available under our webapp.
               - match: { prefix: "/" }
                 route: { cluster: nginx }
               cors:
@@ -52,9 +59,26 @@ static_resources:
                 max_age: "1728000"
                 expose_headers: custom-header-1,grpc-status,grpc-message
           http_filters:
+          # We setup a JWT authentication endpoint in front of the gRPC engine.
+          # This will enforce JWT token validation before we forward the gRPC call
+          - name: envoy.filters.http.jwt_authn
+            config:
+              providers:
+                emulator-jwt:
+                  issuer: android-emulator@jwt-provider.py
+                  audiences:
+                  - android.emulation.control.EmulatorController
+                  local_jwks:
+                    # The secrets that are used by the token service to properly
+                    # sign the jwt tokens.
+                    filename: /etc/jwt_secrets_pub.jwks
+              rules:
+              - match: { prefix: "/android.emulation.control.EmulatorController" }
+                requires: { provider_name: "emulator-jwt" }
           - name: envoy.grpc_web
           - name: envoy.cors
           - name: envoy.router
+
       tls_context:
         common_tls_context:
           tls_certificates:
@@ -77,6 +101,19 @@ static_resources:
               socket_address:
                 address: emulator
                 port_value: 5556
+  - name: jwt_signer
+    connect_timeout: 0.250s
+    type: strict_dns
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: jwt_signer
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: jwt_signer
+                port_value: 8080
   - name: nginx
     connect_timeout: 0.25s
     type: strict_dns
@@ -91,7 +128,7 @@ static_resources:
                 address: nginx
                 port_value: 80
 admin:
-  access_log_path: "/dev/null"
+  access_log_path: "/dev/stdout"
   address:
     socket_address:
       address: 0.0.0.0
