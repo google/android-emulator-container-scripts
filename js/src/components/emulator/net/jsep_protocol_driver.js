@@ -25,24 +25,24 @@ import * as Device from "../../../android_emulation_control/emulator_controller_
  * Register the onConnect/onDisconnect callback properties to be informed of incoming/disconnected streams
  */
 export default class JsepProtocol extends Component {
-
   constructor() {
-    super()
-    this.connected = false
-    this.peerConnection = null
+    super();
+    this.connected = false;
+    this.peerConnection = null;
     /* eslint-disable */
-    this.guid = new proto.android.emulation.control.RtcId()
+    this.guid = new proto.android.emulation.control.RtcId();
   }
 
   static propTypes = {
     uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator
+    auth: PropTypes.func.isRequired, // Auth service
     onConnect: PropTypes.func, // Callback when the video is ready to be show.
-    onDisconnect: PropTypes.func, // Callback when the video is no longer availalb.e
+    onDisconnect: PropTypes.func // Callback when the video is no longer availalbe
   };
 
   static defaultProps = {
-    onConnect: function () { },
-    onDisconnect: function () { },
+    onConnect: function() {},
+    onDisconnect: function() {}
   };
 
   componentDidMount() {
@@ -52,33 +52,39 @@ export default class JsepProtocol extends Component {
   }
 
   componentWillUnmount() {
-    this.cleanup()
+    this.cleanup();
   }
 
   disconnect = () => {
-    const { onDisconnect } = this.props
-    this.connected = false
-    if (this.peerConnection) this.peerConnection.close()
-    onDisconnect()
-  }
+    const { onDisconnect } = this.props;
+    this.connected = false;
+    if (this.peerConnection) this.peerConnection.close();
+    onDisconnect();
+  };
 
   cleanup = () => {
-    this.disconnect()
+    this.disconnect();
     if (this.peerConnection) {
-      this.peerConnection.removeEventListener('track', this.handlePeerConnectionTrack)
-      this.peerConnection.removeEventListener('icecandidate', this.handlePeerIceCandidate)
-      this.peerConnection = null
+      this.peerConnection.removeEventListener(
+        "track",
+        this.handlePeerConnectionTrack
+      );
+      this.peerConnection.removeEventListener(
+        "icecandidate",
+        this.handlePeerIceCandidate
+      );
+      this.peerConnection = null;
     }
-  }
+  };
 
   handlePeerConnectionTrack = e => {
-    const { onConnect } = this.props
-    console.log("handlePeerConnectionTrack: connecting " + e)
-    onConnect(e.streams[0])
-  }
+    const { onConnect } = this.props;
+    console.log("handlePeerConnectionTrack: connecting " + e);
+    onConnect(e.streams[0]);
+  };
 
   handlePeerConnectionStateChange = e => {
-    const { onDisconnect } = this.props
+    const { onDisconnect } = this.props;
     switch (this.peerConnection.connectionState) {
       case "disconnected":
       // At least one of the ICE transports for the connection is in the "disconnected" state
@@ -88,126 +94,138 @@ export default class JsepProtocol extends Component {
       // 	One or more of the ICE transports on the connection is in the "failed" state.
       case "closed":
         //The RTCPeerConnection is closed.
-        onDisconnect()
+        onDisconnect();
     }
-  }
+  };
 
   handlePeerIceCandidate = e => {
-    if (e.candidate === null) return
-    this.sendJsep({ candidate: e.candidate })
-  }
+    if (e.candidate === null) return;
+    this.sendJsep({ candidate: e.candidate });
+  };
 
   handleStart = signal => {
-    this.peerConnection = new RTCPeerConnection(signal.start)
-    this.peerConnection.addEventListener('track', this.handlePeerConnectionTrack, false)
-    this.peerConnection.addEventListener('icecandidate', this.handlePeerIceCandidate, false)
-    this.peerConnection.addEventListener('connectionstatechange', this.handlePeerConnectionStateChange, false)
-  }
+    this.peerConnection = new RTCPeerConnection(signal.start);
+    this.peerConnection.addEventListener(
+      "track",
+      this.handlePeerConnectionTrack,
+      false
+    );
+    this.peerConnection.addEventListener(
+      "icecandidate",
+      this.handlePeerIceCandidate,
+      false
+    );
+    this.peerConnection.addEventListener(
+      "connectionstatechange",
+      this.handlePeerConnectionStateChange,
+      false
+    );
+  };
 
   handleSDP = async signal => {
-    this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal))
-    const answer = await this.peerConnection.createAnswer()
+    this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+    const answer = await this.peerConnection.createAnswer();
     if (answer) {
-      this.peerConnection.setLocalDescription(answer)
-      this.sendJsep({ sdp: answer })
+      this.peerConnection.setLocalDescription(answer);
+      this.sendJsep({ sdp: answer });
     } else {
-      this.disconnect()
+      this.disconnect();
     }
-  }
+  };
 
   handleCandidate = signal => {
-    this.peerConnection.addIceCandidate(new RTCIceCandidate(signal))
-  }
+    this.peerConnection.addIceCandidate(new RTCIceCandidate(signal));
+  };
 
   handleJsepMessage = message => {
     try {
-      console.log("handleJsepMessage: " + message)
-      const signal = JSON.parse(message)
-      if (signal.start) this.handleStart(signal)
-      if (signal.sdp) this.handleSDP(signal)
-      if (signal.bye) this.handleBye()
-      if (signal.candidate) this.handleCandidate(signal)
+      console.log("handleJsepMessage: " + message);
+      const signal = JSON.parse(message);
+      if (signal.start) this.handleStart(signal);
+      if (signal.sdp) this.handleSDP(signal);
+      if (signal.bye) this.handleBye();
+      if (signal.candidate) this.handleCandidate(signal);
     } catch (e) {
-      console.log("Failed to handle message: [" + message + "], due to: " + e)
+      console.log("Failed to handle message: [" + message + "], due to: " + e);
     }
-  }
+  };
 
   handleBye = () => {
     if (this.connected) {
-      this.disconnect()
+      this.disconnect();
     }
-  }
+  };
 
   sendJsep = jsonObject => {
+    const { auth } = this.props
     /* eslint-disable */
-    var request = new proto.android.emulation.control.JsepMsg()
-    request.setId(this.guid)
-    request.setMessage(JSON.stringify(jsonObject))
-    this.emulatorService.sendJsepMessage(request, {},
-      function (err, response) {
-        if (err) {
-          console.error(
-            "Grpc: " + err.code + ", msg: " + err.message,
-            "Emulator:updateview"
-          );
+    var request = new proto.android.emulation.control.JsepMsg();
+    request.setId(this.guid);
+    request.setMessage(JSON.stringify(jsonObject));
+    this.emulatorService.sendJsepMessage(
+      request,
+      auth.authHeader(),
+      function(err, response) {
+        if (err && err.code == 401) {
+          auth.unauthorized(err)
         }
-      });
-  }
+      }
+    );
+  };
 
   startStream() {
-    this.setState({ WebRTC: "connecting" })
-    var self = this
-    var request = new proto.google.protobuf.Empty()
-    var call = this.emulatorService.requestRtcStream(request, {},
-      function (err, response) {
-        if (err) {
-          console.error(
-            "Grpc: " + err.code + ", msg: " + err.message,
-            "Emulator:updateview"
-          );
+    const { auth } = this.props
+    this.setState({ WebRTC: "connecting" });
+    var self = this;
+    var request = new proto.google.protobuf.Empty();
+    var call = this.emulatorService.requestRtcStream(
+      request,
+      auth.authHeader(),
+      function(err, response) {
+        if (err && err.code == 401) {
+          aauth.unauthorized(err)
         } else {
           // Configure
-          self.guid.setGuid(response.getGuid())
-          self.connected = true
+          self.guid.setGuid(response.getGuid());
+          self.connected = true;
 
           // And pump messages
-          self.receiveJsepMessage()
+          self.receiveJsepMessage();
         }
-      });
+      }
+    );
   }
 
   receiveJsepMessage() {
-    if (!this.connected)
-      return
+    if (!this.connected) return;
+    const { auth } = this.props
 
     /* eslint-disable */
     var self = this;
 
     // This is a blocking call, that will return as soon as a series
     // of messages have been made available.
-    this.emulatorService.receiveJsepMessage(this.guid, {},
-      function (err, response) {
-        if (err) {
-          console.error(
-            "Grpc: " + err.code + ", msg: " + err.message,
-            "Emulator:updateview"
-          );
+    this.emulatorService.receiveJsepMessage(
+      this.guid,
+      auth.authHeader(),
+      function(err, response) {
+        if (err && err.code == 401) {
+          auth.unauthorized(err)
         } else {
-          const msg = response.getMessage()
+          const msg = response.getMessage();
           // Handle only if we received a useful message.
           // it is possible to get nothing if the server decides
           // to kick us out.
-          if (msg)
-            self.handleJsepMessage(response.getMessage())
+          if (msg) self.handleJsepMessage(response.getMessage());
 
           // And pump messages
-          self.receiveJsepMessage()
+          self.receiveJsepMessage();
         }
-      });
+      }
+    );
   }
 
-
   render() {
-    return null
+    return null;
   }
 }

@@ -1,6 +1,6 @@
-/**
- * @fileoverview Description of this file.
- */
+import * as Device from "../../../android_emulation_control/emulator_controller_grpc_web_pb.js";
+
+import React, { Component } from "react";
 /*
  * Copyright 2019 The Android Open Source Project
  *
@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 import PropTypes from "prop-types";
-import React, { Component } from "react";
-import * as Device from "../../../android_emulation_control/emulator_controller_grpc_web_pb.js";
 
 /**
  * This pulls the logcat stream from the Emulator, it is basically an invisible React component.
  * Register the onMessage callback to get events when new log messages are coming in.
+ *
+ * TODO(jansene): Integrate with https://github.com/openstf/adbkit-logcat
  */
 export default class Logcat extends Component {
 
@@ -32,6 +32,7 @@ export default class Logcat extends Component {
 
     static propTypes = {
         uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator
+        auth: PropTypes.func.isRequired, // Auth service
         onMessage: PropTypes.func, // Callback logcat lines are coming in
     };
 
@@ -63,14 +64,17 @@ export default class Logcat extends Component {
     updateLog() {
         /* eslint-disable */
         const { offset } = this.state
+        const { auth } = this.props
         const self = this;
         var request = new proto.android.emulation.control.LogMessage()
         request.setStart(offset)
-        var call = this.emulatorService.getLogcat(request, {}, function (
+        var call = this.emulatorService.getLogcat(request, auth.authHeader(), function (
             err,
             response
         ) {
-            if (!err) {
+            if (err && err.code == 401) {
+                auth.unauthorized(err)
+            } else {
                 const { onLogcat } = self.props
                 const { lastline } = self.state
                 // Update the image with the one we just received.
