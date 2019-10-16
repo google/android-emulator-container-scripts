@@ -200,7 +200,7 @@ composing the following set of docker containers:
     - Redirect traffic on port 80 (http) to port 443 (https)
     - Act as a [gRPC proxy](https://grpc.io/blog/state-of-grpc-web/) for the
       emulator.
-    - Verifying tokens to permig access to the emulator gRPC endpoint.
+    - Verifying tokens to permit access to the emulator gRPC endpoint.
     - Redirect other requests to the Nginx component which hosts
       a [React](https://reactjs.org/) application.
 - [Nginx](https://www.nginx.com/), a webserver hosting a compiled React App
