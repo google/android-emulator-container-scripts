@@ -145,3 +145,21 @@ see how docker tries to authenticate to your local service.
 We have seen errors when running docker-compose from a virtual environment.
 
 The easiest solution is not to use docker-compose from a virtual environment.
+
+## Trouble compiling protoc plugins with Homebrew
+
+It is possible that `pkgconfig` is not able to find the proper location of your protobuf libraries.
+This can happen if you are using homebrew with uncommon install location. The easiest way around this
+is to explicitly set the pkg-config directory to point to your libprotobuf description. For example:
+
+```sh
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$(find $(brew --prefix) -name 'pkgconfig' -print | grep protobuf)
+```
+
+Now you can install the protoc-plugin as follows:
+
+```sh
+cd js/protoc-plugin
+make
+sudo make install
+```

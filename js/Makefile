@@ -43,9 +43,7 @@ endif
 
 SYSTEM_OK = false
 ifeq ($(HAS_VALID_PROTOC),true)
-    ifeq ($(HAS_DEP), true)
-	    SYSTEM_OK = true
-    endif
+  	SYSTEM_OK = true
 endif
 
 
@@ -68,7 +66,7 @@ LDFLAGS += -L$(PROTOLIB) -lprotoc -lprotobuf -lpthread -ldl
 all: develop
 
 clean:
-	rm $(WEBPROXY) $(PROTO)
+	rm $(PROTO) $(CONTROLPB) $(GRPCPB)
 
 $(PROTO):
 		mkdir -p $(PROTODIR)
@@ -96,7 +94,7 @@ $(CONTROLPB) $(GRPCPB): $(PROTO) protoc-gen-grpc-web
 deps: $(CONTROLPB) $(GRPCPB) system-check
 	@npm install
 
-develop:
+develop: $(CONTROLPB) $(GRPCPB)
 	./develop.sh
 
 build-release:  $(CONTROLPB) $(GRPCPB) system-check
@@ -127,18 +125,6 @@ ifneq ($(HAS_VALID_PROTOC),true)
 	@echo
 	@echo "And here is where I am looking for the headers: $(PROTOHEADER)/google/protobuf"
 	@echo
-endif
-ifneq ($(HAS_DEP), true)
-	@echo " DEPENDENCY ERROR"
-	@echo
-	@echo "You don't have dep installed in your path."
-	@echo "Please install the go dependency manager by building or "
-	@echo "copying the release. You can find it here:"
-	@echo
-	@echo "  https://golang.github.io/dep/"
-	@echo "  or try $ brew install dep"
-	@echo
-	@echo "Make sure it is named dep and on the path."
 endif
 ifneq ($(SYSTEM_OK),true)
 	@false

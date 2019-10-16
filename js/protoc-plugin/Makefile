@@ -13,9 +13,11 @@
 # limitations under the License.
 
 CXX = g++
-CPPFLAGS += -I/usr/local/include -pthread
+PROTOHEADER=$(shell pkg-config --variable prefix protobuf)/include
+PROTOLIB=$(shell pkg-config --variable prefix protobuf)/lib
+CPPFLAGS += -I/usr/local/include -pthread -I$(PROTOHEADER)
 CXXFLAGS += -std=c++11
-LDFLAGS += -L/usr/local/lib -lprotoc -lprotobuf -lpthread -ldl
+LDFLAGS += -L/usr/local/lib -L$(PROTOLIB) -lprotoc -lprotobuf -lpthread -ldl
 
 all: protoc-gen-grpc-web
 
