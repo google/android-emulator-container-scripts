@@ -24,8 +24,7 @@ import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
  */
 export default class EmulatorFallbackView extends Component {
   static propTypes = {
-    uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator
-    auth: PropTypes.func.isRequired, // Auth service
+    emulator: PropTypes.object, // emulator service
     width: PropTypes.number,
     height: PropTypes.number,
     refreshRate: PropTypes.number
@@ -39,6 +38,15 @@ export default class EmulatorFallbackView extends Component {
 
   state = {
     fallback: true
+  };
+
+  componentDidMount = () => {
+    this.jsep = new JsepProtocolDriver(
+      this.props.emulator,
+      this.onConnect,
+      this.onDisconnect
+    );
+    this.jsep.startStream();
   };
 
   onDisconnect = () => {
@@ -79,16 +87,10 @@ export default class EmulatorFallbackView extends Component {
   };
 
   render() {
-    const { width, height, uri, refreshRate, auth } = this.props;
+    const { width, height, emulator, refreshRate } = this.props;
     const { fallback } = this.state;
     return (
       <div>
-        <JsepProtocolDriver
-          uri={uri}
-          auth={auth}
-          onConnect={this.onConnect}
-          onDisconnect={this.onDisconnect}
-        />
         {!fallback && (
           <video
             ref={node => (this.video = node)}
@@ -101,8 +103,7 @@ export default class EmulatorFallbackView extends Component {
         )}
         {fallback && (
           <EmulatorPngView
-            uri={uri}
-            auth={auth}
+            emulator={emulator}
             refreshRate={refreshRate}
             width={width}
             height={height}

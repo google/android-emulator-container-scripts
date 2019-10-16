@@ -1,10 +1,7 @@
-import * as Device from "../../../android_emulation_control/emulator_controller_grpc_web_pb.js";
-
-import React, { Component } from "react";
 /*
  * Copyright 2019 The Android Open Source Project
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -16,85 +13,77 @@ import React, { Component } from "react";
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import PropTypes from "prop-types";
+import { EventEmitter } from "events";
+import "../../../android_emulation_control/emulator_controller_pb"
 
 /**
- * This pulls the logcat stream from the Emulator, it is basically an invisible React component.
- * Register the onMessage callback to get events when new log messages are coming in.
+ * Gets the logcat stream from the emulator. Register for the 'data' event to receive a logline
+ * when one is available.
  *
- * TODO(jansene): Integrate with https://github.com/openstf/adbkit-logcat
+ * @export
+ * @class Logcat
  */
-export default class Logcat extends Component {
+export default class Logcat {
+  constructor(emulator) {
+    this.emulator = emulator;
+    this.offset = 0;
+    this.lastline = "";
+    this.events = new EventEmitter();
+    this.stream = null;
+  }
 
-    constructor() {
-        super()
+  on = (name, fn) => {
+    this.events.on(name, fn);
+  };
+
+  /**
+   * Stops the ongoing stream by canceling it. This will raise an error.
+   *
+   * @memberof Logcat
+   */
+  stop = () => {
+    if (this.stream) {
+      this.stream.cancel();
     }
+  };
 
-    static propTypes = {
-        uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator
-        auth: PropTypes.func.isRequired, // Auth service
-        onMessage: PropTypes.func, // Callback logcat lines are coming in
-    };
+  /**
+   * Requests the logcat stream.
+   *
+   * @param  {Callback} fnNotify when a new log line arrives.
+   * @memberof Logcat
+   */
+  start = fnNotify => {
+    if (fnNotify) this.on("data", fnNotify);
+    const self = this;
+    /* eslint-disable */
+    const request = new proto.android.emulation.control.LogMessage();
+    request.setStart(this.offset);
+    this.stream = this.emulator.streamLogcat(request);
 
-    static defaultProps = {
-        onLogcat: function () { },
-        refreshRate: 1000, // Once every second.
-    }
-
-    state = {
-        offset: 0, // Current offset, we will be query point
-        lastline: ""
-    };
-
-    componentDidMount() {
-        const { uri, refreshRate } = this.props;
-        this.emulatorService = new Device.EmulatorControllerClient(uri);
-        this.updateLog()
-        this.timerID = setInterval(
-            () => this.updateLog(),
-            refreshRate
-        );
-    }
-
-    componentWillUnmount() {
-        clearInterval(this.timerID);
-    }
-
-    /* Makes a grpc call to get a screenshot */
-    updateLog() {
-        /* eslint-disable */
-        const { offset } = this.state
-        const { auth } = this.props
-        const self = this;
-        var request = new proto.android.emulation.control.LogMessage()
-        request.setStart(offset)
-        var call = this.emulatorService.getLogcat(request, auth.authHeader(), function (
-            err,
-            response
-        ) {
-            if (err && err.code == 401) {
-                auth.unauthorized(err)
-            } else {
-                const { onLogcat } = self.props
-                const { lastline } = self.state
-                // Update the image with the one we just received.
-                if (response.getNext())
-                    self.setState({ offset: response.getNext() })
-
-                var contents = response.getContents()
-                var lines = contents.split('\n')
-                lines[0] = lastline + lines[0]
-                if (!contents[contents.length - 1] != '\n') {
-                    // Partial line.
-                    self.setState({ lastline: lines.pop() })
-
-                }
-                onLogcat(lines)
-            }
-        });
-    }
-
-    render() {
-        return null
-    }
+    this.stream.on("data", response => {
+      self.offset = response.getNext();
+      const contents = response.getContents();
+      const lines = contents.split("\n");
+      const last = contents[contents.length - 1];
+      var cnt = lines.length;
+      if (last != "\n") {
+        cnt--;
+        self.lastline += lines[Math.max(0, cnt - 1)];
+      }
+      for (var i = 0; i < cnt; i++) {
+        var line = lines[i];
+        if (i === 0) {
+          line = self.lastline + line;
+          self.lastline = "";
+        }
+        if (line.length > 0) self.events.emit("data", line);
+      }
+    });
+    this.stream.on("error", error => {
+      if (error.code = 1) {
+        // Ignore we got cancelled.
+      }
+    });
+  };
 }

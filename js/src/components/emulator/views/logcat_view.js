@@ -19,40 +19,44 @@ import Logcat from "../net/logcat.js";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
-
 /**
- * A very simple logcat viewer. TIt displays all logcat items in a material list.
+ * A very simple logcat viewer. It displays all logcat items in a material list.
  */
-class LogcatView extends Component {
+export default class LogcatView extends Component {
   state = { lines: [] };
 
   static propTypes = {
-    uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
-    auth: PropTypes.func.isRequired, // Auth service
-    refreshRate: PropTypes.number,
-    maxHistory: PropTypes.number,
-    classes: PropTypes.object.isRequired
+    emulator: PropTypes.object, // emulator service
+    maxHistory: PropTypes.number
   };
 
   static defaultProps = {
-    refreshRate: 1000, // Desired refresh rate.
-    maxHistory: 512 // Number of loglines to keep.
+    maxHistory: 64 // Number of loglines to keep.
   };
 
-  onLogcat = loglines => {
-    const { lines } = this.state;
-    const { maxHistory } = this.props;
-    var newLines = lines.concat(loglines);
-    if (newLines.length > maxHistory) {
-      newLines = newLines.splice(newLines.length - maxHistory);
-    }
+  componentDidMount = () => {
+    const { emulator } = this.props;
+    this.buffer = []
+    this.logcat = new Logcat(emulator);
+    this.logcat.start(this.onLogcat);
+  };
 
-    this.setState({ lines: newLines });
+  componentWillUnmount = () => {
+    this.logcat.stop();
+  };
+
+  onLogcat = logline => {
+    this.buffer.push(logline)
+    if (this.buffer.length > this.props.maxHistory) {
+      this.buffer.shift()
+    }
+    this.setState({ lines: this.buffer });
   };
 
   asItems = loglines => {
+    var i = 0;
     return loglines.map(line => (
-      <ListItem>
+      <ListItem key={i++}>
         <ListItemText primary={line} />
       </ListItem>
     ));
@@ -60,14 +64,6 @@ class LogcatView extends Component {
 
   render() {
     const { lines } = this.state;
-    const { auth, uri } = this.props;
-    return (
-      <List dense="true">
-        {this.asItems(lines)}
-        <Logcat uri={uri} auth={auth} onLogcat={this.onLogcat} />
-      </List>
-    );
+    return <List dense={true}>{this.asItems(lines)}</List>;
   }
 }
-
-export default LogcatView;

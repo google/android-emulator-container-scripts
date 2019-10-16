@@ -1,4 +1,4 @@
-import { makeStyles, withStyles } from "@material-ui/core/styles";
+import { withStyles } from "@material-ui/core/styles";
 
 import Avatar from "@material-ui/core/Avatar";
 import Box from "@material-ui/core/Box";
@@ -50,7 +50,7 @@ class SignIn extends React.Component {
   };
 
   static propTypes = {
-    auth: PropTypes.func.isRequired // Auth service
+    auth: PropTypes.object.isRequired // Auth service
   };
 
   updateEmail = event => {
@@ -62,18 +62,16 @@ class SignIn extends React.Component {
   };
 
   doLogin = () => {
-    const { auth } = this.props
-    const { email, password } = this.state
-    auth
-      .login(email, password)
-      .catch(e => {
-        this.setState({ displayErrorSnack: true });
-      });
+    const { auth } = this.props;
+    const { email, password } = this.state;
+    auth.login(email, password).catch(e => {
+      this.setState({ displayErrorSnack: true });
+    });
   };
 
   // Login when we press the enter key
   handleTextFieldKeyDown = event => {
-    if (event.key == "Enter") this.doLogin();
+    if (event.key === "Enter") this.doLogin();
   };
 
   render() {
