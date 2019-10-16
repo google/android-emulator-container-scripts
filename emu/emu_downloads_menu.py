@@ -79,7 +79,7 @@ class AndroidReleaseZip(object):
 
     Every released zip file contains a source.properties file, this
     source.properties file contains [key]=[value] pairs with information
-    aobut the contents of the zip.
+    about the contents of the zip.
     """
 
     def __init__(self, fname):
