@@ -36,10 +36,10 @@ fi
 # First we place the adb secret in the right place if it exists
 mkdir -p /root/.android
 
-if [ -f "/run/secrets/adbkey" ]; then
+if [ -f "/run/secrets/adbkey.pub" ]; then
     echo "Copying key from secret partition"
-    cp /run/secrets/adbkey /root/.android
-    chmod 600 /root/.android/adbkey
+    cp /run/secrets/adbkey.pub /root/.android
+    chmod 600 /root/.android/adbkey.pub
 elif [ ! -z "${ADBKEY}" ]; then
     echo "Using provided secret"
     echo "-----BEGIN PRIVATE KEY-----" > /root/.android/adbkey
@@ -58,12 +58,13 @@ tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
+socat -d tcp-listen:5556,reuseaddr,fork tcp:127.0.0.1:6556 &
 
 # Log all the video bridge interactions, note that his file comes into existence later on.
 echo 'video: It is safe to ignore the 2 warnings from tail. The file will come into existence soon.'
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 5556 -no-window -skip-adb-auth -logcat "*:v" {{extra}} "$@"
+exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 6556 -no-window -skip-adb-auth -logcat "*:v" {{extra}} "$@"
 
 # All done!

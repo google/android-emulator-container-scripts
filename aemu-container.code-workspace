@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "js/src/android_emulation_control"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.formatting.provider": "black"
+	}
+}
