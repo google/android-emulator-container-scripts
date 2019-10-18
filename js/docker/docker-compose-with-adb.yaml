@@ -1,0 +1,67 @@
+# This docker file composes the container to include the adb secret from ~/.android
+# This will enable you to access the device over adb.
+# It requires that the ~/.android/adbkey file exists where you launch the container.
+version: "3.7"
+services:
+
+  front-envoy:
+    build:
+      context: .
+      dockerfile: envoy.Dockerfile
+    networks:
+      - envoymesh
+    expose:
+      - "8080"
+      - "8001"
+      - "8443"
+    ports:
+      - "80:8080"
+      - "443:8443"
+      - "8001:8001"
+
+  emulator:
+    build:
+      context: ../../src
+      dockerfile: Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - emulator
+    devices: [/dev/kvm]
+    shm_size: 128M
+    secrets:
+      - adbkey.pub
+    expose:
+      - "5556"
+      - "5555"
+    ports:
+      - "5555:5555"
+
+  jwt_signer:
+    build:
+      context: ../jwt-provider
+      dockerfile: Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - jwt_signer
+    expose:
+      - "8080"
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docker/nginx.Dockerfile
+    networks:
+      envoymesh:
+        aliases:
+          - nginx
+    expose:
+      - "80"
+
+secrets:
+  adbkey.pub:
+    file: ~/.android/adbkey.pub
+
+networks:
+  envoymesh: {}

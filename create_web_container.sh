@@ -12,18 +12,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-source ./configure.sh
+
+DOCKER_YAML=js/docker/docker-compose.yaml
+PASSWDS="$USER,hello"
+
+function help() {
+    cat <<EOF
+       usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
+
+       optional arguments:
+       -h        show this help message and exit.
+       -a        expose adb. Requires ~/.android/adbkey.pub to be available at container launch
+       -s        start the container after creation.
+       -p        list of username password pairs.  Defaults to: [${PASSWDS}]
+EOF
+    exit 1
+}
+
+while getopts 'hasp:' flag; do
+    case "${flag}" in
+    a) DOCKER_YAML=js/docker/docker-compose-with-adb.yaml ;;
+    p) PASSWDS="${OPTARG}" ;;
+    h) help ;;
+    s) START='yes' ;;
+    *) help ;;
+    esac
+done
+
+source ./configure.sh >/dev/null
 
 # Now generate the public/private keys and salt the password
 cd js/jwt-provider
-pip install -r requirements.txt
-python gen-passwords.py --pairs "$@" || exit 1
+pip install -r requirements.txt >/dev/null
+python gen-passwords.py --pairs "${PASSWDS}" || exit 1
 cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
 cd ../..
 
-# compose the container
-pip install docker-compose
-docker-compose -f js/docker/docker-compose.yaml build
+# Copy the private adbkey over
+cp ~/.android/adbkey js/docker/certs
 
-echo "Created container, you can launch it as follows:"
-echo "docker-compose -f js/docker/docker-compose.yaml up"
+# compose the container
+pip install docker-compose >/dev/null
+docker-compose -f ${DOCKER_YAML} build
+rm js/docker/certs/adbkey
+
+if [ "${START}" == "yes" ]; then
+    docker-compose -f ${DOCKER_YAML} up
+else
+    echo "Created container, you can launch it as follows:"
+    echo "docker-compose -f ${DOCKER_YAML} up"
+fi

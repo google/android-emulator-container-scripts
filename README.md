@@ -232,11 +232,24 @@ keep the following in mind:
 
 ## Running the emulator on the web
 
-Once you have taken care of the steps above you can create the containers as
-follows:
+Once you have taken care of the steps above you can create the containers using
+the `create_web_container.sh` script:
 
 ```sh
-    ./create_web_container.sh user1,passwd1,user2,passwd2,....
+    $ ./create_web_container.sh -h
+       usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
+
+       optional arguments:
+       -h        show this help message and exit.
+       -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
+       -s        start the container after creation.
+       -p        list of username password pairs.  Defaults to: [jansene,hello]
+```
+
+For example:
+
+```sh
+    ./create_web_container.sh -p user1,passwd1,user2,passwd2,....
 ```
 This will do the following:
 
@@ -254,6 +267,22 @@ You can now launch the container as follows:
 Point your browser to [localhost](http://localhost). You will likely get
 a warning due to the usage of the self signed certifcate. Once you accept the
 cert you should be able to login and start using the emulator.
+
+Keep the following things in mind when you make the emulator accessible over adb:
+
+- Port 5555 will be exposed in the container.
+- The container must have access to the file: `~/.android/adbkey.pub`. This is
+  the public key used by adb. If this file does not exist you can launch the
+  emulator once to generate one for you.
+- The adb client you use to connect to the container must have access to the
+  private key (~/.android/adbkey).  This is usually the case if you are on the same machine.
+- You must run: `adb connect ip-address-of-container:5555` before you can
+  interact with the device. For example:
+
+```sh
+    $ adb connect localhost:5555
+    $ adb shell getprop
+```
 
 ### Troubleshooting
 
