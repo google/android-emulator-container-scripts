@@ -23,9 +23,7 @@ import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
  */
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
-    uri: PropTypes.string, // gRPC endpoint of the emulator
-    auth: PropTypes.func.isRequired, // Auth service
-
+    emulator: PropTypes.object, // emulator service
     width: PropTypes.number,
     height: PropTypes.number
   };
@@ -35,7 +33,11 @@ export default class EmulatorWebrtcView extends Component {
     height: 1920
   };
 
-  onDisconnect = () => {};
+  componentDidMount = () => {
+    const { emulator } = this.props;
+    this.jsep = new JsepProtocolDriver(emulator, this.onConnect);
+    this.jsep.startStream();
+  };
 
   onConnect = stream => {
     console.log(
@@ -74,7 +76,7 @@ export default class EmulatorWebrtcView extends Component {
   };
 
   render() {
-    const { width, height, uri, auth } = this.props;
+    const { width, height } = this.props;
     return (
       <div>
         <video
@@ -84,12 +86,6 @@ export default class EmulatorWebrtcView extends Component {
           muted="muted"
           onContextMenu={this.onContextMenu}
           onCanPlay={this.onCanPlay}
-        />
-        <JsepProtocolDriver
-          uri={uri}
-          auth={auth}
-          onConnect={this.onConnect}
-          onDisconnect={this.onDisconnect}
         />
       </div>
     );

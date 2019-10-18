@@ -15,22 +15,19 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import * as Device from "../../android_emulation_control/emulator_controller_grpc_web_pb.js";
 import * as Proto from "../../android_emulation_control/emulator_controller_pb.js";
 import EmulatorPngView from "./views/simple_png_view.js";
 import EmulatorWebrtcView from "./views/webrtc_view.js";
 import EmulatorFallbackView from "./views/fallback_emulator_view.js";
-import { Container } from "@material-ui/core";
 
 /**
  * An emulator object that displays the screen and sends mouse events via gRPC.
  *
- * The emulator will mount an EmulatorPngView component to display the current state
+ * The emulator will mount a png, webrtc or fallback view component to display the current state
  * of the emulator. It will translate mouse events on this component and send them
  * to the actual emulator.
  *
  * The size of this component will be: (width * scale) x (height * scale)
- * The refreshRate will be passed on to the view.
  */
 export default class Emulator extends Component {
   state = {
@@ -40,12 +37,11 @@ export default class Emulator extends Component {
   };
 
   static propTypes = {
-    uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
-    auth: PropTypes.func.isRequired, // Auth service
+    emulator: PropTypes.object, // emulator service
     width: PropTypes.number,
     height: PropTypes.number,
     scale: PropTypes.number,
-    refreshRate: PropTypes.number,
+    refreshRate: PropTypes.number, // Refresh rate to use when falling back to screenshots.
     view: PropTypes.oneOf(["webrtc", "png", "fallback"]).isRequired
   };
 
@@ -53,7 +49,7 @@ export default class Emulator extends Component {
     width: 1080, // The width of the emulator display
     height: 1920, // The height of the emulator display
     scale: 0.35, // Scale factor of the emulator image
-    refreshRate: 5, // Desired refresh rate.
+    refreshRate: 5, // Desired refresh rate if using screenshots.
     view: "webrtc" // Default view to be used.
   };
 
@@ -63,45 +59,25 @@ export default class Emulator extends Component {
     fallback: EmulatorFallbackView
   };
 
-  componentDidMount() {
-    const { uri } = this.props;
-    this.emulatorService = new Device.EmulatorControllerClient(uri);
-  }
-
   setCoordinates = (down, xp, yp) => {
     // It is totally possible that we send clicks that are offscreen..
-    const { width, height, scale } = this.props;
+    const { width, height, scale, emulator } = this.props;
     const x = Math.round((xp * width) / (width * scale));
     const y = Math.round((yp * height) / (height * scale));
 
-    const { auth } = this.props;
     // Make the grpc call.
     var request = new Proto.MouseEvent();
     request.setX(x);
     request.setY(y);
     request.setButtons(down ? 1 : 0);
-    this.emulatorService.sendMouse(request, auth.authHeader(), function(
-      err,
-      _response
-    ) {
-      if (err && err.code == 401) {
-        auth.unauthorized(err);
-      }
-    });
+    emulator.sendMouse(request);
   };
 
   handleKey = e => {
-    const { auth } = this.props;
+    const { emulator } = this.props;
     var request = new Proto.KeyboardEvent();
     request.setKey(e.key);
-    this.emulatorService.sendKey(request, auth.authHeader(), function(
-      err,
-      _response
-    ) {
-      if (err && err.code == 401) {
-        auth.unauthorized(err);
-      }
-    });
+    emulator.sendKey(request);
   };
 
   // Properly handle the mouse events.
@@ -124,14 +100,10 @@ export default class Emulator extends Component {
     this.setCoordinates(true, offsetX, offsetY);
   };
 
-  onLogcat = msg => {
-    console.log(msg);
-  };
-
   render() {
-    const { width, height, scale, uri, refreshRate, view, auth } = this.props;
+    const { width, height, scale, refreshRate, view, emulator } = this.props;
     const SpecificView = this.components[view];
-    const suppressOutline = { outline: "none" };
+    const styled = { outline: "none", maxWidth: width * scale };
     return (
       <div
         tabIndex="1"
@@ -140,15 +112,13 @@ export default class Emulator extends Component {
         onMouseUp={this.handleMouseUp}
         onMouseOut={this.handleMouseUp}
         onKeyDown={this.handleKey}
-        maxWidth={width * scale}
-        style={suppressOutline}
+        style={styled}
       >
         <SpecificView
           width={width * scale}
           height={height * scale}
           refreshRate={refreshRate}
-          uri={uri}
-          auth={auth}
+          emulator={emulator}
         />
       </div>
     );

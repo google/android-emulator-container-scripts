@@ -1,4 +1,4 @@
-import { makeStyles, withStyles } from "@material-ui/core/styles";
+import { withStyles } from "@material-ui/core/styles";
 
 import AppBar from "@material-ui/core/AppBar";
 import Box from "@material-ui/core/Box";
@@ -48,12 +48,12 @@ class EmulatorScreen extends React.Component {
   };
 
   static propTypes = {
-    uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
-    auth: PropTypes.func.isRequired // Auth service
+    emulator: PropTypes.object, // emulator service
+    auth: PropTypes.object
   };
 
   render() {
-    const { uri, auth, classes } = this.props;
+    const { emulator, auth, classes } = this.props;
     const { view } = this.state;
     return (
       <div className={classes.root}>
@@ -92,13 +92,13 @@ class EmulatorScreen extends React.Component {
         <div className={classes.paper}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
-              <Container maxWidth="sm" nofocusborder>
-                <Emulator uri={uri} auth={auth} view={this.state.view} />
+              <Container maxWidth="sm">
+                <Emulator emulator={emulator} view={this.state.view} />
               </Container>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <LogcatView uri={uri} auth={auth} maxHistory="8" />
+              <LogcatView emulator={emulator} maxHistory={8} />
             </Grid>
           </Grid>
         </div>

@@ -216,7 +216,7 @@ keep the following in mind:
 - The demo has two methods to display the emulator.
     1. Create an image every second, which is displayed in the browser. This
     approach will always work, but gives poor performance.
-    1. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
+    2. Use [WebRTC](https://webrtc.org/) to display the state of the emulator in
        real time. This will only work if you are able to create a peer to peer
        connection to the server hosting the emulator. This is usually not
        a problem when your server is publicly visible, or if you are running the
@@ -235,8 +235,9 @@ keep the following in mind:
 Once you have taken care of the steps above you can create the containers as
 follows:
 
+```sh
     ./create_web_container.sh user1,passwd1,user2,passwd2,....
-
+```
 This will do the following:
 
 - Create a virtual environment
@@ -244,8 +245,11 @@ This will do the following:
 - Generate a public and private key pair, used to encrypt/decrypt JWT tokens
 - Create the set of containers to interact with the emulator.
 
+You can now launch the container as follows:
 
+```sh
     docker-compose -f js/docker/docker-compose.yaml up
+```
 
 Point your browser to [localhost](http://localhost). You will likely get
 a warning due to the usage of the self signed certifcate. Once you accept the

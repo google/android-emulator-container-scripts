@@ -13,63 +13,83 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import PropTypes from "prop-types";
-import { Component } from "react";
 import axios from "axios";
+import { EventEmitter } from "events";
 
-// An auth service class is responsible for providing an authentication header
-// that will be send along with every gRPC request. The auth service must be
-// injected in every emulator component with the "auth" property.
-//
-// The unauthorized(err) method will be invoked whenever a 401 status code is received.
-export class TokenAuthService extends Component {
-  static propTypes = {
-    auth_uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
-    onLogin: PropTypes.func,
-    onLogout: PropTypes.func,
-    onRegister: PropTypes.func,
-    onUnauthorized: PropTypes.func
+/**
+ * A TokenAuthService is an authentication service that can login
+ * using BasicAuth to an endpoint to obtain a JWT token.
+ * This JWT token will be set on the header for every outgoing request.
+ *
+ * @export
+ * @class TokenAuthService
+ */
+export class TokenAuthService {
+  /**
+   *Creates an instance of TokenAuthService.
+   * @param {string} uri The endpoint that hands out a JWT Token.
+   * @memberof TokenAuthService
+   */
+  constructor(uri) {
+    this.events = new EventEmitter();
+    this.auth_uri = uri;
+  }
+
+  /**
+   * Get notifications for state changes.
+   * Currently only `authorized` is supported.
+   *
+   * @param {string} name of the event
+   * @param {callback} fn To be invoked
+   */
+  on = (name, fn) => {
+    this.events.on(name, fn);
   };
 
-  state = {
-    token: null
-  };
-
+  /**
+   * Obtains a JWT token with basic auth for the given username and password.
+   *
+   * @param {string} email The user name/email
+   * @param {string} password The password
+   * @returns A promise
+   */
   login = (email, password) => {
-    const { onLogin } = this.props;
     return axios
-      .get(this.props.auth_uri, {
+      .get(this.auth_uri, {
         auth: {
           username: email,
           password: password
         }
       })
       .then(response => {
-        this.state.token = "Bearer " + response.data;
-        if (onLogin) {
-          onLogin();
-        }
+        this.token = "Bearer " + response.data;
+        this.events.emit("authorized", true);
       });
   };
 
+  /**
+   * Logs the user out by resetting the token.
+   *
+   * @returns A promis
+   */
   logout = () => {
-    const { onLogout } = this.props;
     return new Promise((resolve, reject) => {
-      this.state.token = null;
+      this.token = null;
       resolve(null);
-      if (onLogout) {
-        onLogout();
-      }
+      this.events.emit("authorized", false);
     });
   };
 
+  /**
+   * Called by the EmulatorWebClient when the web endpoint
+   * returns a 401. It will fire the `authorized` event.
+   *
+   * @memberof TokenAuthService
+   * @see EmulatorWebClient
+   */
   unauthorized = ev => {
-    console.log("Not authorized: " + ev);
-    const { onUnauthorized } = this.props;
-    if (onUnauthorized) {
-      onUnauthorized();
-    }
+    this.token = null;
+    this.events.emit("authorized", false);
   };
 
   register = (email, password) => {
@@ -78,47 +98,58 @@ export class TokenAuthService extends Component {
     });
   };
 
-  isLoggedIn = () => {
-    const { token } = this.state;
-    return token != null;
+  /**
+   *
+   * @memberof TokenAuthService
+   * @returns True if a token is set.
+   */
+  authorized = () => {
+    return this.token != null;
   };
 
+  /**
+   * Called by the EmulatorWebClient to obtain the authentication
+   * headers
+   *
+   * @memberof TokenAuthService
+   * @returns The authentication header for the web call
+   * @see EmulatorWebClient
+   */
   authHeader = () => {
-    const { token } = this.state;
-    return { Authorization: token };
+    return { Authorization: this.token };
   };
 }
 
-// Always logged in and no headers will be set.
-export class NoAuthService extends Component {
-  static propTypes = {
-    auth_uri: PropTypes.string.isRequired, // gRPC endpoint of the emulator.
-    onLogin: PropTypes.func,
-    onLogout: PropTypes.func,
-    onRegister: PropTypes.func,
-    onUnauthorized: PropTypes.func
+/**
+ * An authentication service that can be used for testing.
+ * It will declare itself logged in as soon as the login method has been invoked.
+ *
+ * @export
+ * @class NoAuthService
+ */
+export class NoAuthService {
+  constructor() {
+    this.events = new EventEmitter();
+    this.loggedin = false;
+  }
+
+  on = (name, fn) => {
+    this.events.on(name, fn);
   };
 
-  state = {
-    loggedin: false
-  };
   login = (email, password) => {
-    const { onLogin } = this.props;
-
     return new Promise((resolve, reject) => {
-      this.state.loggedin = true;
+      this.loggedin = true;
       resolve(null);
-
-      if (onLogin) {
-        onLogin();
-      }
+      this.events.emit("authorized", this.loggedin);
     });
   };
 
   logout = () => {
     return new Promise((resolve, reject) => {
-      this.state.loggedin = false;
+      this.loggedin = false;
       resolve(null);
+      this.events.emit("authorized", this.loggedin);
     });
   };
 
@@ -129,12 +160,12 @@ export class NoAuthService extends Component {
   };
 
   unauthorized = ev => {
-    console.log("Not authorized: " + ev);
+    this.loggedin = false;
+    this.events.emit("authorized", this.loggedin);
   };
 
-  isLoggedIn = () => {
-    console.log("Always logged in..");
-    return this.state.loggedin;
+  authorized = () => {
+    return this.loggedin;
   };
 
   authHeader = () => {
