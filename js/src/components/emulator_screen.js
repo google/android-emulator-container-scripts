@@ -72,9 +72,9 @@ class EmulatorScreen extends React.Component {
                 <OndemandVideoIcon />
               </IconButton>
               <IconButton
-                aria-label="Switch to fallback"
+                aria-label="Switch to screenshots"
                 color="inherit"
-                onClick={() => this.setState({ view: "fallback" })}
+                onClick={() => this.setState({ view: "png" })}
               >
                 <ImageIcon />
               </IconButton>

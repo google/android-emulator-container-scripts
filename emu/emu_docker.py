@@ -80,7 +80,7 @@ def main():
         "--extra",
         default="",
         help="Series of additional commands to pass on to the emulator. "
-        + 'For example -turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\"',
+        + 'For example "-turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\""',
     )
     create_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"

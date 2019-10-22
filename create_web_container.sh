@@ -16,7 +16,7 @@
 DOCKER_YAML=js/docker/docker-compose.yaml
 PASSWDS="$USER,hello"
 
-function help() {
+help() {
     cat <<EOF
        usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
 
@@ -39,7 +39,7 @@ while getopts 'hasp:' flag; do
     esac
 done
 
-source ./configure.sh >/dev/null
+. ./configure.sh >/dev/null
 
 # Now generate the public/private keys and salt the password
 cd js/jwt-provider
@@ -56,7 +56,7 @@ pip install docker-compose >/dev/null
 docker-compose -f ${DOCKER_YAML} build
 rm js/docker/certs/adbkey
 
-if [ "${START}" == "yes" ]; then
+if [ "${START}" = "yes" ]; then
     docker-compose -f ${DOCKER_YAML} up
 else
     echo "Created container, you can launch it as follows:"
