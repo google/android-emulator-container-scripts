@@ -155,7 +155,15 @@ setup(
     # If using Python 2.6 or earlier, then these have to be included in
     # MANIFEST.in as well.
     package_data={  # Optional
-        'emu' : ['templates/*', 'templates/avd/*', 'templates/avd/Pixel2.avd/*']
+        'emu' : [
+            'templates/Dockerfile',
+            'templates/README.md',
+            'templates/default.pa',
+            'templates/launch-emulator.sh',
+
+            'templates/avd/Pixel2.ini',
+            'templates/avd/Pixel2.avd/config.ini',
+        ],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
