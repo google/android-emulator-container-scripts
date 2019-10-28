@@ -15,6 +15,5 @@
 FROM envoyproxy/envoy:latest
 
 # Workaround for linux missing host.docker.internal
-RUN  echo "172.17.0.1 host.docker.internal" >> /etc/hosts
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
-CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
+CMD echo "172.17.0.1 host.docker.internal" >> /etc/hosts && /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
