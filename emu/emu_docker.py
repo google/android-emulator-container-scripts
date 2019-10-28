@@ -17,6 +17,7 @@
 import argparse
 import logging
 import os
+import sys
 
 import emu
 import emu.emu_downloads_menu as emu_downloads_menu
