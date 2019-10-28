@@ -8,7 +8,17 @@ killgroup(){
 }
 
 cd "$(dirname "$0")"
-docker build -t emu-dev-web develop
+BUILD_OS=$(uname -s)
+case $BUILD_OS in
+  Darwin)
+    echo "Building for Mac"
+    docker build -t emu-dev-web -f develop/Dockerfile.mac develop
+    ;;
+  *)
+    echo "Building for linux"
+    docker build -t emu-dev-web -f develop/Dockerfile.unix develop
+    ;;
+esac
 docker rm emu-dev-grpc-web
 docker run  -p 8080:8080 -p 8001:8001  --name emu-dev-grpc-web emu-dev-web &
 npm start &

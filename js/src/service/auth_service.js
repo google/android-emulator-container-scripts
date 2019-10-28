@@ -130,7 +130,7 @@ export class TokenAuthService {
 export class NoAuthService {
   constructor() {
     this.events = new EventEmitter();
-    this.loggedin = false;
+    this.loggedin = true;
   }
 
   on = (name, fn) => {
