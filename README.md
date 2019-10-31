@@ -4,7 +4,8 @@ This is a set of minimal scripts to run the emulator in a container for various
 systems such as Docker, for external consumption. The scripts are compatible
 with both Python version 2 and 3.
 
-*Note that this is still an experimental feature!*
+*Note that this is still an experimental feature and we recommend installing
+this tool in a [python virtual environment](https://docs.python.org/3/tutorial/venv.html).
 
 # Requirements
 
@@ -40,14 +41,15 @@ Keep in mind that you will see reduced performance if you are making use of
 nested virtualization.
 
 
-# Install
+# Install in a virtual environment
 
 You can install the python package as follows:
 
-    python setup.py install --user
+    source ./configure.sh
 
-This should make the  executable `emu-docker` available. You can get detailed
-information about the usage by launching it as follows:
+This will activate a virtual environment and make the executable `emu-docker`
+available. You can get detailed information about the usage by launching it as
+follows:
 
     emu-docker -h
 

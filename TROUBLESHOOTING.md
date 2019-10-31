@@ -2,11 +2,26 @@
 
 Here are a list of things that we have seen with potential workarounds:
 
-## Why can't a use an image before O?
+## Why can't I use an image before O?
 
 Releases before O are using an older linux kernel (3.10). This version of the
 linux kernel has some issues that are under [active
 investigation](https://issuetracker.google.com/issues/140881613) for X86_64 images.
+
+
+## Unable to find emu-docker
+
+Some people have reported issues around launching `emu-docker`.
+[Issue #30](https://github.com/google/android-emulator-container-scripts/issues/30).
+The easiest way to resolve this is to run the project in a virtual environment.
+The virtual environment can be activated as follows:
+
+```sh
+source ./configure.sh
+```
+
+This will create a virtual environment and activate it for you. This will make
+sure everything is isolated and you should be able to launch `emu-docker`.
 
 ## Exceptions when trying to create the docker container:
 
@@ -64,6 +79,8 @@ If this is the case you will have to delete the container:
 ```sh
 docker rm -f  CONTAINER_ID
 ```
+
+where `CONTAINER_ID` is the id of the emulator container.
 
 ## I am not seeing any video in the demo when selecting webrtc
 
