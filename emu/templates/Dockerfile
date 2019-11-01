@@ -11,14 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+FROM alpine AS unzipper
+
+RUN apk add --update unzip
+
+COPY {{emu_zip}} /tmp/
+RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
+
+COPY {{sysimg_zip}} /tmp/
+RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
+
 FROM debian:stretch-slim
 
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u
 # pulse audio is needed due to some webrtc dependencies.
 RUN apt-get update && apt-get install -y \
-# Needed for install
-    unzip \
 # Emulator & video bridge dependencies
     libc6 libdbus-1-3 libfontconfig1 libgcc1 \
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \
@@ -46,13 +54,8 @@ COPY default.pa /etc/pulse/default.pa
 RUN gpasswd -a root audio && \
     chmod +x /android/sdk/launch-emulator.sh
 
-COPY {{emu_zip}} /android/sdk/
-RUN unzip -u -o /android/sdk/{{emu_zip}} -d /android/sdk/ && \
-    rm /android/sdk/{{emu_zip}}
-
-COPY {{sysimg_zip}} /android/sdk/
-RUN unzip -u -o /android/sdk/{{sysimg_zip}} -d /android/sdk/system-images/android && \
-    rm /android/sdk/{{sysimg_zip}}
+COPY --from=unzipper /emu/ /android/sdk/
+COPY --from=unzipper /sysimg/ /android/sdk/system-images/android/
 
 COPY avd /android-home
 # Create an initial snapshot so we will boot fast next time around,
