@@ -25,7 +25,9 @@ RUN apt-get update && apt-get install -y \
     libnss3 libxcomposite1 libxcursor1 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat \
 # Enable turncfg through usage of curl
-    curl
+    curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Next we get an android image ready
 # We explicitly curl the image from a public site to make sure we
