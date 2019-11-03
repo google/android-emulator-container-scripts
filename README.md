@@ -80,7 +80,7 @@ After building the containers, you can launch the emulator as follows
 
     docker-compose -f js/docker/docker-compose.yaml up
 
-The emulator should be avaiable at [http://localhost](http://localhost).
+The emulator should be available at [http://localhost](http://localhost).
 
 ## Obtaining URLs for emulator/system image zip files
 
@@ -132,9 +132,9 @@ and system image.  After the two are obtained, we can build a Docker image.
 
 
 Given an emulator zip file and a system image zip file, we can build a directory
-that can be sent to `docker build` via the following invocation of `emu_docker`:
+that can be sent to `docker build` via the following invocation of `emu-docker`:
 
-    emu_docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
+    emu-docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
     (getcwd()/src by default)]
 
 This places all the right elements to run a docker image, but does not build,
@@ -152,7 +152,7 @@ A Docker image ID will output; save this image ID.
 ## Running the Docker image
 
 We currently assume that KVM will be used with docker in order to provide CPU
-virtualization capabilties to the resulting Docker image.
+virtualization capabilities to the resulting Docker image.
 
 We provide the following run script:
 
@@ -160,7 +160,7 @@ We provide the following run script:
 
 It does the following:
 
-    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm--publish
+    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
     5556:5556/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
@@ -256,7 +256,7 @@ For example:
 This will do the following:
 
 - Create a virtual environment
-- Configure the token service to give acess to the passed in users.
+- Configure the token service to give access to the passed in users.
 - Generate a public and private key pair, used to encrypt/decrypt JWT tokens
 - Create the set of containers to interact with the emulator.
 
@@ -267,7 +267,7 @@ docker-compose -f js/docker/docker-compose.yaml up
 ```
 
 Point your browser to [localhost](http://localhost). You will likely get
-a warning due to the usage of the self signed certifcate. Once you accept the
+a warning due to the usage of the self signed certificate. Once you accept the
 cert you should be able to login and start using the emulator.
 
 Keep the following things in mind when you make the emulator accessible over adb:
@@ -288,7 +288,7 @@ $ adb shell getprop
 
 ### Troubleshooting
 
-We have a seperate [document](TROUBLESHOOTING.md) related to dealing with
+We have a separate [document](TROUBLESHOOTING.md) related to dealing with
 issues.
 
 ### Modifying the demo
