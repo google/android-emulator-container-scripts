@@ -134,8 +134,8 @@ and system image.  After the two are obtained, we can build a Docker image.
 Given an emulator zip file and a system image zip file, we can build a directory
 that can be sent to `docker build` via the following invocation of `emu_docker`:
 
-     emu_docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
-     (getcwd()/src by default)]
+    emu_docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
+    (getcwd()/src by default)]
 
 This places all the right elements to run a docker image, but does not build,
 run or publish yet. A Linux emulator zip file must be used.
@@ -165,7 +165,7 @@ It does the following:
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
-- Uses `--device /dev/kvm to have CPU acceleration
+- Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
   host ports 5556/6555 to container ports 5556/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
@@ -238,20 +238,20 @@ Once you have taken care of the steps above you can create the containers using
 the `create_web_container.sh` script:
 
 ```sh
-    $ ./create_web_container.sh -h
-       usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
+$ ./create_web_container.sh -h
+   usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
 
-       optional arguments:
-       -h        show this help message and exit.
-       -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
-       -s        start the container after creation.
-       -p        list of username password pairs.  Defaults to: [jansene,hello]
+   optional arguments:
+   -h        show this help message and exit.
+   -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
+   -s        start the container after creation.
+   -p        list of username password pairs.  Defaults to: [jansene,hello]
 ```
 
 For example:
 
 ```sh
-    ./create_web_container.sh -p user1,passwd1,user2,passwd2,....
+./create_web_container.sh -p user1,passwd1,user2,passwd2,....
 ```
 This will do the following:
 
@@ -263,7 +263,7 @@ This will do the following:
 You can now launch the container as follows:
 
 ```sh
-    docker-compose -f js/docker/docker-compose.yaml up
+docker-compose -f js/docker/docker-compose.yaml up
 ```
 
 Point your browser to [localhost](http://localhost). You will likely get
@@ -282,8 +282,8 @@ Keep the following things in mind when you make the emulator accessible over adb
   interact with the device. For example:
 
 ```sh
-    $ adb connect localhost:5555
-    $ adb shell getprop
+$ adb connect localhost:5555
+$ adb shell getprop
 ```
 
 ### Troubleshooting
