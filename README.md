@@ -80,7 +80,7 @@ After building the containers, you can launch the emulator as follows
 
     docker-compose -f js/docker/docker-compose.yaml up
 
-The emulator should be avaiable at [http://localhost](http://localhost).
+The emulator should be available at [http://localhost](http://localhost).
 
 ## Obtaining URLs for emulator/system image zip files
 
@@ -132,10 +132,10 @@ and system image.  After the two are obtained, we can build a Docker image.
 
 
 Given an emulator zip file and a system image zip file, we can build a directory
-that can be sent to `docker build` via the following invocation of `emu_docker`:
+that can be sent to `docker build` via the following invocation of `emu-docker`:
 
-     emu_docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
-     (getcwd()/src by default)]
+    emu-docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
+    (getcwd()/src by default)]
 
 This places all the right elements to run a docker image, but does not build,
 run or publish yet. A Linux emulator zip file must be used.
@@ -152,7 +152,7 @@ A Docker image ID will output; save this image ID.
 ## Running the Docker image
 
 We currently assume that KVM will be used with docker in order to provide CPU
-virtualization capabilties to the resulting Docker image.
+virtualization capabilities to the resulting Docker image.
 
 We provide the following run script:
 
@@ -160,12 +160,12 @@ We provide the following run script:
 
 It does the following:
 
-    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm--publish
+    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
     5556:5556/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
-- Uses `--device /dev/kvm to have CPU acceleration
+- Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
   host ports 5556/6555 to container ports 5556/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
@@ -238,36 +238,36 @@ Once you have taken care of the steps above you can create the containers using
 the `create_web_container.sh` script:
 
 ```sh
-    $ ./create_web_container.sh -h
-       usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
+$ ./create_web_container.sh -h
+   usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
 
-       optional arguments:
-       -h        show this help message and exit.
-       -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
-       -s        start the container after creation.
-       -p        list of username password pairs.  Defaults to: [jansene,hello]
+   optional arguments:
+   -h        show this help message and exit.
+   -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
+   -s        start the container after creation.
+   -p        list of username password pairs.  Defaults to: [jansene,hello]
 ```
 
 For example:
 
 ```sh
-    ./create_web_container.sh -p user1,passwd1,user2,passwd2,....
+./create_web_container.sh -p user1,passwd1,user2,passwd2,....
 ```
 This will do the following:
 
 - Create a virtual environment
-- Configure the token service to give acess to the passed in users.
+- Configure the token service to give access to the passed in users.
 - Generate a public and private key pair, used to encrypt/decrypt JWT tokens
 - Create the set of containers to interact with the emulator.
 
 You can now launch the container as follows:
 
 ```sh
-    docker-compose -f js/docker/docker-compose.yaml up
+docker-compose -f js/docker/docker-compose.yaml up
 ```
 
 Point your browser to [localhost](http://localhost). You will likely get
-a warning due to the usage of the self signed certifcate. Once you accept the
+a warning due to the usage of the self signed certificate. Once you accept the
 cert you should be able to login and start using the emulator.
 
 Keep the following things in mind when you make the emulator accessible over adb:
@@ -282,13 +282,13 @@ Keep the following things in mind when you make the emulator accessible over adb
   interact with the device. For example:
 
 ```sh
-    $ adb connect localhost:5555
-    $ adb shell getprop
+$ adb connect localhost:5555
+$ adb shell getprop
 ```
 
 ### Troubleshooting
 
-We have a seperate [document](TROUBLESHOOTING.md) related to dealing with
+We have a separate [document](TROUBLESHOOTING.md) related to dealing with
 issues.
 
 ### Modifying the demo
