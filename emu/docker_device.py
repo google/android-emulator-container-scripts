@@ -76,7 +76,7 @@ class DockerDevice(object):
         try:
             api_client = docker.APIClient()
             logging.info(api_client.version())
-            result = api_client.build(path=self.dest, rm=True, decode=True)
+            result = api_client.build(path=self.dest, tag=self.repo, rm=True, decode=True)
             for entry in result:
                 if "stream" in entry:
                     sys.stdout.write(entry["stream"])
