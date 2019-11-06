@@ -30,10 +30,10 @@ class DockerDevice(object):
     run this as root, or have enabled sudoless docker.
     """
 
-    def __init__(self, emulator, sysimg, dest_dir, repo=""):
+    def __init__(self, emulator, sysimg, dest_dir, tag=""):
         self.sysimg = AndroidReleaseZip(sysimg)
         self.emulator = AndroidReleaseZip(emulator)
-        self.repo = repo
+        self.tag = tag
         self.dest = dest_dir
         self.env = Environment(loader=PackageLoader("emu", "templates"))
 
@@ -76,7 +76,7 @@ class DockerDevice(object):
         try:
             api_client = docker.APIClient()
             logging.info(api_client.version())
-            result = api_client.build(path=self.dest, tag=self.repo, rm=True, decode=True)
+            result = api_client.build(path=self.dest, tag=self.tag, rm=True, decode=True)
             for entry in result:
                 if "stream" in entry:
                     sys.stdout.write(entry["stream"])

@@ -31,7 +31,7 @@ def list_images(_):
 
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image."""
-    device = DockerDevice(args.emuzip, args.imgzip, args.dest, args.repo)
+    device = DockerDevice(args.emuzip, args.imgzip, args.dest, args.tag)
     device.create_docker_file(args.extra)
     img = device.create_container()
     if img and args.start:
@@ -86,7 +86,7 @@ def main():
     create_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
-    create_parser.add_argument("--repo", default="", help="Docker repository name")
+    create_parser.add_argument("--tag", default="", help="Docker image name")
     create_parser.add_argument(
         "--start",
         action="store_true",
@@ -114,7 +114,7 @@ def main():
         help="Starts the container after creating it. "
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
-    create_inter.add_argument("--repo", default="", help="Docker repository name")
+    create_inter.add_argument("--tag", default="", help="Docker image name")
     create_inter.set_defaults(func=create_docker_image_interactive)
 
     args = parser.parse_args()
