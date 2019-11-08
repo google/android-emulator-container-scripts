@@ -58,13 +58,23 @@ tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
-socat -d tcp-listen:5556,reuseaddr,fork tcp:127.0.0.1:6556 &
 
-# Log all the video bridge interactions, note that his file comes into existence later on.
-echo 'video: It is safe to ignore the 2 warnings from tail. The file will come into existence soon.'
+
+mkdir /tmp/android-unknown
+touch /tmp/android-unknown/kernel.log
+touch /tmp/android-unknown/logcat.log
+echo 'It is safe to ignore the warnings from tail. The files will come into existence soon.'
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
+tail --retry -f /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
+tail --retry -f /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
+
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 6556 -no-window -skip-adb-auth -logcat "*:v" {{extra}} "$@"
+exec emulator/emulator @Pixel2 -no-audio -verbose  -ports 6554,6555 \
+-grpc 6556 -no-window \
+-skip-adb-auth \
+-shell-serial file:/tmp/android-unknown/kernel.log \
+-logcat-output /tmp/android-unknown/logcat.log \
+{{extra}} -qemu -append panic=1
 
 # All done!
