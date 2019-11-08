@@ -1,3 +1,16 @@
+# Copyright 2019 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import datetime
 import errno
 import json
@@ -6,7 +19,6 @@ import os
 import shutil
 import socket
 import sys
-
 from distutils.spawn import find_executable
 
 import docker
@@ -141,9 +153,11 @@ class DockerDevice(object):
             {
                 "playstore": self.sysimg.tag() == "google_apis_playstore",
                 "abi": self.sysimg.abi(),
+                "cpu": self.sysimg.cpu(),
                 "tag": self.sysimg.tag(),
             },
         )
+        extra += " {}".format(self.sysimg.logger_flags())
         self._write_template("launch-emulator.sh", {"extra": extra, "version": emu.__version__})
         self._write_template("default.pa", {})
         self._write_template(
@@ -153,6 +167,7 @@ class DockerDevice(object):
                 "tag": self.sysimg.tag(),
                 "api": self.sysimg.api(),
                 "abi": self.sysimg.abi(),
+                "cpu": self.sysimg.cpu(),
                 "emu_zip": os.path.basename(self.emulator.fname),
                 "emu_build_id": self.emulator.revision(),
                 "sysimg_zip": os.path.basename(self.sysimg.fname),

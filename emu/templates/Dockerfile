@@ -37,9 +37,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Next we get an android image ready
-# We explicitly curl the image from a public site to make sure we
-# don't accidentally publish internal testing images.
 # Now we configure the user account under which we will be running the emulator
 RUN mkdir -p /android/sdk/platforms && \
     mkdir -p /android/sdk/platform-tools && \

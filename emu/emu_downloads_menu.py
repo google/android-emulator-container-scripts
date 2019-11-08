@@ -82,6 +82,8 @@ class AndroidReleaseZip(object):
     about the contents of the zip.
     """
 
+    ABI_CPU_MAP = {"armeabi-v7a": "arm", "arm64-v8a": "arm64", "x86_64": "x86_64", "x86": "x86"}
+
     def __init__(self, fname):
         self.fname = fname
         if not zipfile.is_zipfile(fname):
@@ -104,6 +106,10 @@ class AndroidReleaseZip(object):
         """The abi if any."""
         return self.props.get("SystemImage.Abi", "")
 
+    def cpu(self):
+        """Returns the cpu architecture, derived from the abi."""
+        return self.ABI_CPU_MAP[self.abi()]
+
     def tag(self):
         """The tag associated with this release."""
         return self.props.get("SystemImage.TagId", "")
@@ -115,6 +121,12 @@ class AndroidReleaseZip(object):
     def revision(self):
         """The revision of this release."""
         return self.props.get("Pkg.Revision")
+
+    def logger_flags(self):
+        if "arm" in self.cpu():
+            return "-logcat V:* -show-kernel"
+        else:
+            return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
 
 
 class SysImgInfo(object):
@@ -142,7 +154,9 @@ class SysImgInfo(object):
         self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
 
     def download(self, dest=None):
-        dest = dest or os.path.join(os.getcwd(), "sys-img-{}-{}-{}.zip".format(self.tag, self.api, self.letter))
+        dest = dest or os.path.join(
+            os.getcwd(), "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
+        )
         print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
         return _download(self.url, dest)
 
@@ -177,10 +191,10 @@ class EmuInfo(object):
         return _download(self.urls[hostos], dest)
 
 
-def get_images_info():
+def get_images_info(arm=False):
     """Gets all the publicly available system images from the Android Image Repos.
 
-    Returns a list of AndroidSystemImages that were found and can boot."""
+    Returns a list of AndroidSystemImages that were found and (hopefully) can boot."""
     xml = []
     for url in SYSIMG_REPOS:
         response = urlfetch.get(url)
@@ -192,7 +206,10 @@ def get_images_info():
     # Filter only for intel images that we know that work
     x86_64_imgs = [info for info in infos if info.abi == "x86_64" and info.letter >= MIN_REL_X64]
     x86_imgs = [info for info in infos if info.abi == "x86" and info.letter >= MIN_REL_I386]
-    return sorted(x86_64_imgs + x86_imgs, key=lambda x: x.api + x.tag)
+    slow = []
+    if arm:
+        slow = [info for info in infos if info.abi.startswith("arm")]
+    return sorted(x86_64_imgs + x86_imgs + slow, key=lambda x: x.api + x.tag)
 
 
 def get_emus_info():
@@ -210,11 +227,11 @@ def get_emus_info():
     return infos
 
 
-def select_image():
+def select_image(arm):
     """Displayes an interactive menu to select a released system image.
 
     Returns a SysImgInfo object with the choice or None if the user aborts.    """
-    img_infos = get_images_info()
+    img_infos = get_images_info(arm)
     display = [
         "{} {} {} ({})".format(img_info.api, img_info.letter, img_info.tag, img_info.abi) for img_info in img_infos
     ]
@@ -232,9 +249,9 @@ def select_emulator():
     return emu_infos[selection] if selection < len(emu_infos) else None
 
 
-def list_all_downloads():
+def list_all_downloads(arm):
     """Lists all available downloads that can be used to construct a Docker image."""
-    img_infos = get_images_info()
+    img_infos = get_images_info(arm)
     emu_infos = get_emus_info()
 
     for img_info in img_infos:

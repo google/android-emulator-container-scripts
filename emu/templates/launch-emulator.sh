@@ -73,8 +73,6 @@ tail --retry -f /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
 exec emulator/emulator @Pixel2 -no-audio -verbose  -ports 6554,6555 \
 -grpc 6556 -no-window \
 -skip-adb-auth \
--shell-serial file:/tmp/android-unknown/kernel.log \
--logcat-output /tmp/android-unknown/logcat.log \
 {{extra}} -qemu -append panic=1
 
 # All done!
