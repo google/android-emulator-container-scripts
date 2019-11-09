@@ -61,12 +61,12 @@ socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
 
 
 mkdir /tmp/android-unknown
-touch /tmp/android-unknown/kernel.log
-touch /tmp/android-unknown/logcat.log
+mkfifo /tmp/android-unknown/kernel.log
+mkfifo /tmp/android-unknown/logcat.log
 echo 'It is safe to ignore the warnings from tail. The files will come into existence soon.'
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
-tail --retry -f /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
-tail --retry -f /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
+cat /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
+cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
 
 
 # Kick off the emulator
