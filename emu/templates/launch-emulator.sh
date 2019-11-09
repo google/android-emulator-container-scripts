@@ -51,6 +51,7 @@ else
 fi
 
 # We need pulse audio for the webrtc video bridge, let's configure it.
+mkdir -p ~/.config/pulse
 export PULSE_SERVER=unix:/tmp/pulse-socket
 pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
 tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
@@ -58,7 +59,6 @@ tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
-
 
 mkdir /tmp/android-unknown
 mkfifo /tmp/android-unknown/kernel.log
@@ -71,7 +71,7 @@ cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
 
 # Kick off the emulator
 exec emulator/emulator @Pixel2 -no-audio -verbose  -ports 6554,6555 \
--grpc 6556 -no-window \
+-grpc 5556 -no-window \
 -skip-adb-auth \
 {{extra}} -qemu -append panic=1
 
