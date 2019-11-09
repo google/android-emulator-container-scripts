@@ -51,6 +51,7 @@ else
 fi
 
 # We need pulse audio for the webrtc video bridge, let's configure it.
+mkdir -p ~/.config/pulse
 export PULSE_SERVER=unix:/tmp/pulse-socket
 pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
 tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
@@ -58,13 +59,20 @@ tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
-socat -d tcp-listen:5556,reuseaddr,fork tcp:127.0.0.1:6556 &
 
-# Log all the video bridge interactions, note that his file comes into existence later on.
-echo 'video: It is safe to ignore the 2 warnings from tail. The file will come into existence soon.'
+mkdir /tmp/android-unknown
+mkfifo /tmp/android-unknown/kernel.log
+mkfifo /tmp/android-unknown/logcat.log
+echo 'It is safe to ignore the warnings from tail. The files will come into existence soon.'
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
+cat /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
+cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
+
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -show-kernel -ports 6554,6555 -grpc 6556 -no-window -skip-adb-auth -logcat "*:v" {{extra}} "$@"
+exec emulator/emulator @Pixel2 -no-audio -verbose  -ports 6554,6555 \
+-grpc 5556 -no-window \
+-skip-adb-auth \
+{{extra}} -qemu -append panic=1
 
 # All done!

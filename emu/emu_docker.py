@@ -24,9 +24,9 @@ import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_device import DockerDevice
 
 
-def list_images(_):
+def list_images(args):
     """Lists all the publicly available system and emlator images."""
-    emu_downloads_menu.list_all_downloads()
+    emu_downloads_menu.list_all_downloads(args.arm)
 
 
 def create_docker_image(args):
@@ -40,7 +40,7 @@ def create_docker_image(args):
 
 def create_docker_image_interactive(args):
     """Interactively create a docker image by selecting the desired combination from a menu."""
-    img = emu_downloads_menu.select_image() or sys.exit(1)
+    img = emu_downloads_menu.select_image(args.arm) or sys.exit(1)
     emulator = emu_downloads_menu.select_emulator() or sys.exit(1)
 
     img_zip = img.download()
@@ -65,6 +65,12 @@ def main():
 
     list_parser = subparsers.add_parser(
         "list", help="list all the available the publicly available emulators and system images."
+    )
+
+    list_parser.add_argument(
+        "--arm",
+        action="store_true",
+        help="Display arm images. Note that arm images are not hardware accelerated and are *extremely* slow.",
     )
     list_parser.set_defaults(func=list_images)
 
@@ -113,6 +119,11 @@ def main():
         action="store_true",
         help="Starts the container after creating it. "
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
+    )
+    create_inter.add_argument(
+        "--arm",
+        action="store_true",
+        help="Display arm images. Note that arm images are not hardware accelerated and are *extremely* slow.",
     )
     create_inter.add_argument("--tag", default="", help="Docker image name")
     create_inter.set_defaults(func=create_docker_image_interactive)
