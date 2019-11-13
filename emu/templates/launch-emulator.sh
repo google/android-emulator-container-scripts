@@ -63,16 +63,16 @@ socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
 mkdir /tmp/android-unknown
 mkfifo /tmp/android-unknown/kernel.log
 mkfifo /tmp/android-unknown/logcat.log
-echo 'It is safe to ignore the warnings from tail. The files will come into existence soon.'
+echo "emulator: It is safe to ignore the warnings from tail. The files will come into existence soon."
 tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
 cat /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
 cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
 
+echo "emulator: exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
+-grpc 5556 -no-window -skip-adb-auth {{extra}} ${EMULATOR_PARAMS} -qemu -append panic=1"
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -no-audio -verbose  -ports 6554,6555 \
--grpc 5556 -no-window \
--skip-adb-auth \
-{{extra}} -qemu -append panic=1
+exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
+-grpc 5556 -no-window -skip-adb-auth {{extra}}  ${EMULATOR_PARAMS} -qemu -append panic=1
 
 # All done!
