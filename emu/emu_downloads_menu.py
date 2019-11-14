@@ -17,6 +17,7 @@
 
 import logging
 import os
+import re
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -207,7 +208,7 @@ class EmuInfo(object):
             hostos = archive.find("host-os").text
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
 
-    def download(self, hostos, dest=None):
+    def download(self, hostos='linux', dest=None):
         """"Downloads the released pacakage for the given os to the dest."""
         dest = dest or os.path.join(os.getcwd(), "emulator-{}.zip".format(self.version))
         print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
@@ -232,7 +233,30 @@ def get_images_info(arm=False):
     slow = []
     if arm:
         slow = [info for info in infos if info.abi.startswith("arm")]
-    return sorted(x86_64_imgs + x86_imgs + slow, key=lambda x: x.api + x.tag)
+    all_imgs = sorted(x86_64_imgs + x86_imgs + slow, key=lambda x: x.api + x.tag)
+    # Filter out windows/darwin images.
+    return [i for i in all_imgs if "windows" not in i.url and "darwin" not in i.url]
+
+
+def find_image(regexpr):
+    reg = re.compile(regexpr)
+    all_images = get_images_info(True)
+    matches = [img for img in all_images if reg.match("{} {} {}".format(img.letter, img.tag, img.abi))]
+    logging.info("Found matching images: %s", matches)
+    if not matches:
+        raise Exception("No system image found matching {}. Run the list command to list available images".format(regexpr))
+    return matches[0]
+
+
+def find_emulator(channel):
+    """Displayes an interactive menu to select a released emulator binary.
+
+    Returns a ImuInfo object with the choice or None if the user aborts.    """
+    emu_infos = [x for x in get_emus_info() if "linux" in x.urls and x.channel == channel]
+    logging.info("Found matching emulators: %s", emu_infos)
+    if not emu_infos:
+        raise Exception("No emulator found in channel {}".format(channel))
+    return emu_infos[0]
 
 
 def get_emus_info():
