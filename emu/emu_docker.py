@@ -31,7 +31,15 @@ def list_images(args):
 
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image."""
-    device = DockerDevice(args.emuzip, args.imgzip, args.dest, args.tag)
+    imgzip = args.imgzip
+    if not os.path.exists(imgzip):
+        imgzip = emu_downloads_menu.find_image(imgzip).download()
+
+    emuzip = args.emuzip
+    if emuzip in ['stable', 'canary']:
+        emuzip = emu_downloads_menu.find_emulator(emuzip).download()
+
+    device = DockerDevice(emuzip, imgzip, args.dest, args.tag)
     device.create_docker_file(args.extra)
     img = device.create_container()
     if img and args.start:
@@ -81,8 +89,16 @@ def main():
         "After the Docker image is started up, interaction with the emulator is made possible via port forwarding and ADB, "
         "or gRPC and WebRTC.",
     )
-    create_parser.add_argument("emuzip", help="Zipfile containing the a publicly released emulator.")
-    create_parser.add_argument("imgzip", help="Zipfile containing a public system image that should be launched.")
+    create_parser.add_argument(
+        "emuzip",
+        help="Zipfile containing the a publicly released emulator, or [canary|stable] to use the latest canary or stable release.",
+    )
+    create_parser.add_argument(
+        "imgzip",
+        help='Zipfile containing a public system image that should be launched, or a regexp matching the image to retrieve. '
+        'The first matching image will be selected when using a regex. '
+        'Use the list command to show all available images. For example "P google_apis_playstore x86_64".',
+    )
     create_parser.add_argument(
         "--extra",
         default="",
