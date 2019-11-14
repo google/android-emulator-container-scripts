@@ -20,6 +20,7 @@ import os
 import xml.etree.ElementTree as ET
 import zipfile
 
+
 import urlfetch
 from consolemenu import SelectionMenu
 from tqdm import tqdm
@@ -55,6 +56,10 @@ API_LETTER_MAPPING = {
 # Older versions might not work as expected.
 MIN_REL_I386 = "K"
 MIN_REL_X64 = "O"
+
+
+# Platform tools, needed to get adb.
+PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
 
 
 def _download(url, dest):
@@ -127,6 +132,24 @@ class AndroidReleaseZip(object):
             return "-logcat V:* -show-kernel"
         else:
             return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
+
+
+class PlatformTools(object):
+    """The platform tools zip file. It will be downloaded on demand."""
+
+    def __init__(self, fname=None):
+        self.platform = fname
+
+    def extract_adb(self, dest):
+        if not self.platform:
+            self.platform = self.download()
+        with zipfile.ZipFile(self.platform, "r") as plzip:
+            plzip.extract("platform-tools/adb", dest)
+
+    def download(self, dest=None):
+        dest = dest or os.path.join(os.getcwd(), "platform-tools-latest-linux.zip")
+        print("Downloading platform tools to {}".format(dest))
+        return _download(PLATFORM_TOOLS_URL, dest)
 
 
 class SysImgInfo(object):

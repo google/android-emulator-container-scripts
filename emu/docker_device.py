@@ -26,14 +26,13 @@ from jinja2 import Environment, PackageLoader
 from tqdm import tqdm
 
 import emu
-from emu.emu_downloads_menu import AndroidReleaseZip
+from emu.emu_downloads_menu import AndroidReleaseZip, PlatformTools
 
 
 def mkdir_p(path):
     """Make directories recursively if path not exists."""
     if not os.path.exists(path):
         os.makedirs(path)
-
 
 class DockerDevice(object):
     """A Docker Device is capable of creating and launching docker images.
@@ -49,11 +48,23 @@ class DockerDevice(object):
         self.dest = dest_dir
         self.env = Environment(loader=PackageLoader("emu", "templates"))
 
-    def _find_adb(self):
-        adb_loc = os.path.join(os.environ.get("ANDROID_SDK_ROOT", ""), "platform-tools", "adb")
-        if os.path.exists(adb_loc) and os.access(adb_loc, os.X_OK):
-            return adb_loc
-        return find_executable("adb")
+    def _copy_adb_to(self, dest):
+        """Find adb, or download it if needed."""
+        adb_dest = os.path.join(dest, 'adb')
+        adb_loc = None
+        if 'linux' in sys.platform:
+            adb_loc = os.path.join(os.environ.get("ANDROID_SDK_ROOT", ""), "platform-tools", "adb")
+            if not (os.path.exists(adb_loc) and os.access(adb_loc, os.X_OK)):
+                adb_loc = find_executable("adb")
+
+        if adb_loc is None:
+            logging.info("No local adb, retrieving platform-tools")
+            tools = PlatformTools()
+            tools.extract_adb(adb_dest)
+        else:
+            logging.info("Copying %s to %s", adb_loc, adb_dest)
+            shutil.copy2(adb_loc, adb_dest)
+
 
     def _read_adb_key(self):
         adb_path = os.path.expanduser("~/.android/adbkey")
@@ -126,9 +137,6 @@ class DockerDevice(object):
         logging.info("Sysimg zip: %s", self.sysimg)
         logging.info("Docker src dir: %s", self.dest)
 
-        adb_loc = self._find_adb()
-        if adb_loc is None:
-            raise IOError(errno.ENOENT, "Unable to find ADB below $ANDROID_SDK_ROOT or on the path!")
 
         date = datetime.datetime.utcnow().isoformat("T") + "Z"
 
@@ -144,8 +152,7 @@ class DockerDevice(object):
 
         platform_tools_dir = os.path.join(self.dest, "platform-tools")
         mkdir_p(platform_tools_dir)
-        logging.info("Using adb: %s", adb_loc)
-        shutil.copy2(adb_loc, platform_tools_dir)
+        self._copy_adb_to(platform_tools_dir)
 
         self._write_template("avd/Pixel2.ini", {"api": self.sysimg.api()})
         self._write_template(
