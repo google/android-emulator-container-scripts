@@ -14,4 +14,4 @@
 CONTAINER_ID=$1
 shift
 PARAMS="$@"
-docker run -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=${PARAMS}" --privileged  --publish 5556:5556/tcp --publish 5555:5555/tcp ${CONTAINER_ID}
+docker run -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=${PARAMS}" --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp ${CONTAINER_ID}
