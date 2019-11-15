@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# This launcher will force the emulator to use hardware acceleration. In order to use this you will need to have
+# installed the nvida docker container drivers (https://github.com/NVIDIA/nvidia-docker)
 CONTAINER_ID=$1
 shift
 PARAMS="$@"
-docker run -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=${PARAMS}" --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp ${CONTAINER_ID}
+# Allow display access from the container.
+xhost +si:localuser:root
+docker run --gpus all -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=-gpu host ${PARAMS}" --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp ${CONTAINER_ID}
