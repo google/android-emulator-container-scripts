@@ -21,7 +21,8 @@ RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
 COPY {{sysimg_zip}} /tmp/
 RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
 
-FROM debian:stretch-slim
+FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display
 
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u
