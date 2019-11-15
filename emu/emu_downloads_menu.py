@@ -116,6 +116,10 @@ class AndroidReleaseZip(object):
         """Returns the cpu architecture, derived from the abi."""
         return self.ABI_CPU_MAP[self.abi()]
 
+    def gpu(self):
+        """Returns whether or not the system has gpu support."""
+        return self.props.get("SystemImage.GpuSupport")
+
     def tag(self):
         """The tag associated with this release."""
         return self.props.get("SystemImage.TagId", "")

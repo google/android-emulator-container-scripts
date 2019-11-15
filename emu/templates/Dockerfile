@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Emulator & video bridge dependencies
     libc6 libdbus-1-3 libfontconfig1 libgcc1 \
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \
-    libnss3 libxcomposite1 libxcursor1 \
+    libnss3 libxcomposite1 libxcursor1 libxi6 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat \
 # Enable turncfg through usage of curl
     curl ca-certificates && \
@@ -50,7 +50,6 @@ COPY launch-emulator.sh /android/sdk/
 COPY default.pa /android/sdk/
 COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
-
 RUN gpasswd -a root audio && \
     chmod +x /android/sdk/launch-emulator.sh
 
@@ -69,13 +68,19 @@ ENV ANDROID_SDK_ROOT /android/sdk
 ENV ANDROID_AVD_HOME /android-home
 WORKDIR /android/sdk
 
-# Note, we will not be using gpu acceleration, nor will the emulator be visible.
 # You will need to make use of the grpc snapshot/webrtc functionality to actually interact with
 # the emulator.
 CMD ["/android/sdk/launch-emulator.sh"]
 
+# Note we should use gRPC status endpoint to check for health once the canary release is out.
+HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 CMD /android/sdk/platform-tools/adb -s emulator-6554 shell getprop dev.bootcomplete | grep "1"
+
 # Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
+      SystemImage.Abi={{abi}} \
+      SystemImage.TagId={{tag}} \
+      SystemImage.GpuSupport={{gpu}} \
+      AndroidVersion.ApiLevel={{api}} \
       com.google.android.emulator.build-date="{{date}}" \
       com.google.android.emulator.description="Pixel 2 Emulator, running API {{api}}" \
       com.google.android.emulator.version="{{tag}}-{{api}}-{{abi}}/{{emu_build_id}}"

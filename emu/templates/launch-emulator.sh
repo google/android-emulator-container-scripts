@@ -57,6 +57,11 @@ pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --lo
 tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
 { pactl list | sed 's/^/pulse: /g' ; } || echo "pulse: Unable to connect to pulse audio, WebRTC will not work."
 
+
+# Launch internal adb server, needed for our health check.
+# Once we have the grpc status point we can use that instead.
+/android/sdk/platform-tools/adb start-server
+
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
 
@@ -68,11 +73,10 @@ tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
 cat /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
 cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
 
-echo "emulator: exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
--grpc 5556 -no-window -skip-adb-auth {{extra}} ${EMULATOR_PARAMS} -qemu -append panic=1"
-
 # Kick off the emulator
 exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
--grpc 5556 -no-window -skip-adb-auth {{extra}}  ${EMULATOR_PARAMS} -qemu -append panic=1
-
+  -grpc 5556 -no-window -skip-adb-auth \
+  -shell-serial file:/tmp/android-unknown/kernel.log \
+  -logcat-output /tmp/android-unknown/logcat.log \
+  {{extra}} ${EMULATOR_PARAMS} -qemu -append panic=1
 # All done!

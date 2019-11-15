@@ -175,6 +175,7 @@ class DockerDevice(object):
                 "api": self.sysimg.api(),
                 "abi": self.sysimg.abi(),
                 "cpu": self.sysimg.cpu(),
+                "gpu": self.sysimg.gpu(),
                 "emu_zip": os.path.basename(self.emulator.fname),
                 "emu_build_id": self.emulator.revision(),
                 "sysimg_zip": os.path.basename(self.sysimg.fname),
