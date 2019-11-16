@@ -130,7 +130,6 @@ Example output:
 One can then use tools like `wget` or a browser to download a desired emulator
 and system image.  After the two are obtained, we can build a Docker image.
 
-
 Given an emulator zip file and a system image zip file, we can build a directory
 that can be sent to `docker build` via the following invocation of `emu-docker`:
 
@@ -156,7 +155,7 @@ virtualization capabilities to the resulting Docker image.
 
 We provide the following run script:
 
-    ./run.sh <docker-image-id>
+    ./run.sh <docker-image-id> <additional-emulator-params>
 
 It does the following:
 
@@ -170,6 +169,29 @@ It does the following:
   host ports 5556/6555 to container ports 5556/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
+
+### Running the Docker image with GPU acceleration
+
+We currently only support hardware acceleration for NVIDIA. In order to make use
+of hardware acceleration you might have to install the NVIDIA docker extensions
+from [here](https://github.com/NVIDIA/nvidia-docker) if you are running
+an older version of docker (<19.03). You must make sure you have
+a minimal X installation if you are using a cloud instance. For example
+[Xvfb](https://en.wikipedia.org/wiki/Xvfb) can be used.
+
+You can now launch the emulator with the `run-with-gpu.sh` script:
+
+    ./run-with-gpu.sh <docker-image-id> <additional-emulator-params>
+
+The script is similar as to the one described above with the addition that it will:
+
+  - Make all the available gpu's available (`--gpu all`)
+  - Opens up xhost access for the container
+  - Enable the domain socket under /tmp/.X11-unix to communicate with hosts X server
+
+Hardware acceleration will significantly improve performance of applications that heavily
+rely on graphics. Note that even though we need a X11 server for gpu acceleratation there
+will be no ui displayed.
 
 ## Communicating with the emulator in the container
 

@@ -78,5 +78,6 @@ exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
   -grpc 5556 -no-window -skip-adb-auth \
   -shell-serial file:/tmp/android-unknown/kernel.log \
   -logcat-output /tmp/android-unknown/logcat.log \
+  -gpu swiftshader_indirect \
   {{extra}} ${EMULATOR_PARAMS} -qemu -append panic=1
 # All done!
