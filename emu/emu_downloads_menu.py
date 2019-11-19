@@ -128,6 +128,12 @@ class AndroidReleaseZip(object):
         """The revision of this release."""
         return self.props.get("Pkg.Revision")
 
+    def is_system_image(self):
+        return "System Image" in self.desc()
+
+    def is_emulator(self):
+        return "Android Emulator" in self.desc()
+
     def logger_flags(self):
         if "arm" in self.cpu():
             return "-logcat V:* -show-kernel"

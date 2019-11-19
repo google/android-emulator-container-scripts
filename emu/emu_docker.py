@@ -36,8 +36,15 @@ def create_docker_image(args):
         imgzip = emu_downloads_menu.find_image(imgzip).download()
 
     emuzip = args.emuzip
-    if emuzip in ['stable', 'canary']:
+    if emuzip in ["stable", "canary"]:
         emuzip = emu_downloads_menu.find_emulator(emuzip).download()
+
+    rel = emu_downloads_menu.AndroidReleaseZip(imgzip)
+    if not rel.is_system_image():
+        raise Exception("{} is not a zip file with a system image".format(imgzip))
+    rel = emu_downloads_menu.AndroidReleaseZip(emuzip)
+    if not rel.is_emulator():
+        raise Exception("{} is not a zip file with an emulator".format(imgzip))
 
     device = DockerDevice(emuzip, imgzip, args.dest, args.tag)
     device.create_docker_file(args.extra)
@@ -95,8 +102,8 @@ def main():
     )
     create_parser.add_argument(
         "imgzip",
-        help='Zipfile containing a public system image that should be launched, or a regexp matching the image to retrieve. '
-        'The first matching image will be selected when using a regex. '
+        help="Zipfile containing a public system image that should be launched, or a regexp matching the image to retrieve. "
+        "The first matching image will be selected when using a regex. "
         'Use the list command to show all available images. For example "P google_apis_playstore x86_64".',
     )
     create_parser.add_argument(

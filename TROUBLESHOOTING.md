@@ -69,6 +69,23 @@ FileNotFoundError: [Errno 2] Unable to find ADB below $ANDROID_SDK_ROOT or on th
 
 You will need to install adb.
 
+## Exceptions when providing wrong zipfiles
+
+If you seen an exception along the following lines:
+
+```python
+Traceback (most recent call last):
+  File "/tmp/android-emulator-container-scripts/venv/bin/emu-docker", line 11, in <module>
+    load_entry_point('emu-docker', 'console_scripts', 'emu-docker')()
+  File "/tmp/android-emulator-container-scripts/emu/emu_docker.py", line 159, in main
+    args.func(args)
+  File "/tmp/android-emulator-container-scripts/emu/emu_docker.py", line 44, in create_docker_image
+    raise Exception("{} is not a zip file with a system image".format(imgzip))
+Exception: emulator-29.2.8.zip is not a zip file with a system image
+```
+
+You likely provided the parameters in the incorrect order.
+
 ## The container suddenly stopped and I cannot restart it.
 
 It is possible that the emulator crashes or terminates unexpectedly. In this
