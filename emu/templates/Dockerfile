@@ -18,10 +18,8 @@ RUN apk add --update unzip
 COPY {{emu_zip}} /tmp/
 RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
 
-COPY {{sysimg_zip}} /tmp/
-RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
 
-FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04
+FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04 AS emulator
 ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display
 
 # Install all the required emulator dependencies.
@@ -54,7 +52,6 @@ RUN gpasswd -a root audio && \
     chmod +x /android/sdk/launch-emulator.sh
 
 COPY --from=unzipper /emu/ /android/sdk/
-COPY --from=unzipper /sysimg/ /android/sdk/system-images/android/
 
 COPY avd /android-home
 # Create an initial snapshot so we will boot fast next time around,
@@ -73,8 +70,20 @@ WORKDIR /android/sdk
 CMD ["/android/sdk/launch-emulator.sh"]
 
 # Note we should use gRPC status endpoint to check for health once the canary release is out.
-HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 CMD /android/sdk/platform-tools/adb -s emulator-6554 shell getprop dev.bootcomplete | grep "1"
+HEALTHCHECK --interval=30s \
+            --timeout=30s \
+            --start-period=30s \
+            --retries=3 \
+            CMD /android/sdk/platform-tools/adb -s emulator-6554 shell getprop dev.bootcomplete | grep "1"
 
+FROM unzipper as sys_unzipper
+
+COPY {{sysimg_zip}} /tmp/
+RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
+
+FROM emulator
+
+COPY --from=sys_unzipper /sysimg/ /android/sdk/system-images/android/
 # Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
       SystemImage.Abi={{abi}} \

@@ -93,11 +93,11 @@ class AndroidReleaseZip(object):
     def __init__(self, fname):
         self.fname = fname
         if not zipfile.is_zipfile(fname):
-            raise "{} is not a zipfile!".format(fname)
+            raise Exception("{} is not a zipfile!".format(fname))
         with zipfile.ZipFile(fname, "r") as sysimg:
             props = [x for x in sysimg.infolist() if "source.properties" in x.filename]
             if not props:
-                raise "{} does not contain source.properties!".format(fname)
+                raise Exception("{} does not contain source.properties!".format(fname))
             prop = sysimg.read(props[0]).decode("utf-8").splitlines()
             self.props = dict([a.split("=") for a in prop if "=" in a])
 
@@ -107,6 +107,14 @@ class AndroidReleaseZip(object):
     def api(self):
         """The api level, if any."""
         return self.props.get("AndroidVersion.ApiLevel", "")
+
+    def codename(self):
+        """First letter of the desert, if any."""
+        api = self.api()
+        if api in API_LETTER_MAPPING:
+            return API_LETTER_MAPPING[api]
+        else:
+            return "_"
 
     def abi(self):
         """The abi if any."""
@@ -122,7 +130,10 @@ class AndroidReleaseZip(object):
 
     def tag(self):
         """The tag associated with this release."""
-        return self.props.get("SystemImage.TagId", "")
+        tag = self.props.get("SystemImage.TagId", "")
+        if tag == 'default':
+            tag = 'android'
+        return tag
 
     def desc(self):
         """Descripton of this release."""
@@ -188,6 +199,9 @@ class SysImgInfo(object):
         print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
         return _download(self.url, dest)
 
+    def __str__(self):
+        return "{} {} {}".format(self.letter, self.tag, self.abi)
+
 
 class EmuInfo(object):
     """Provides information about a released emulator."""
@@ -212,11 +226,14 @@ class EmuInfo(object):
             hostos = archive.find("host-os").text
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
 
-    def download(self, hostos='linux', dest=None):
+    def download(self, hostos="linux", dest=None):
         """"Downloads the released pacakage for the given os to the dest."""
         dest = dest or os.path.join(os.getcwd(), "emulator-{}.zip".format(self.version))
         print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
         return _download(self.urls[hostos], dest)
+
+    def __str__(self):
+        return "{} {}".format(self.channel, self.version)
 
 
 def get_images_info(arm=False):
@@ -245,10 +262,14 @@ def get_images_info(arm=False):
 def find_image(regexpr):
     reg = re.compile(regexpr)
     all_images = get_images_info(True)
-    matches = [img for img in all_images if reg.match("{} {} {}".format(img.letter, img.tag, img.abi))]
-    logging.info("Found matching images: %s", matches)
+    matches = [img for img in all_images if reg.match(str(img))]
+    logging.info(
+        "Found %s matching images: %s from %s", regexpr, [str(x) for x in matches], [str(x) for x in all_images]
+    )
     if not matches:
-        raise Exception("No system image found matching {}. Run the list command to list available images".format(regexpr))
+        raise Exception(
+            "No system image found matching {}. Run the list command to list available images".format(regexpr)
+        )
     return matches[0]
 
 
@@ -257,16 +278,16 @@ def find_emulator(channel):
 
     Returns a ImuInfo object with the choice or None if the user aborts.    """
     emu_infos = [x for x in get_emus_info() if "linux" in x.urls and x.channel == channel]
-    logging.info("Found matching emulators: %s", emu_infos)
+    logging.info("Found %s matching images: %s", channel, [str(x) for x in emu_infos])
     if not emu_infos:
         raise Exception("No emulator found in channel {}".format(channel))
     return emu_infos[0]
 
 
 def get_emus_info():
-    """Gets all the publicly available system images from the Android Image Repos.
+    """Gets all the publicly available emulator builds.
 
-         Returns a list of AndroidSystemImages that were found.    """
+         Returns a list of EmuInfo items that were found.    """
     xml = []
     for url in EMU_REPOS:
         response = urlfetch.get(url)
