@@ -29,6 +29,24 @@ EOF
     exit 1
 }
 
+panic() {
+  echo $1
+  exit 1
+}
+
+generate_pub_adb() {
+  # Generate the adb public key, if it does not exist
+  if [[ ! -f ~/.android/adbkey.pub ]]; then
+    local ADB=adb
+    if [ !   $(command -v $ADB >/dev/null 2>&1) ]; then
+       ADB=$ANDROID_SDK_ROOT/platform-tools/adb
+       command -v $ADB >/dev/null 2>&1 || panic "No public adb key, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
+    fi
+    echo "Creating public key from private key with $ADB"
+    $ADB pubkey  ~/.android/adbkey > ~/.android/adbkey.pub
+  fi
+}
+
 while getopts 'hasp:' flag; do
     case "${flag}" in
     a) DOCKER_YAML=js/docker/docker-compose-with-adb.yaml ;;
@@ -39,6 +57,9 @@ while getopts 'hasp:' flag; do
     esac
 done
 
+# Make sure we have all we need for adb to succeed.
+generate_pub_adb
+
 . ./configure.sh >/dev/null
 
 # Now generate the public/private keys and salt the password
@@ -47,6 +68,7 @@ pip install -r requirements.txt >/dev/null
 python gen-passwords.py --pairs "${PASSWDS}" || exit 1
 cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
 cd ../..
+
 
 # Copy the private adbkey over
 cp ~/.android/adbkey js/docker/certs
