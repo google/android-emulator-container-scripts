@@ -51,11 +51,11 @@ else
 fi
 
 # We need pulse audio for the webrtc video bridge, let's configure it.
-mkdir -p ~/.config/pulse
+mkdir -p /root/.config/pulse
 export PULSE_SERVER=unix:/tmp/pulse-socket
-pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1
+pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1 --exit-idle-time=-1
 tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
-{ pactl list | sed 's/^/pulse: /g' ; } || echo "pulse: Unable to connect to pulse audio, WebRTC will not work."
+pactl list || exit 1
 
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:6555 &
