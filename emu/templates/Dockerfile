@@ -47,7 +47,6 @@ RUN mkdir -p /android/sdk/platforms && \
 # Make sure to place files that do not change often in the higher layers
 # as this will improve caching.
 COPY launch-emulator.sh /android/sdk/
-COPY default.pa /android/sdk/
 COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
 RUN gpasswd -a root audio && \
