@@ -15,6 +15,7 @@ import datetime
 import errno
 import json
 import logging
+import re
 import os
 import shutil
 import socket
@@ -34,6 +35,7 @@ def mkdir_p(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
 class DockerDevice(object):
     """A Docker Device is capable of creating and launching docker images.
 
@@ -41,18 +43,32 @@ class DockerDevice(object):
     run this as root, or have enabled sudoless docker.
     """
 
+    TAG_REGEX = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._-]*:?[a-zA-Z0-9._-]*")
+
     def __init__(self, emulator, sysimg, dest_dir, tag=""):
+
         self.sysimg = AndroidReleaseZip(sysimg)
         self.emulator = AndroidReleaseZip(emulator)
-        self.tag = tag
         self.dest = dest_dir
         self.env = Environment(loader=PackageLoader("emu", "templates"))
+        if not tag:
+            tag = "{}-{}-{}-{}-{}".format(
+                self.sysimg.tag(), self.sysimg.api(), self.sysimg.codename(), self.sysimg.abi(), self.emulator.revision()
+            )
+        self.tag = tag.replace(" ", "_")
+        self.tag = "aemu:{}".format(tag)
+        if not self.TAG_REGEX.match(self.tag):
+            raise Exception("The resulting tag: {} is not a valid docker tag.", self.tag)
+
+        # The following are only set after creating/launching.
+        self.container = None
+        self.identity = None
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
-        adb_dest = os.path.join(dest, 'adb')
+        adb_dest = os.path.join(dest, "adb")
         adb_loc = None
-        if 'linux' in sys.platform:
+        if "linux" in sys.platform:
             adb_loc = os.path.join(os.environ.get("ANDROID_SDK_ROOT", ""), "platform-tools", "adb")
             if not (os.path.exists(adb_loc) and os.access(adb_loc, os.X_OK)):
                 adb_loc = find_executable("adb")
@@ -64,7 +80,6 @@ class DockerDevice(object):
         else:
             logging.info("Copying %s to %s", adb_loc, adb_dest)
             shutil.copy2(adb_loc, adb_dest)
-
 
     def _read_adb_key(self):
         adb_path = os.path.expanduser("~/.android/adbkey")
@@ -87,18 +102,25 @@ class DockerDevice(object):
         with open(dest, "w") as dfile:
             dfile.write(template.render(template_dict))
 
-    def create_container(self, tag=None):
-        """Creates the docker container, returning the sha of the container, or None in case of failure."""
-        if not tag:
-            tag = "emulator/{}-{}-{}:{}".format(
-                self.sysimg.tag(), self.sysimg.api(), self.sysimg.abi(), self.emulator.revision()
-            )
-
-        identity = None
-        print("Creating docker image: {}.. be patient this can take a while!".format(tag))
+    def get_api_client(self):
         try:
             api_client = docker.APIClient()
             logging.info(api_client.version())
+            return api_client
+        except:
+            logging.exception("Failed to create default client, trying domain socket.", exc_info=True)
+
+        api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
+        logging.info(api_client.version())
+        return api_client
+
+    def create_container(self):
+        """Creates the docker container, returning the sha of the container, or None in case of failure."""
+        identity = None
+        print("Creating docker image: {}.. be patient this can take a while!".format(self.tag))
+        try:
+            logging.info("build(path=%s, tag=%s, rm=True, decode=True)", self.dest, self.tag)
+            api_client = self.get_api_client()
             result = api_client.build(path=self.dest, tag=self.tag, rm=True, decode=True)
             for entry in result:
                 if "stream" in entry:
@@ -106,14 +128,18 @@ class DockerDevice(object):
                 if "aux" in entry and "ID" in entry["aux"]:
                     identity = entry["aux"]["ID"]
         except:
-            logging.exception("Failed to create container.")
+            logging.exception("Failed to create container.", exc_info=True)
             print("You can manually create the container as follows:")
             print("docker build {}".format(self.dest))
 
+        self.identity = identity
         return identity
 
     def launch(self, image_sha, port=5555):
-        """Launches the container with the given sha, publishing abd on port, and grpc on port + 1."""
+        """Launches the container with the given sha, publishing abd on port, and grpc on port + 1.
+
+           Returns the container.
+        """
         client = docker.from_env()
         try:
             container = client.containers.run(
@@ -124,9 +150,11 @@ class DockerDevice(object):
                 ports={"5555/tcp": port, "5556/tcp": port + 1},
                 environment={"ADBKEY": self._read_adb_key()},
             )
+            self.container = container
             print("Launched {} (id:{})".format(container.name, container.id))
             print("docker logs -f {}".format(container.name))
             print("docker stop {}".format(container.name))
+            return container
         except:
             logging.exception("Unable to run the %s", image_sha)
             print("Unable to start the container, try running it as:")
@@ -136,7 +164,6 @@ class DockerDevice(object):
         logging.info("Emulator zip: %s", self.emulator)
         logging.info("Sysimg zip: %s", self.sysimg)
         logging.info("Docker src dir: %s", self.dest)
-
 
         date = datetime.datetime.utcnow().isoformat("T") + "Z"
 
@@ -170,7 +197,7 @@ class DockerDevice(object):
         self._write_template(
             "Dockerfile",
             {
-                "user": "{}@{}".format(os.environ["USER"], socket.gethostname()),
+                "user": "{}@{}".format(os.environ.get("USER", "unknown"), socket.gethostname()),
                 "tag": self.sysimg.tag(),
                 "api": self.sysimg.api(),
                 "abi": self.sysimg.abi(),

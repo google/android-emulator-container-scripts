@@ -30,7 +30,10 @@ def list_images(args):
 
 
 def create_docker_image(args):
-    """Create a directory containing all the necessary ingredients to construct a docker image."""
+    """Create a directory containing all the necessary ingredients to construct a docker image.
+
+    Returns the DockerDevice object.
+    """
     imgzip = args.imgzip
     if not os.path.exists(imgzip):
         imgzip = emu_downloads_menu.find_image(imgzip).download()
@@ -51,6 +54,8 @@ def create_docker_image(args):
     img = device.create_container()
     if img and args.start:
         device.launch(img)
+
+    return device
 
 
 def create_docker_image_interactive(args):

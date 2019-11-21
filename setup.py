@@ -146,7 +146,7 @@ setup(
     # projects.
     extras_require={  # Optional
         'dev': ['check-manifest', 'versioneer', 'black'],
-        'test': ['coverage'],
+        'test': ['coverage', 'mock', 'tox'],
     },
 
     # If there are data files included in your packages that need to be
@@ -160,7 +160,6 @@ setup(
             'templates/README.md',
             'templates/default.pa',
             'templates/launch-emulator.sh',
-
             'templates/avd/Pixel2.ini',
             'templates/avd/Pixel2.avd/config.ini',
         ],
