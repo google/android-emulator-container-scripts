@@ -66,7 +66,6 @@ class DockerDevice(object):
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
-        adb_dest = os.path.join(dest, "adb")
         adb_loc = None
         if "linux" in sys.platform:
             adb_loc = os.path.join(os.environ.get("ANDROID_SDK_ROOT", ""), "platform-tools", "adb")
@@ -76,10 +75,10 @@ class DockerDevice(object):
         if adb_loc is None:
             logging.info("No local adb, retrieving platform-tools")
             tools = PlatformTools()
-            tools.extract_adb(adb_dest)
+            tools.extract_adb(dest)
         else:
-            logging.info("Copying %s to %s", adb_loc, adb_dest)
-            shutil.copy2(adb_loc, adb_dest)
+            logging.info("Copying %s to %s", adb_loc, dest)
+            shutil.copy2(adb_loc, dest)
 
     def _read_adb_key(self):
         adb_path = os.path.expanduser("~/.android/adbkey")
@@ -177,9 +176,7 @@ class DockerDevice(object):
         shutil.copy2(self.sysimg.fname, self.dest)
         logging.info("Done copying")
 
-        platform_tools_dir = os.path.join(self.dest, "platform-tools")
-        mkdir_p(platform_tools_dir)
-        self._copy_adb_to(platform_tools_dir)
+        self._copy_adb_to(self.dest)
 
         self._write_template("avd/Pixel2.ini", {"api": self.sysimg.api()})
         self._write_template(

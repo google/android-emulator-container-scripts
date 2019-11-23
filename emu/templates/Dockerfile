@@ -48,7 +48,7 @@ COPY launch-emulator.sh /android/sdk/
 COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
 RUN gpasswd -a root audio && \
-    chmod +x /android/sdk/launch-emulator.sh
+    chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
 
 COPY --from=unzipper /emu/ /android/sdk/
 
