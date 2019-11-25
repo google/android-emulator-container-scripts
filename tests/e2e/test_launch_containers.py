@@ -51,7 +51,6 @@ def test_build_container(channel, img):
 @pytest.mark.linux
 @pytest.mark.parametrize('channel, img', [('canary', 'Q'), ('stable', 'P')])
 def test_run_container(channel, img):
-    assert not "linux" in sys.platform
     assert docker.from_env().ping()
     with TempDir() as tmp:
         args = Arguments(channel, img, tmp, None, False, "")

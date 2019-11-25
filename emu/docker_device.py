@@ -66,19 +66,9 @@ class DockerDevice(object):
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
-        adb_loc = None
-        if "linux" in sys.platform:
-            adb_loc = os.path.join(os.environ.get("ANDROID_SDK_ROOT", ""), "platform-tools", "adb")
-            if not (os.path.exists(adb_loc) and os.access(adb_loc, os.X_OK)):
-                adb_loc = find_executable("adb")
-
-        if adb_loc is None:
-            logging.info("No local adb, retrieving platform-tools")
-            tools = PlatformTools()
-            tools.extract_adb(dest)
-        else:
-            logging.info("Copying %s to %s", adb_loc, dest)
-            shutil.copy2(adb_loc, dest)
+        logging.info("Retrieving platform-tools")
+        tools = PlatformTools()
+        tools.extract_adb(dest)
 
     def _read_adb_key(self):
         adb_path = os.path.expanduser("~/.android/adbkey")
