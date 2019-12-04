@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright 2019 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ help() {
        optional arguments:
        -h        show this help message and exit.
        -a        expose adb. Requires ~/.android/adbkey.pub to be available at container launch
+                 this will create public/private keys if non exist in ~/.android.
        -s        start the container after creation.
        -p        list of username password pairs.  Defaults to: [${PASSWDS}]
 EOF
@@ -36,11 +37,15 @@ panic() {
 
 generate_pub_adb() {
   # Generate the adb public key, if it does not exist
-  if [[ ! -f ~/.android/adbkey.pub ]]; then
+  if [ ! -f ~/.android/adbkey.pub ] || [ ! -f ~/.android/adbkey ]; then
     local ADB=adb
-    if [ !   $(command -v $ADB >/dev/null 2>&1) ]; then
+    if [ !  $(command -v $ADB >/dev/null 2>&1) ]; then
        ADB=$ANDROID_SDK_ROOT/platform-tools/adb
-       command -v $ADB >/dev/null 2>&1 || panic "No public adb key, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
+       command -v $ADB >/dev/null 2>&1 || panic "No adb keys, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
+    fi
+    if [ ! -f ~/.android/adbkey ]; then
+      echo "Creating a new private key with $ADB"
+      $ADB keygen ~/.android/adbkey
     fi
     echo "Creating public key from private key with $ADB"
     $ADB pubkey  ~/.android/adbkey > ~/.android/adbkey.pub
