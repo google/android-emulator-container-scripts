@@ -50,6 +50,13 @@ else
     echo "No adb key provided.. You might not be able to connect to the emulator."
 fi
 
+# Override config settings that the user forcefully wants to override.
+if [ ! -z "${AVD_CONFIG}" ]; then
+  echo "Adding ${AVD_CONFIG} to config.ini"
+  echo "${AVD_CONFIG}" >> "/android-home/Pixel2.avd/config.ini"
+fi
+
+
 # We need pulse audio for the webrtc video bridge, let's configure it.
 mkdir -p /root/.config/pulse
 export PULSE_SERVER=unix:/tmp/pulse-socket
