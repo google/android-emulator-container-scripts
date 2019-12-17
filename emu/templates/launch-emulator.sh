@@ -27,6 +27,11 @@ img=$ANDROID_SDK_ROOT/system-images/android
 rm -rf /tmp/*
 rm -rf /android-home/Pixel2.avd/*.lock
 
+# We do not want to keep adb secrets around, if the emulator
+# ever created the secrets itself we will never be able to connect.
+rm /root/.android/adbkey
+rm /root/.android/adbkey.pub
+
 # Check for core-dumps, that might be left over
 if ls core* 1> /dev/null 2>&1; then
     echo "** WARNING ** WARNING ** WARNING **"
@@ -37,7 +42,7 @@ fi
 mkdir -p /root/.android
 
 if [ -f "/run/secrets/adbkey.pub" ]; then
-    echo "Copying key from secret partition"
+    echo "Copying public key from secret partition"
     cp /run/secrets/adbkey.pub /root/.android
     chmod 600 /root/.android/adbkey.pub
 elif [ ! -z "${ADBKEY}" ]; then
