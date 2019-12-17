@@ -18,9 +18,7 @@ RUN apk add --update unzip
 COPY {{emu_zip}} /tmp/
 RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
 
-
-FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04 AS emulator
-ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display
+{{from_base_img}}
 
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u

@@ -177,7 +177,10 @@ of hardware acceleration you might have to install the NVIDIA docker extensions
 from [here](https://github.com/NVIDIA/nvidia-docker) if you are running
 an older version of docker (<19.03). You must make sure you have
 a minimal X installation if you are using a cloud instance. For example
-[Xvfb](https://en.wikipedia.org/wiki/Xvfb) can be used.
+[Xvfb](https://en.wikipedia.org/wiki/Xvfb) can be used. You must build the
+containers by passing in the --gpu flag:
+
+    emu-docker create canary Q --gpu
 
 You can now launch the emulator with the `run-with-gpu.sh` script:
 

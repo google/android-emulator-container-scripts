@@ -49,7 +49,7 @@ def create_docker_image(args):
     if not rel.is_emulator():
         raise Exception("{} is not a zip file with an emulator".format(imgzip))
 
-    device = DockerDevice(emuzip, imgzip, args.dest, args.tag)
+    device = DockerDevice(emuzip, imgzip, args.dest, args.gpu, args.tag)
     device.create_docker_file(args.extra)
     img = device.create_container()
     if img and args.start:
@@ -65,7 +65,7 @@ def create_docker_image_interactive(args):
 
     img_zip = img.download()
     emu_zip = emulator.download("linux")
-    device = DockerDevice(emu_zip, img_zip, args.dest)
+    device = DockerDevice(emu_zip, img_zip, args.dest, args.gpu)
     device.create_docker_file(args.extra)
     img = device.create_container()
     if img and args.start:
@@ -121,6 +121,7 @@ def main():
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
     create_parser.add_argument("--tag", default="", help="Docker image name")
+    create_parser.add_argument("--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration")
     create_parser.add_argument(
         "--start",
         action="store_true",
@@ -142,6 +143,7 @@ def main():
     create_inter.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
+    create_inter.add_argument("--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration")
     create_inter.add_argument(
         "--start",
         action="store_true",
