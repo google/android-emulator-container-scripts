@@ -40,7 +40,6 @@ following requirements:
 Keep in mind that you will see reduced performance if you are making use of
 nested virtualization.
 
-
 # Install in a virtual environment
 
 You can install the python package as follows:
@@ -52,6 +51,9 @@ available. You can get detailed information about the usage by launching it as
 follows:
 
     emu-docker -h
+
+You will need to accept the android licenses when you are creating images. You will have
+to accept the license agreements before you can create docker containers.
 
 ## Quick start, interactively creating and running a docker image
 

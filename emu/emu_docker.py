@@ -15,6 +15,7 @@
 # Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image.
 
 import argparse
+import click
 import logging
 import os
 import sys
@@ -27,6 +28,19 @@ from emu.docker_device import DockerDevice
 def list_images(args):
     """Lists all the publicly available system and emlator images."""
     emu_downloads_menu.list_all_downloads(args.arm)
+
+
+def accept_licenses(args):
+    licenses = set([x.license for x in emu_downloads_menu.get_emus_info()] + [x.license for x in emu_downloads_menu.get_images_info()])
+    licenses = [x for x in licenses if not x.is_accepted()]
+    if not licenses:
+        print("You have already accepted all licenses.")
+        return
+
+    print("\n\n".join([str(l) for l in licenses]))
+    if args.accept or click.confirm("Do you accept the licenses?"):
+        for l in licenses:
+            l.force_accept()
 
 
 def create_docker_image(args):
@@ -94,6 +108,12 @@ def main():
     )
     list_parser.set_defaults(func=list_images)
 
+    license_parser = subparsers.add_parser(
+        "licenses", help="Lists all licenses and gives you a chance to accept or reject them."
+    )
+    license_parser.add_argument("--accept", action="store_true", help="Accept all licensens after displaying them.")
+    license_parser.set_defaults(func=accept_licenses)
+
     create_parser = subparsers.add_parser(
         "create",
         help="Given an emulator and system image zip file, "
@@ -121,7 +141,9 @@ def main():
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
     create_parser.add_argument("--tag", default="", help="Docker image name")
-    create_parser.add_argument("--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration")
+    create_parser.add_argument(
+        "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
+    )
     create_parser.add_argument(
         "--start",
         action="store_true",
@@ -143,7 +165,9 @@ def main():
     create_inter.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
-    create_inter.add_argument("--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration")
+    create_inter.add_argument(
+        "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
+    )
     create_inter.add_argument(
         "--start",
         action="store_true",
