@@ -44,8 +44,13 @@ class DockerDevice(object):
     """
 
     TAG_REGEX = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._-]*:?[a-zA-Z0-9._-]*")
+    GPU_BASEIMG = (
+        "FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04 AS emulator\n"
+        + "ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display"
+    )
+    DEFAULT_BASE_IMG = "FROM debian:stretch-slim AS emulator"
 
-    def __init__(self, emulator, sysimg, dest_dir, tag=""):
+    def __init__(self, emulator, sysimg, dest_dir, gpu=False, tag=""):
 
         self.sysimg = AndroidReleaseZip(sysimg)
         self.emulator = AndroidReleaseZip(emulator)
@@ -53,7 +58,11 @@ class DockerDevice(object):
         self.env = Environment(loader=PackageLoader("emu", "templates"))
         if not tag:
             tag = "{}-{}-{}-{}-{}".format(
-                self.sysimg.tag(), self.sysimg.api(), self.sysimg.codename(), self.sysimg.abi(), self.emulator.revision()
+                self.sysimg.tag(),
+                self.sysimg.api(),
+                self.sysimg.codename(),
+                self.sysimg.abi(),
+                self.emulator.revision(),
             )
         self.tag = tag.replace(" ", "_")
         self.tag = "aemu:{}".format(tag)
@@ -63,6 +72,9 @@ class DockerDevice(object):
         # The following are only set after creating/launching.
         self.container = None
         self.identity = None
+        self.base_img = DockerDevice.DEFAULT_BASE_IMG
+        if gpu:
+            self.base_img = DockerDevice.GPU_BASEIMG
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
@@ -194,5 +206,6 @@ class DockerDevice(object):
                 "emu_build_id": self.emulator.revision(),
                 "sysimg_zip": os.path.basename(self.sysimg.fname),
                 "date": date,
+                "from_base_img": self.base_img,
             },
         )
