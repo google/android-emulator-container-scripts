@@ -32,7 +32,7 @@ from utils import TempDir, find_adb, find_free_port
 
 
 
-Arguments = collections.namedtuple("Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept")
+Arguments = collections.namedtuple("Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept, metrics, no_metrics")
 
 @pytest.mark.slow
 @pytest.mark.e2e
@@ -41,7 +41,7 @@ def test_build_container(channel, img, gpu):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True)
+        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False)
         emu_docker.accept_licenses(args)
         device = emu_docker.create_docker_image(args)
         assert device.identity is not None
@@ -55,7 +55,7 @@ def test_build_container(channel, img, gpu):
 def test_run_container(channel, img, gpu):
     assert docker.from_env().ping()
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True)
+        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False)
         emu_docker.accept_licenses(args)
         device = emu_docker.create_docker_image(args)
         port = find_free_port()

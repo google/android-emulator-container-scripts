@@ -37,7 +37,7 @@ class DockerConfig(object):
         return self._cfg_true("metrics")
 
     def set_collect_metrics(self, to_collect):
-        self._set_cfg("metrics", to_collect)
+        self._set_cfg("metrics", str(to_collect))
 
     def decided_on_metrics(self):
         return self._has_cfg("metrics")
@@ -53,8 +53,8 @@ class DockerConfig(object):
             return "True" in self.cfg["DEFAULT"][label]
         return False
 
-    def _set_cfg(self, label):
-        self.cfg["DEFAULT"][label] = "True"
+    def _set_cfg(self, label, state="True"):
+        self.cfg["DEFAULT"][label] = state
         self._save_config()
 
     def _has_cfg(self, label):

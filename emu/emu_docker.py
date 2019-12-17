@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image.
-
 import argparse
-import click
 import logging
 import os
 import sys
 
+import click
+
+# Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image.
+import colorlog
 import emu
 import emu.emu_downloads_menu as emu_downloads_menu
+from emu.docker_config import DockerConfig
 from emu.docker_device import DockerDevice
 
 
@@ -31,7 +33,10 @@ def list_images(args):
 
 
 def accept_licenses(args):
-    licenses = set([x.license for x in emu_downloads_menu.get_emus_info()] + [x.license for x in emu_downloads_menu.get_images_info()])
+    licenses = set(
+        [x.license for x in emu_downloads_menu.get_emus_info()]
+        + [x.license for x in emu_downloads_menu.get_images_info()]
+    )
     licenses = [x for x in licenses if not x.is_accepted()]
     if not licenses:
         print("You have already accepted all licenses.")
@@ -48,6 +53,21 @@ def create_docker_image(args):
 
     Returns the DockerDevice object.
     """
+
+    cfg = DockerConfig()
+    if args.metrics:
+        cfg.set_collect_metrics(True)
+    if args.no_metrics:
+        cfg.set_collect_metrics(False)
+
+    if not cfg.decided_on_metrics():
+        logging.warning(
+            "Please opt in or out of metrics collection.\n"
+            "You will receive this warning until an option is selected.\n"
+            "To opt in or out pass the --metrics or --no-metrics flag\n"
+            "Note, that metrics will only be collected if you opt in."
+        )
+
     imgzip = args.imgzip
     if not os.path.exists(imgzip):
         imgzip = emu_downloads_menu.find_image(imgzip).download()
@@ -64,7 +84,7 @@ def create_docker_image(args):
         raise Exception("{} is not a zip file with an emulator".format(imgzip))
 
     device = DockerDevice(emuzip, imgzip, args.dest, args.gpu, args.tag)
-    device.create_docker_file(args.extra)
+    device.create_docker_file(args.extra, cfg.collect_metrics())
     img = device.create_container()
     if img and args.start:
         device.launch(img)
@@ -76,11 +96,21 @@ def create_docker_image_interactive(args):
     """Interactively create a docker image by selecting the desired combination from a menu."""
     img = emu_downloads_menu.select_image(args.arm) or sys.exit(1)
     emulator = emu_downloads_menu.select_emulator() or sys.exit(1)
+    cfg = DockerConfig()
+    metrics = False
+
+    if not cfg.decided_on_metrics():
+        cfg.set_collect_metrics(
+            click.confirm(
+                "Would you like to help make the emulator better by sending usage statistics to Google upon (graceful) emulator exit?"
+            )
+        )
+    metrics = cfg.collect_metrics()
 
     img_zip = img.download()
     emu_zip = emulator.download("linux")
     device = DockerDevice(emu_zip, img_zip, args.dest, args.gpu)
-    device.create_docker_file(args.extra)
+    device.create_docker_file(args.extra, metrics)
     img = device.create_container()
     if img and args.start:
         device.launch(img)
@@ -144,6 +174,13 @@ def main():
     create_parser.add_argument(
         "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
     )
+
+    create_parser.add_argument(
+        "--metrics",
+        action="store_true",
+        help="When enabled, the emulator will send usage metrics to Google when the container exists gracefully.",
+    )
+    create_parser.add_argument("--no-metrics", action="store_true", help="Disables the collection of usage metrics.")
     create_parser.add_argument(
         "--start",
         action="store_true",
@@ -183,8 +220,15 @@ def main():
     create_inter.set_defaults(func=create_docker_image_interactive)
 
     args = parser.parse_args()
+
+    # Configure logger.
     lvl = logging.DEBUG if args.verbose else logging.WARNING
-    logging.basicConfig(level=lvl)
+    handler = colorlog.StreamHandler()
+    handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(levelname)s:%(message)s"))
+    logging.root = colorlog.getLogger("root")
+    logging.root.addHandler(handler)
+    logging.root.setLevel(lvl)
+
     if hasattr(args, "func"):
         args.func(args)
     else:

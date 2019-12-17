@@ -15,19 +15,20 @@ import datetime
 import errno
 import json
 import logging
-import re
 import os
+import re
 import shutil
 import socket
 import sys
 from distutils.spawn import find_executable
 
-import docker
-from jinja2 import Environment, PackageLoader
-from tqdm import tqdm
+from packaging import version
 
+import docker
 import emu
 from emu.emu_downloads_menu import AndroidReleaseZip, PlatformTools
+from jinja2 import Environment, PackageLoader
+from tqdm import tqdm
 
 
 def mkdir_p(path):
@@ -161,7 +162,7 @@ class DockerDevice(object):
             print("Unable to start the container, try running it as:")
             print("./run.sh {}", image_sha)
 
-    def create_docker_file(self, extra=""):
+    def create_docker_file(self, extra="", metrics=False):
         logging.info("Emulator zip: %s", self.emulator)
         logging.info("Sysimg zip: %s", self.sysimg)
         logging.info("Docker src dir: %s", self.dest)
@@ -190,6 +191,11 @@ class DockerDevice(object):
                 "tag": self.sysimg.tag(),
             },
         )
+
+        # Only version 29.3.1 >= can collect metrics.
+        if metrics and version.parse(self.emulator.revision()) >= version.parse("29.3.1"):
+            extra += " -metrics-collection"
+
         extra += " {}".format(self.sysimg.logger_flags())
         self._write_template("launch-emulator.sh", {"extra": extra, "version": emu.__version__})
         self._write_template("default.pa", {})
