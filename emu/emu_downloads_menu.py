@@ -20,10 +20,11 @@ import os
 import re
 import xml.etree.ElementTree as ET
 import zipfile
-
+import click
 
 import urlfetch
 from consolemenu import SelectionMenu
+from emu.docker_config import DockerConfig
 from tqdm import tqdm
 
 SYSIMG_REPOS = [
@@ -131,8 +132,8 @@ class AndroidReleaseZip(object):
     def tag(self):
         """The tag associated with this release."""
         tag = self.props.get("SystemImage.TagId", "")
-        if tag == 'default':
-            tag = 'android'
+        if tag == "default":
+            tag = "android"
         return tag
 
     def desc(self):
@@ -151,7 +152,7 @@ class AndroidReleaseZip(object):
 
     def logger_flags(self):
         if "arm" in self.cpu():
-            return "-logcat V:* -show-kernel"
+            return "-logcat *:V -show-kernel"
         else:
             return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
 
@@ -174,10 +175,56 @@ class PlatformTools(object):
         return _download(PLATFORM_TOOLS_URL, dest)
 
 
-class SysImgInfo(object):
+class License(object):
+    """Represents a license."""
+
+    def __init__(self, license):
+        self.name = license.attrib["id"]
+        self.text = license.text
+        self.cfg = DockerConfig()
+
+    def accept(self):
+        agree = "\n\n".join([self.text, "Do you accept the license?"])
+        if not self.is_accepted():
+            if not click.confirm(agree):
+                raise Exception("License not accepted.")
+            self.cfg.accept_license(self.name)
+
+        return True
+
+    def is_accepted(self):
+        return self.cfg.accepted_license(self.name)
+
+    def force_accept(self):
+        self.cfg.accept_license(self.name)
+
+    def __str__(self):
+        return self.text
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.name == other.name
+
+
+class LicensedObject(object):
+    """A dowloadable object for which a license needs to be accepted."""
+
+    def __init__(self, pkg, licenses):
+        self.license = licenses[pkg.find("uses-license").attrib["ref"]]
+
+    def download(self, url, dest):
+        """"Downloads the released pacakage forto the dest."""
+        if self.license.accept():
+            return _download(url, dest)
+
+
+class SysImgInfo(LicensedObject):
     """Provides information about a released system image."""
 
-    def __init__(self, pkg):
+    def __init__(self, pkg, licenses):
+        super(SysImgInfo, self).__init__(pkg, licenses)
         details = pkg.find("type-details")
         self.api = details.find("api-level").text
 
@@ -203,16 +250,17 @@ class SysImgInfo(object):
             os.getcwd(), "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
         )
         print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
-        return _download(self.url, dest)
+        return super(SysImgInfo, self).download(self.url, dest)
 
     def __str__(self):
         return "{} {} {}".format(self.letter, self.tag, self.abi)
 
 
-class EmuInfo(object):
+class EmuInfo(LicensedObject):
     """Provides information about a released emulator."""
 
-    def __init__(self, pkg):
+    def __init__(self, pkg, licenses):
+        super(EmuInfo, self).__init__(pkg, licenses)
         rev = pkg.find("revision")
 
         rev_major = rev.find("major").text
@@ -236,7 +284,7 @@ class EmuInfo(object):
         """"Downloads the released pacakage for the given os to the dest."""
         dest = dest or os.path.join(os.getcwd(), "emulator-{}.zip".format(self.version))
         print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
-        return _download(self.urls[hostos], dest)
+        return super(EmuInfo, self).download(self.urls[hostos], dest)
 
     def __str__(self):
         return "{} {}".format(self.channel, self.version)
@@ -251,9 +299,13 @@ def get_images_info(arm=False):
         response = urlfetch.get(url)
         if response.status == 200:
             xml.append(response.content)
+
+    licenses = [License(p) for x in xml for p in ET.fromstring(x).findall("license")]
+    licenses = dict([(x.name, x) for x in [y for y in licenses]])
+
     xml = [ET.fromstring(x).findall("remotePackage") for x in xml]
     # Flatten the list of lists into a system image objects.
-    infos = [SysImgInfo(item) for sublist in xml for item in sublist]
+    infos = [SysImgInfo(item, licenses) for sublist in xml for item in sublist]
     # Filter only for intel images that we know that work
     x86_64_imgs = [info for info in infos if info.abi == "x86_64" and info.letter >= MIN_REL_X64]
     x86_imgs = [info for info in infos if info.abi == "x86" and info.letter >= MIN_REL_I386]
@@ -299,9 +351,12 @@ def get_emus_info():
         response = urlfetch.get(url)
         if response.status == 200:
             xml.append(response.content)
+
+    licenses = [License(p) for x in xml for p in ET.fromstring(x).findall("license")]
+    licenses = dict([(x.name, x) for x in [y for y in licenses]])
     xml = [[p for p in ET.fromstring(x).findall("remotePackage") if "emulator" == p.attrib["path"]] for x in xml]
     # Flatten the list of lists into a system image objects.
-    infos = [EmuInfo(item) for sublist in xml for item in sublist]
+    infos = [EmuInfo(item, licenses) for sublist in xml for item in sublist]
     return infos
 
 
