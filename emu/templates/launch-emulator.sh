@@ -16,11 +16,11 @@
 
 
 # Let's log the emulator,script and image  version.
-emulator/emulator -version | head -n 1 | sed 's/^/version: /g'
+emulator/emulator -version | head -n 1 | sed -u 's/^/version: /g'
 echo 'version: launch_script: {{version}}'
 img=$ANDROID_SDK_ROOT/system-images/android
-[ -f "$img/x86_64/source.properties" ] && cat "$img/x86_64/source.properties"| sed 's/^/version: /g'
-[ -f "$img/x86/source.properties" ] && cat "$img/x86/source.properties"| sed 's/^/version: /g'
+[ -f "$img/x86_64/source.properties" ] && cat "$img/x86_64/source.properties"| sed -u 's/^/version: /g'
+[ -f "$img/x86/source.properties" ] && cat "$img/x86/source.properties"| sed -u 's/^/version: /g'
 
 
 # Delete any leftovers from hard exits.
@@ -61,7 +61,7 @@ fi
 mkdir -p /root/.config/pulse
 export PULSE_SERVER=unix:/tmp/pulse-socket
 pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1 --exit-idle-time=-1
-tail -f /tmp/pulseverbose.log -n +1 | sed 's/^/pulse: /g' &
+tail -f /tmp/pulseverbose.log -n +1 | sed -u 's/^/pulse: /g' &
 pactl list || exit 1
 
 
@@ -76,9 +76,9 @@ mkdir /tmp/android-unknown
 mkfifo /tmp/android-unknown/kernel.log
 mkfifo /tmp/android-unknown/logcat.log
 echo "emulator: It is safe to ignore the warnings from tail. The files will come into existence soon."
-tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed 's/^/video: /g' &
-cat /tmp/android-unknown/kernel.log | sed 's/^/kernel: /g' &
-cat /tmp/android-unknown/logcat.log | sed 's/^/logcat: /g' &
+tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed -u 's/^/video: /g' &
+cat /tmp/android-unknown/kernel.log | sed -u 's/^/kernel: /g' &
+cat /tmp/android-unknown/logcat.log | sed -u 's/^/logcat: /g' &
 
 # Kick off the emulator
 exec emulator/emulator @Pixel2 -no-audio -verbose -ports 6554,6555 \
