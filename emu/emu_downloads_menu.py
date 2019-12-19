@@ -20,12 +20,13 @@ import os
 import re
 import xml.etree.ElementTree as ET
 import zipfile
-import click
 
+import click
 import urlfetch
 from consolemenu import SelectionMenu
-from emu.docker_config import DockerConfig
 from tqdm import tqdm
+
+from emu.docker_config import DockerConfig
 
 SYSIMG_REPOS = [
     "https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml",
@@ -90,6 +91,8 @@ class AndroidReleaseZip(object):
     """
 
     ABI_CPU_MAP = {"armeabi-v7a": "arm", "arm64-v8a": "arm64", "x86_64": "x86_64", "x86": "x86"}
+    SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
+    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore"}
 
     def __init__(self, fname):
         self.fname = fname
@@ -121,6 +124,9 @@ class AndroidReleaseZip(object):
         """The abi if any."""
         return self.props.get("SystemImage.Abi", "")
 
+    def short_abi(self):
+        return self.SHORT_MAP[self.abi()]
+
     def cpu(self):
         """Returns the cpu architecture, derived from the abi."""
         return self.ABI_CPU_MAP[self.abi()]
@@ -136,6 +142,9 @@ class AndroidReleaseZip(object):
             tag = "android"
         return tag
 
+    def short_tag(self):
+        return self.SHORT_TAG[self.tag()]
+
     def desc(self):
         """Descripton of this release."""
         return self.props.get("Pkg.Desc")
@@ -143,6 +152,15 @@ class AndroidReleaseZip(object):
     def revision(self):
         """The revision of this release."""
         return self.props.get("Pkg.Revision")
+
+    def build_id(self):
+        """The build id, or revision of build id is not available."""
+        if "Pgk.BuildId" in self.props:
+            return self.props.get("Pkg.BuildId")
+        return self.revision()
+
+    def repo_friendly_name(self):
+        return "{}-{}-{}".format(self.codename().lower(), self.short_tag(), self.short_abi())
 
     def is_system_image(self):
         return "System Image" in self.desc()
@@ -328,18 +346,18 @@ def find_image(regexpr):
         raise Exception(
             "No system image found matching {}. Run the list command to list available images".format(regexpr)
         )
-    return matches[0]
+    return matches
 
 
 def find_emulator(channel):
     """Displayes an interactive menu to select a released emulator binary.
 
     Returns a ImuInfo object with the choice or None if the user aborts.    """
-    emu_infos = [x for x in get_emus_info() if "linux" in x.urls and x.channel == channel]
+    emu_infos = [x for x in get_emus_info() if "linux" in x.urls and (channel == "all" or x.channel == channel)]
     logging.info("Found %s matching images: %s", channel, [str(x) for x in emu_infos])
     if not emu_infos:
         raise Exception("No emulator found in channel {}".format(channel))
-    return emu_infos[0]
+    return emu_infos
 
 
 def get_emus_info():

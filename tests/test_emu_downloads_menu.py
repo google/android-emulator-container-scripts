@@ -118,7 +118,10 @@ class RetrieveImages(unittest.TestCase):
         self.assertGreater(len(menu.get_images_info()), 0)
 
     def test_finds_p(self):
-        self.assertRegexpMatches(str(menu.find_image("P")), "P")
+        images = menu.find_image("P")
+        self.assertGreater(len(images), 0)
+        for img in images:
+            self.assertRegexpMatches(str(img), "P")
 
 
 
