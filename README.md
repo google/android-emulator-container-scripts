@@ -168,7 +168,7 @@ It does the following:
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
 - Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
-  host ports 5556/6555 to container ports 5556/5555 respectively.
+  host ports 5556/5555 to container ports 5556/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
