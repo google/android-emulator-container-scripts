@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image."""
+
 import argparse
+import itertools
 import logging
 import os
 import sys
 
 import click
-
-# Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image.
 import colorlog
+
 import emu
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
@@ -68,28 +70,32 @@ def create_docker_image(args):
             "Note, that metrics will only be collected if you opt in."
         )
 
-    imgzip = args.imgzip
-    if not os.path.exists(imgzip):
-        imgzip = emu_downloads_menu.find_image(imgzip).download()
+    imgzip = [args.imgzip]
+    if not os.path.exists(imgzip[0]):
+        imgzip = [x.download() for x in emu_downloads_menu.find_image(imgzip[0])]
 
-    emuzip = args.emuzip
-    if emuzip in ["stable", "canary"]:
-        emuzip = emu_downloads_menu.find_emulator(emuzip).download()
+    emuzip = [args.emuzip]
+    if emuzip[0] in ["stable", "canary", "all"]:
+        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
 
-    rel = emu_downloads_menu.AndroidReleaseZip(imgzip)
-    if not rel.is_system_image():
-        raise Exception("{} is not a zip file with a system image".format(imgzip))
-    rel = emu_downloads_menu.AndroidReleaseZip(emuzip)
-    if not rel.is_emulator():
-        raise Exception("{} is not a zip file with an emulator".format(imgzip))
 
-    device = DockerDevice(emuzip, imgzip, args.dest, args.gpu, args.tag)
-    device.create_docker_file(args.extra, cfg.collect_metrics())
-    img = device.create_container()
-    if img and args.start:
-        device.launch(img)
+    for (img, emu) in itertools.product(imgzip, emuzip):
+        logging.info("Processing %s, %s", img, emu)
+        rel = emu_downloads_menu.AndroidReleaseZip(img)
+        if not rel.is_system_image():
+            raise Exception("{} is not a zip file with a system image".format(img))
+        rel = emu_downloads_menu.AndroidReleaseZip(emu)
+        if not rel.is_emulator():
+            raise Exception("{} is not a zip file with an emulator".format(emu))
 
-    return device
+        device = DockerDevice(emu, img, args.dest, args.gpu, args.repo, args.tag)
+        device.create_docker_file(args.extra, cfg.collect_metrics())
+        img = device.create_container()
+        if img and args.start:
+            device.launch(img)
+        if args.push:
+            device.push(img)
+        return device
 
 
 def create_docker_image_interactive(args):
@@ -153,12 +159,12 @@ def main():
     )
     create_parser.add_argument(
         "emuzip",
-        help="Zipfile containing the a publicly released emulator, or [canary|stable] to use the latest canary or stable release.",
+        help="Zipfile containing the a publicly released emulator, or [canary|stable|all] to use the latest canary or stable, or every release.",
     )
     create_parser.add_argument(
         "imgzip",
         help="Zipfile containing a public system image that should be launched, or a regexp matching the image to retrieve. "
-        "The first matching image will be selected when using a regex. "
+        "All the matching images will be selected when using a regex. "
         'Use the list command to show all available images. For example "P google_apis_playstore x86_64".',
     )
     create_parser.add_argument(
@@ -170,7 +176,13 @@ def main():
     create_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
-    create_parser.add_argument("--tag", default="", help="Docker image name")
+    create_parser.add_argument("--tag", default="", help="Docker tag, defaults to the emulator build id")
+    create_parser.add_argument("--repo", default="", help="Repo prefix, for example: us.gcr.io/emu-dev/")
+    create_parser.add_argument(
+        "--push",
+        action="store_true",
+        help="Push the created image to your repository, as marked by the --repo argument.",
+    )
     create_parser.add_argument(
         "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
     )
@@ -216,7 +228,6 @@ def main():
         action="store_true",
         help="Display arm images. Note that arm images are not hardware accelerated and are *extremely* slow.",
     )
-    create_inter.add_argument("--tag", default="", help="Docker image name")
     create_inter.set_defaults(func=create_docker_image_interactive)
 
     args = parser.parse_args()

@@ -37,6 +37,47 @@ def mkdir_p(path):
         os.makedirs(path)
 
 
+class ProgressTracker(object):
+    """Tracks progress using tqdm for a set of layers that are pushed."""
+
+    def __init__(self):
+        # This tracks the information for a given layer id.
+        self.progress = {}
+        self.idx = -1
+
+    def __del__(self):
+        for k in self.progress:
+            self.progress[k]["tqdm"].close()
+
+    def update(self, entry):
+        """Update the progress bars given a an entry.."""
+        if "id" not in entry:
+            return
+
+        identity = entry["id"]
+        if identity not in self.progress:
+            self.idx += 1
+            self.progress[identity] = {
+                "tqdm": tqdm(total=0, position=self.idx, unit="B", unit_scale=True),  # The progress bar
+                "total": 0,  # Total of bytes we are shipping
+                "status": "",  # Status message.
+                "current": 0,  # Current of total already send.
+            }
+        prog = self.progress[identity]
+
+        total = int(entry.get("progressDetail", {}).get("total", -1))
+        current = int(entry.get("progressDetail", {}).get("current", 0))
+        if prog["total"] != total and total != -1:
+            prog["total"] = total
+            prog["tqdm"].reset(total=total)
+        if prog["status"] != entry["status"]:
+            prog["tqdm"].set_description("{0} {1}".format(entry.get("status"), identity))
+        if current != 0:
+            diff = current - prog["current"]
+            prog["current"] = current
+            prog["tqdm"].update(diff)
+
+
 class DockerDevice(object):
     """A Docker Device is capable of creating and launching docker images.
 
@@ -51,22 +92,21 @@ class DockerDevice(object):
     )
     DEFAULT_BASE_IMG = "FROM debian:stretch-slim AS emulator"
 
-    def __init__(self, emulator, sysimg, dest_dir, gpu=False, tag=""):
+    def __init__(self, emulator, sysimg, dest_dir, gpu=False, repo="", tag=""):
 
         self.sysimg = AndroidReleaseZip(sysimg)
         self.emulator = AndroidReleaseZip(emulator)
         self.dest = dest_dir
         self.env = Environment(loader=PackageLoader("emu", "templates"))
+        if repo and repo[-1] != "/":
+            repo += "/"
+        repo += self.sysimg.repo_friendly_name()
+        if gpu:
+            repo += "-gpu"
         if not tag:
-            tag = "{}-{}-{}-{}-{}".format(
-                self.sysimg.tag(),
-                self.sysimg.api(),
-                self.sysimg.codename(),
-                self.sysimg.abi(),
-                self.emulator.revision(),
-            )
-        self.tag = tag.replace(" ", "_")
-        self.tag = "aemu:{}".format(tag)
+            tag = self.emulator.build_id()
+
+        self.tag = "{}:{}".format(repo, tag)
         if not self.TAG_REGEX.match(self.tag):
             raise Exception("The resulting tag: {} is not a valid docker tag.", self.tag)
 
@@ -76,6 +116,20 @@ class DockerDevice(object):
         self.base_img = DockerDevice.DEFAULT_BASE_IMG
         if gpu:
             self.base_img = DockerDevice.GPU_BASEIMG
+
+    def push(self, sha, latest=False):
+        repo, tag = self.tag.split(":")
+        print("Pushing docker image: {}.. be patient this can take a while!".format(self.tag))
+        tracker = ProgressTracker()
+        try:
+            client = docker.from_env()
+            result = client.images.push(repo, tag, stream=True, decode=True)
+            for entry in result:
+                tracker.update(entry)
+        except:
+            logging.exception("Failed to push image.", exc_info=True)
+            logging.warning("You can manually push the image as follows:")
+            logging.warning("docker push {}".format(self.tag))
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
@@ -131,8 +185,8 @@ class DockerDevice(object):
                     identity = entry["aux"]["ID"]
         except:
             logging.exception("Failed to create container.", exc_info=True)
-            print("You can manually create the container as follows:")
-            print("docker build {}".format(self.dest))
+            logging.warning("You can manually create the container as follows:")
+            logging.warning("docker build {}".format(self.dest))
 
         self.identity = identity
         return identity
@@ -209,7 +263,7 @@ class DockerDevice(object):
                 "cpu": self.sysimg.cpu(),
                 "gpu": self.sysimg.gpu(),
                 "emu_zip": os.path.basename(self.emulator.fname),
-                "emu_build_id": self.emulator.revision(),
+                "emu_build_id": self.emulator.build_id(),
                 "sysimg_zip": os.path.basename(self.sysimg.fname),
                 "date": date,
                 "from_base_img": self.base_img,

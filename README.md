@@ -198,6 +198,51 @@ Hardware acceleration will significantly improve performance of applications tha
 rely on graphics. Note that even though we need a X11 server for gpu acceleratation there
 will be no ui displayed.
 
+## Pushing images to a repository
+
+You can push the created images to a repository by providing the --push and --repo and
+--tag parameters when creating an image. The --tag parameter is optional and is used
+to indicate the version of the created image. This will default to the build-id of the
+emulator, as system images are rarely updated.
+
+We adopted the following naming scheme for images:
+
+{desert}-{sort}-{abi}
+
+Where:
+
+- desert is the desert letter
+- sort is one of: *aosp*, *google*, *playstore*
+    - *aosp*: A basic android open source image
+    - *google*: A system image that includes access to Google Play services.
+    - *playstore*: A system image that includes the Google Play Store app and access to Google Play services,
+                   including a Google Play tab in the Extended controls dialog that provides a
+                   convenient button for updating Google Play services on the device.
+- abi indicates the underlying CPU architecture, which is one of: *x86*, *x64*, *a32*, *a64*.
+  Note that arm images are not hardware accelerated and might not be fast enough.
+
+For example: *q-playstore-x86:29.3.2* indicates a playstore enabled system image with Q running on 32-bit x86.
+
+*Note: We are in the process of migrating from version number to emulator build numbers,
+ which are more accurate*
+
+An example invocation for publishing all Q images to google cloud repo could be:
+
+```sh
+    emu-docker -v create --push --repo us.gcr.io/emulator-project/ stable "Q"
+```
+
+Images that have been pushed to a repository can be launched directly from the repository.
+For example:
+
+
+```sh
+    docker run --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp \
+    us.gcr.io/emulator-project/q-playstore-x86:29.3.2
+```
+
+**Note: The projects above are samples, we are not yet hosting any of these images.**
+
 ## Communicating with the emulator in the container
 
 ## adb

@@ -32,16 +32,16 @@ from utils import TempDir, find_adb, find_free_port
 
 
 
-Arguments = collections.namedtuple("Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept, metrics, no_metrics")
+Arguments = collections.namedtuple("Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept, metrics, no_metrics, repo, push")
 
 @pytest.mark.slow
 @pytest.mark.e2e
-@pytest.mark.parametrize('channel, img, gpu', [('canary', 'Q', True), ('stable', 'P', False)])
+@pytest.mark.parametrize('channel, img, gpu', [('all', 'Q google_apis x86_64', True), ('stable', 'P android x86_64', False)])
 def test_build_container(channel, img, gpu):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False)
+        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False, "aemu", False)
         emu_docker.accept_licenses(args)
         device = emu_docker.create_docker_image(args)
         assert device.identity is not None
@@ -51,11 +51,11 @@ def test_build_container(channel, img, gpu):
 @pytest.mark.slow
 @pytest.mark.e2e
 @pytest.mark.linux
-@pytest.mark.parametrize('channel, img, gpu', [('canary', 'Q', True), ('stable', 'P', False)])
+@pytest.mark.parametrize('channel, img, gpu', [('all', 'Q google_apis x86_64', True), ('stable', 'P android x86_64', False)])
 def test_run_container(channel, img, gpu):
     assert docker.from_env().ping()
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False)
+        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False, "aemu", False)
         emu_docker.accept_licenses(args)
         device = emu_docker.create_docker_image(args)
         port = find_free_port()
