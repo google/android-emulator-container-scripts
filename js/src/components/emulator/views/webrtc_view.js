@@ -16,10 +16,11 @@
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
+import * as Proto from "../../../android_emulation_control/emulator_controller_pb.js";
 
 /**
  * A view on the emulator that is using WebRTC. It will use the Jsep protocol over gRPC to
- * establish the video streams.
+ * establish the video streams. Mouse & key events will be send of data channels.
  */
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
@@ -31,6 +32,12 @@ export default class EmulatorWebrtcView extends Component {
   static defaultProps = {
     width: 1080,
     height: 1920
+  };
+
+  state = {
+    mouseDown: false, // Current state of mouse
+    xpos: 0,
+    ypos: 0
   };
 
   componentDidMount = () => {
@@ -75,10 +82,62 @@ export default class EmulatorWebrtcView extends Component {
     e.preventDefault();
   };
 
+
+  setCoordinates = (down, xp, yp) => {
+    // It is totally possible that we send clicks that are offscreen..
+    const { width, height } = this.props;
+    // TODO(jansene): This needs to come from the emulator.
+    let scale = height / 1920;
+    const x = Math.round((xp * width) / (width * scale));
+    const y = Math.round((yp * height) / (height * scale));
+
+    // Make the grpc call.
+    var request = new Proto.MouseEvent();
+    request.setX(x);
+    request.setY(y);
+    request.setButtons(down ? 1 : 0);
+    this.jsep.send("mouse", request)
+  };
+
+  handleKeyDown = e => {
+    var request = new Proto.KeyboardEvent();
+    request.setKey(e.key);
+    request.setEventtype(2);
+    this.jsep.send("keyboard", request)
+  };
+
+  // Properly handle the mouse events.
+  handleMouseDown = e => {
+    this.setState({ mouseDown: true });
+    const { offsetX, offsetY } = e.nativeEvent;
+    this.setCoordinates(true, offsetX, offsetY);
+  };
+
+  handleMouseUp = e => {
+    this.setState({ mouseDown: false });
+    const { offsetX, offsetY } = e.nativeEvent;
+    this.setCoordinates(false, offsetX, offsetY);
+  };
+
+  handleMouseMove = e => {
+    const { mouseDown } = this.state;
+    if (!mouseDown) return;
+    const { offsetX, offsetY } = e.nativeEvent;
+    this.setCoordinates(true, offsetX, offsetY);
+  };
+
   render() {
     const { width, height } = this.props;
     return (
-      <div>
+      <div
+        /* handle interaction */
+        onMouseDown={this.handleMouseDown}
+        onMouseMove={this.handleMouseMove}
+        onMouseUp={this.handleMouseUp}
+        onMouseOut={this.handleMouseUp}
+        onKeyDown={this.handleKeyDown}
+        tabIndex="0"
+      >
         <video
           ref={node => (this.video = node)}
           width={width}

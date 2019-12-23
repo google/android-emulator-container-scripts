@@ -20,7 +20,7 @@ import "../../../android_emulation_control/emulator_controller_pb";
  * This drives the jsep protocol with the emulator. The jsep protocol is described here:
  * https://rtcweb-wg.github.io/jsep/. Note that we use a message pump to the grpc endpoint
  * to receive jsep messages that must remain active for the duration of the connection.
- * 
+ *
  *  This class can fire two events:
  *
  * - `connected` when the stream has become available.
@@ -49,6 +49,7 @@ export default class JsepProtocol {
     this.events = new EventEmitter();
     /* eslint-disable */
     this.guid = new proto.android.emulation.control.RtcId();
+    this.event_forwarders = {}
 
     if (onConnect) this.events.on("connected", onConnect);
     if (onDisconnect) this.events.on("disconnected", onDisconnect);
@@ -125,10 +126,37 @@ export default class JsepProtocol {
     }
   };
 
+  _handleDataChannelStatusChange = e => {
+    console.log("Data status change " + e);
+  };
+
+  send(label, msg) {
+    let bytes = msg.serializeBinary();
+    let forwarder = this.event_forwarders[label]
+
+    // Only send if the connection is ready and opened.
+    if (forwarder && forwarder.readyState == "open") {
+      console.log("Sending events")
+      this.event_forwarders[label].send(bytes);
+    }
+  }
+
   _handlePeerIceCandidate = e => {
     if (e.candidate === null) return;
     this._sendJsep({ candidate: e.candidate });
   };
+
+  _handleDataChannel = e => {
+    let channel = e.channel
+    console.log("Channel: " + channel.label)
+    // channel.onclose = this._handleDataChannelStatusChange;
+    // channel.onopen = this._handleDataChannelStatusChange;
+    // channel.onerror = this._handleDataChannelStatusChange;
+    channel.onmessage = e => { console.log("msg: " + e)};
+    channel.onopen = e => { console.log("open:" + e)};
+    channel.onerror = e => { console.log("err:" + e)};
+    this.event_forwarders[channel.label] = channel;
+  }
 
   _handleStart = signal => {
     this.peerConnection = new RTCPeerConnection(signal.start);
@@ -147,7 +175,9 @@ export default class JsepProtocol {
       this._handlePeerConnectionStateChange,
       false
     );
+    this.peerConnection.ondatachannel = e => { console.log("Data " + e); this._handleDataChannel(e); }
   };
+
 
   _handleSDP = async signal => {
     this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
