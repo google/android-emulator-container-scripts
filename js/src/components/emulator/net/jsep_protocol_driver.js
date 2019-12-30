@@ -55,6 +55,7 @@ export default class JsepProtocol {
     if (onDisconnect) this.events.on("disconnected", onDisconnect);
   }
 
+
   on = (name, fn) => {
     this.events.on(name, fn);
   };
@@ -134,10 +135,22 @@ export default class JsepProtocol {
     let bytes = msg.serializeBinary();
     let forwarder = this.event_forwarders[label]
 
-    // Only send if the connection is ready and opened.
+    // Send via data channel/gRPC bridge.
     if (forwarder && forwarder.readyState == "open") {
-      console.log("Sending events")
       this.event_forwarders[label].send(bytes);
+    } else {
+      // Fallback to using the gRPC protocol
+      switch (label) {
+        case "mouse":
+          this.emulator.sendMouse(msg);
+          break;
+        case "keyboard":
+          this.emulator.sendKey(msg);
+          break;
+        case "touch":
+          this.emulator.sendTouch(msg);
+          break;
+      }
     }
   }
 
@@ -148,13 +161,6 @@ export default class JsepProtocol {
 
   _handleDataChannel = e => {
     let channel = e.channel
-    console.log("Channel: " + channel.label)
-    // channel.onclose = this._handleDataChannelStatusChange;
-    // channel.onopen = this._handleDataChannelStatusChange;
-    // channel.onerror = this._handleDataChannelStatusChange;
-    channel.onmessage = e => { console.log("msg: " + e)};
-    channel.onopen = e => { console.log("open:" + e)};
-    channel.onerror = e => { console.log("err:" + e)};
     this.event_forwarders[channel.label] = channel;
   }
 
@@ -175,7 +181,7 @@ export default class JsepProtocol {
       this._handlePeerConnectionStateChange,
       false
     );
-    this.peerConnection.ondatachannel = e => { console.log("Data " + e); this._handleDataChannel(e); }
+    this.peerConnection.ondatachannel = e => { this._handleDataChannel(e); }
   };
 
 
