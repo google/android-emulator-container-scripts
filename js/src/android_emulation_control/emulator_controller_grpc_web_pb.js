@@ -699,15 +699,15 @@ proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.sendRo
  * @const
  * @type {!grpc.web.AbstractClientBase.MethodInfo<
  *   !proto.google.protobuf.Empty,
- *   !proto.android.emulation.control.VmConfiguration>}
+ *   !proto.android.emulation.control.EmulatorStatus>}
  */
-const methodInfo_EmulatorController_getVmConfiguration = new grpc.web.AbstractClientBase.MethodInfo(
-  proto.android.emulation.control.VmConfiguration,
+const methodInfo_EmulatorController_getStatus = new grpc.web.AbstractClientBase.MethodInfo(
+  proto.android.emulation.control.EmulatorStatus,
   /** @param {!proto.google.protobuf.Empty} request */
   function(request) {
     return request.serializeBinary();
   },
-  proto.android.emulation.control.VmConfiguration.deserializeBinary
+  proto.android.emulation.control.EmulatorStatus.deserializeBinary
 );
 
 
@@ -716,18 +716,18 @@ const methodInfo_EmulatorController_getVmConfiguration = new grpc.web.AbstractCl
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.Error, ?proto.android.emulation.control.VmConfiguration)}
+ * @param {function(?grpc.web.Error, ?proto.android.emulation.control.EmulatorStatus)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.android.emulation.control.VmConfiguration>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.android.emulation.control.EmulatorStatus>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.android.emulation.control.EmulatorControllerClient.prototype.getVmConfiguration =
+proto.android.emulation.control.EmulatorControllerClient.prototype.getStatus =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/android.emulation.control.EmulatorController/getVmConfiguration',
+      '/android.emulation.control.EmulatorController/getStatus',
       request,
       metadata || {},
-      methodInfo_EmulatorController_getVmConfiguration,
+      methodInfo_EmulatorController_getStatus,
       callback);
 };
 
@@ -737,16 +737,16 @@ proto.android.emulation.control.EmulatorControllerClient.prototype.getVmConfigur
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.android.emulation.control.VmConfiguration>}
+ * @return {!Promise<!proto.android.emulation.control.EmulatorStatus>}
  *     A native promise that resolves to the response
  */
-proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.getVmConfiguration =
+proto.android.emulation.control.EmulatorControllerPromiseClient.prototype.getStatus =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/android.emulation.control.EmulatorController/getVmConfiguration',
+      '/android.emulation.control.EmulatorController/getStatus',
       request,
       metadata || {},
-      methodInfo_EmulatorController_getVmConfiguration);
+      methodInfo_EmulatorController_getStatus);
 };
 
 

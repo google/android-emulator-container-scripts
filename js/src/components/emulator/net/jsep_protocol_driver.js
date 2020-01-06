@@ -20,7 +20,7 @@ import "../../../android_emulation_control/emulator_controller_pb";
  * This drives the jsep protocol with the emulator. The jsep protocol is described here:
  * https://rtcweb-wg.github.io/jsep/. Note that we use a message pump to the grpc endpoint
  * to receive jsep messages that must remain active for the duration of the connection.
- * 
+ *
  *  This class can fire two events:
  *
  * - `connected` when the stream has become available.
@@ -49,10 +49,12 @@ export default class JsepProtocol {
     this.events = new EventEmitter();
     /* eslint-disable */
     this.guid = new proto.android.emulation.control.RtcId();
+    this.event_forwarders = {}
 
     if (onConnect) this.events.on("connected", onConnect);
     if (onDisconnect) this.events.on("disconnected", onDisconnect);
   }
+
 
   on = (name, fn) => {
     this.events.on(name, fn);
@@ -125,10 +127,42 @@ export default class JsepProtocol {
     }
   };
 
+  _handleDataChannelStatusChange = e => {
+    console.log("Data status change " + e);
+  };
+
+  send(label, msg) {
+    let bytes = msg.serializeBinary();
+    let forwarder = this.event_forwarders[label]
+
+    // Send via data channel/gRPC bridge.
+    if (forwarder && forwarder.readyState == "open") {
+      this.event_forwarders[label].send(bytes);
+    } else {
+      // Fallback to using the gRPC protocol
+      switch (label) {
+        case "mouse":
+          this.emulator.sendMouse(msg);
+          break;
+        case "keyboard":
+          this.emulator.sendKey(msg);
+          break;
+        case "touch":
+          this.emulator.sendTouch(msg);
+          break;
+      }
+    }
+  }
+
   _handlePeerIceCandidate = e => {
     if (e.candidate === null) return;
     this._sendJsep({ candidate: e.candidate });
   };
+
+  _handleDataChannel = e => {
+    let channel = e.channel
+    this.event_forwarders[channel.label] = channel;
+  }
 
   _handleStart = signal => {
     this.peerConnection = new RTCPeerConnection(signal.start);
@@ -147,7 +181,9 @@ export default class JsepProtocol {
       this._handlePeerConnectionStateChange,
       false
     );
+    this.peerConnection.ondatachannel = e => { this._handleDataChannel(e); }
   };
+
 
   _handleSDP = async signal => {
     this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal));

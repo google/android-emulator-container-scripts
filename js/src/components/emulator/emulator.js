@@ -15,7 +15,6 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import * as Proto from "../../android_emulation_control/emulator_controller_pb.js";
 import EmulatorPngView from "./views/simple_png_view.js";
 import EmulatorWebrtcView from "./views/webrtc_view.js";
 import EmulatorFallbackView from "./views/fallback_emulator_view.js";
@@ -30,11 +29,6 @@ import EmulatorFallbackView from "./views/fallback_emulator_view.js";
  * The size of this component will be: (width * scale) x (height * scale)
  */
 export default class Emulator extends Component {
-  state = {
-    mouseDown: false, // Current state of mouse
-    xpos: 0,
-    ypos: 0
-  };
 
   static propTypes = {
     emulator: PropTypes.object, // emulator service
@@ -59,46 +53,6 @@ export default class Emulator extends Component {
     fallback: EmulatorFallbackView
   };
 
-  setCoordinates = (down, xp, yp) => {
-    // It is totally possible that we send clicks that are offscreen..
-    const { width, height, scale, emulator } = this.props;
-    const x = Math.round((xp * width) / (width * scale));
-    const y = Math.round((yp * height) / (height * scale));
-
-    // Make the grpc call.
-    var request = new Proto.MouseEvent();
-    request.setX(x);
-    request.setY(y);
-    request.setButtons(down ? 1 : 0);
-    emulator.sendMouse(request);
-  };
-
-  handleKey = e => {
-    const { emulator } = this.props;
-    var request = new Proto.KeyboardEvent();
-    request.setKey(e.key);
-    emulator.sendKey(request);
-  };
-
-  // Properly handle the mouse events.
-  handleMouseDown = e => {
-    this.setState({ mouseDown: true });
-    const { offsetX, offsetY } = e.nativeEvent;
-    this.setCoordinates(true, offsetX, offsetY);
-  };
-
-  handleMouseUp = e => {
-    this.setState({ mouseDown: false });
-    const { offsetX, offsetY } = e.nativeEvent;
-    this.setCoordinates(false, offsetX, offsetY);
-  };
-
-  handleMouseMove = e => {
-    const { mouseDown } = this.state;
-    if (!mouseDown) return;
-    const { offsetX, offsetY } = e.nativeEvent;
-    this.setCoordinates(true, offsetX, offsetY);
-  };
 
   render() {
     const { width, height, scale, refreshRate, view, emulator } = this.props;
@@ -107,11 +61,6 @@ export default class Emulator extends Component {
     return (
       <div
         tabIndex="1"
-        onMouseDown={this.handleMouseDown}
-        onMouseMove={this.handleMouseMove}
-        onMouseUp={this.handleMouseUp}
-        onMouseOut={this.handleMouseUp}
-        onKeyDown={this.handleKey}
         style={styled}
       >
         <SpecificView
