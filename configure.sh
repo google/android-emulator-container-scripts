@@ -26,16 +26,18 @@ if [ ! -f "./venv/bin/activate" ]; then
      echo "Using python 3"
      PYTHON=python3
      $PYTHON -m venv venv
-     ./venv/bin/pip install --upgrade pip
-     ./venv/bin/pip install --upgrade setuptools
+     [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade pip
+     [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade setuptools
   else
     echo "Using python 2"
     command virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
     virtualenv venv
   fi
 fi
-
-. ./venv/bin/activate
-$PYTHON setup.py develop
-pip show docker-compose 2>/dev/null || pip install docker-compose
-echo "Ready to run emu-docker!"
+if [ -e ./venv/bin/activate ]; then
+   . ./venv/bin/activate
+   $PYTHON setup.py develop
+   pip show packaging &>/dev/null || pip install packaging
+   pip show docker-compose &>/dev/null || pip install docker-compose
+   echo "Ready to run emu-docker!"
+fi
