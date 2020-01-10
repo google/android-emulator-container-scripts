@@ -37,7 +37,5 @@ fi
 if [ -e ./venv/bin/activate ]; then
    . ./venv/bin/activate
    $PYTHON setup.py develop
-   pip show packaging &>/dev/null || pip install packaging
-   pip show docker-compose &>/dev/null || pip install docker-compose
    echo "Ready to run emu-docker!"
 fi
