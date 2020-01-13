@@ -84,7 +84,7 @@ If for example you are running the emulator in a private Google GCE project, you
 
     - Produce a result on stdout.
     - Produce a result within 1000 ms.
-    - Produce a valid [JSON RTCConfiguration object](https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection).
+    - Produce a valid [JSON RTCConfiguration object](https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration).
     - That contain at least an "iceServers" array.
     - The exit value should be 0 on success
 

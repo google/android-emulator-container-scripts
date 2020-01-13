@@ -36,9 +36,9 @@ panic() {
 
 generate_pub_adb() {
   # Generate the adb public key, if it does not exist
-  if [[ ! -f ~/.android/adbkey.pub ]]; then
+  if [ ! -f ~/.android/adbkey.pub ]; then
     local ADB=adb
-    if [ !   $(command -v $ADB >/dev/null 2>&1) ]; then
+    if [ ! command -v $ADB >/dev/null 2>&1 ]; then
        ADB=$ANDROID_SDK_ROOT/platform-tools/adb
        command -v $ADB >/dev/null 2>&1 || panic "No public adb key, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
     fi
