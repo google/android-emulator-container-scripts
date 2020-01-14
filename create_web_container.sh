@@ -22,7 +22,7 @@ help() {
 
        optional arguments:
        -h        show this help message and exit.
-       -a        expose adb. Requires ~/.android/adbkey.pub to be available at container launch
+       -a        expose adb. Requires ~/.android/adbkey to be available at container launch
        -s        start the container after creation.
        -p        list of username password pairs.  Defaults to: [${PASSWDS}]
 EOF
@@ -34,16 +34,16 @@ panic() {
   exit 1
 }
 
-generate_pub_adb() {
+generate_keys() {
   # Generate the adb public key, if it does not exist
-  if [ ! -f ~/.android/adbkey.pub ]; then
+  if [ ! -f ~/.android/adbkey ]; then
     local ADB=adb
     if [ ! command -v $ADB >/dev/null 2>&1 ]; then
        ADB=$ANDROID_SDK_ROOT/platform-tools/adb
-       command -v $ADB >/dev/null 2>&1 || panic "No public adb key, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
+       command -v $ADB >/dev/null 2>&1 || panic "No adb key, and adb not found in $ADB, make sure ANDROID_SDK_ROOT is set!"
     fi
     echo "Creating public key from private key with $ADB"
-    $ADB pubkey  ~/.android/adbkey > ~/.android/adbkey.pub
+    $ADB keygen ~/.android/adbkey
   fi
 }
 
@@ -58,7 +58,7 @@ while getopts 'hasp:' flag; do
 done
 
 # Make sure we have all we need for adb to succeed.
-generate_pub_adb
+generate_keys
 
 . ./configure.sh >/dev/null
 

@@ -39,21 +39,22 @@ def accept_licenses(args):
         [x.license for x in emu_downloads_menu.get_emus_info()]
         + [x.license for x in emu_downloads_menu.get_images_info()]
     )
-    licenses = [x for x in licenses if not x.is_accepted()]
-    if not licenses:
+    to_accept = [x for x in licenses if not x.is_accepted()]
+    if not to_accept:
+        print("\n\n".join([str(l) for l in licenses]))
         print("You have already accepted all licenses.")
         return
 
-    print("\n\n".join([str(l) for l in licenses]))
+    print("\n\n".join([str(l) for l in to_accept]))
     if args.accept or click.confirm("Do you accept the licenses?"):
-        for l in licenses:
+        for l in to_accept:
             l.force_accept()
 
 
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image.
 
-    Returns the DockerDevice object.
+    Returns the created DockerDevice objects.
     """
 
     cfg = DockerConfig()
@@ -78,7 +79,7 @@ def create_docker_image(args):
     if emuzip[0] in ["stable", "canary", "all"]:
         emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
 
-
+    devices = []
     for (img, emu) in itertools.product(imgzip, emuzip):
         logging.info("Processing %s, %s", img, emu)
         rel = emu_downloads_menu.AndroidReleaseZip(img)
@@ -95,7 +96,10 @@ def create_docker_image(args):
             device.launch(img)
         if args.push:
             device.push(img)
-        return device
+        devices.append(device)
+
+    return devices
+
 
 
 def create_docker_image_interactive(args):

@@ -44,7 +44,7 @@ static_resources:
               routes:
                 # This is the emulator endpoint for grpc requests.
               - match: { prefix: "/android.emulation.control.EmulatorController" }
-                route: 
+                route:
                    cluster: emulator_service_grpc
                    max_grpc_timeout: 0s
 
@@ -103,7 +103,7 @@ static_resources:
             address:
               socket_address:
                 address: emulator
-                port_value: 5556
+                port_value: 8556
   - name: jwt_signer
     connect_timeout: 0.250s
     type: strict_dns

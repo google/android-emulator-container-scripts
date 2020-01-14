@@ -217,7 +217,8 @@ class License(object):
         self.cfg.accept_license(self.name)
 
     def __str__(self):
-        return self.text
+      # encode to utf-8 for python 2
+      return str(self.text.encode('utf-8'))
 
     def __hash__(self):
         return hash(self.name)
