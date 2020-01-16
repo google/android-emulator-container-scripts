@@ -28,7 +28,7 @@ install_adb_keys() {
   # ever created the secrets itself we will never be able to connect.
   rm -f /root/.android/adbkey /root/.android/adbkey.pub
 
-  if [ -f "/run/secrets/adbkey" ]; then
+  if [ -s "/run/secrets/adbkey" ]; then
     echo "emulator: Copying private key from secret partition"
     cp /run/secrets/adbkey /root/.android
   elif [ ! -z "${ADBKEY}" ]; then
@@ -46,7 +46,7 @@ install_adb_keys() {
 # Installs the console tokens, if any. The environment variable |TOKEN| will be
 # non empty if a token has been set.
 install_console_tokens() {
-  if [ -f "/run/secrets/token" ]; then
+  if [ -s "/run/secrets/token" ]; then
     echo "emulator: Copying console token from secret partition"
     cp /run/secrets/token /root/.emulator_console_auth_token
     TOKEN=yes
@@ -64,13 +64,9 @@ install_console_tokens() {
 }
 
 install_grpc_certs() {
-  if [[ -f "/run/secrets/emulator-grpc.cer" ]] && [[ -f "/run/secrets/emulator-grpc.key" ]]; then
-    echo "emulator: Copying cert from secret partition"
-    cp /run/secrets/emulator-grpc.cer /root/.android/emulator-grpc.cer
-    cp /run/secrets/emulator-grpc.key /root/.android/emulator-grpc.key
-  else
-    echo "emulator: No console token provided, console disabled."
-  fi
+    # Copy certs if they exists and are not empty.
+    [ -s "/run/secrets/grpc_cer" ] && cp /run/secrets/grpc_cer /root/.android/emulator-grpc.cer
+    [ -s "/run/secrets/grpc_key" ] && cp /run/secrets/grpc_key /root/.android/emulator-grpc.key
 }
 
 clean_up() {

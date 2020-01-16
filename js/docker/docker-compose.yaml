@@ -1,10 +1,8 @@
 version: "3.7"
 services:
-
   front-envoy:
-    build:
-      context: .
-      dockerfile: envoy.Dockerfile
+    image: emulator_envoy:latest
+    container_name: emulator_envoy
     networks:
       - envoymesh
     expose:
@@ -17,9 +15,8 @@ services:
       - "8001:8001"
 
   emulator:
-    build:
-      context: ../../src
-      dockerfile: Dockerfile
+    image: emulator_emulator:latest
+    container_name: emulator_emulator
     networks:
       envoymesh:
         aliases:
@@ -30,9 +27,8 @@ services:
       - "8556"
 
   jwt_signer:
-    build:
-      context: ../jwt-provider
-      dockerfile: Dockerfile
+    image: emulator_jwt_signer:latest
+    container_name: emulator_jwt_signer
     networks:
       envoymesh:
         aliases:
@@ -40,19 +36,15 @@ services:
     expose:
       - "8080"
 
-
-
   nginx:
-    build:
-      context: ..
-      dockerfile: docker/nginx.Dockerfile
+    image: emulator_nginx:latest
+    container_name: emulator_nginx
     networks:
       envoymesh:
         aliases:
           - nginx
     expose:
       - "80"
-
 
 networks:
   envoymesh: {}

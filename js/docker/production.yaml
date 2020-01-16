@@ -1,0 +1,14 @@
+# This docker has a series of overrides to expose the private adbkey as a secret.
+# It requires that the /opt/emulator/adbkey file exists where you launch the container.
+version: "3.7"
+services:
+  emulator:
+    secrets:
+      - adbkey
+    ports:
+      - "5555:5555"
+
+secrets:
+  adbkey:
+    file: /opt/emulator/adbkey
+
