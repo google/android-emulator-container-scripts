@@ -182,7 +182,7 @@ a minimal X installation if you are using a cloud instance. For example
 [Xvfb](https://en.wikipedia.org/wiki/Xvfb) can be used. You must build the
 containers by passing in the --gpu flag:
 
-    emu-docker create canary Q --gpu
+    emu-docker create stable Q --gpu
 
 You can now launch the emulator with the `run-with-gpu.sh` script:
 

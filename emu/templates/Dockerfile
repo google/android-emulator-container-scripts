@@ -55,9 +55,15 @@ COPY avd /android-home
 # This is currently an experimental feature, and is not easily configurable//
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
 
-# Open up adb & grpc port
+# This is the console port, you usually want to keep this closed.
+EXPOSE 5554
+
+# This is the ADB port, useful.
 EXPOSE 5555
-EXPOSE 5556
+
+# This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
+EXPOSE 8556
+
 ENV ANDROID_SDK_ROOT /android/sdk
 ENV ANDROID_AVD_HOME /android-home
 WORKDIR /android/sdk
@@ -71,7 +77,7 @@ HEALTHCHECK --interval=30s \
             --timeout=30s \
             --start-period=30s \
             --retries=3 \
-            CMD /android/sdk/platform-tools/adb -s emulator-6554 shell getprop dev.bootcomplete | grep "1"
+            CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
 FROM unzipper as sys_unzipper
 

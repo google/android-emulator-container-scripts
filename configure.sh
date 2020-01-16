@@ -30,8 +30,8 @@ if [ ! -f "./venv/bin/activate" ]; then
      [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade setuptools
   else
     echo "Using python 2"
-    command virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
-    virtualenv venv
+    $PYTHON -m virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
+    $PYTHON -m virtualenv venv
   fi
 fi
 if [ -e ./venv/bin/activate ]; then

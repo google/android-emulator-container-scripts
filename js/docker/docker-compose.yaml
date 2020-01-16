@@ -27,7 +27,7 @@ services:
     devices: [/dev/kvm]
     shm_size: 128M
     expose:
-      - "5556"
+      - "8556"
 
   jwt_signer:
     build:

@@ -30,7 +30,7 @@ services:
     devices: [/dev/kvm]
     shm_size: 128M
     secrets:
-      - adbkey.pub
+      - adbkey
     expose:
       - "5556"
       - "5555"
@@ -60,8 +60,8 @@ services:
       - "80"
 
 secrets:
-  adbkey.pub:
-    file: ~/.android/adbkey.pub
+  adbkey:
+    file: ~/.android/adbkey
 
 networks:
   envoymesh: {}
