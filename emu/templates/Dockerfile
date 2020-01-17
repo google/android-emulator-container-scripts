@@ -11,13 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM alpine AS unzipper
-
-RUN apk add --update unzip
-
-COPY {{emu_zip}} /tmp/
-RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
-
 {{from_base_img}}
 
 # Install all the required emulator dependencies.
@@ -37,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Now we configure the user account under which we will be running the emulator
 RUN mkdir -p /android/sdk/platforms && \
     mkdir -p /android/sdk/platform-tools && \
-    mkdir -p /android/sdk/system-images && \
+    mkdir -p /android/sdk/system-images/android && \
     mkdir -p /android-home
 
 # Make sure to place files that do not change often in the higher layers
@@ -45,12 +38,13 @@ RUN mkdir -p /android/sdk/platforms && \
 COPY launch-emulator.sh /android/sdk/
 COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
+
 RUN gpasswd -a root audio && \
     chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
 
-COPY --from=unzipper /emu/ /android/sdk/
-
-COPY avd /android-home
+COPY avd/ /android-home
+COPY emu/ /android/sdk/
+COPY sys/ /android/sdk/system-images/android/
 # Create an initial snapshot so we will boot fast next time around,
 # This is currently an experimental feature, and is not easily configurable//
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
@@ -79,14 +73,6 @@ HEALTHCHECK --interval=30s \
             --retries=3 \
             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
-FROM unzipper as sys_unzipper
-
-COPY {{sysimg_zip}} /tmp/
-RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
-
-FROM emulator
-
-COPY --from=sys_unzipper /sysimg/ /android/sdk/system-images/android/
 # Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
       SystemImage.Abi={{abi}} \

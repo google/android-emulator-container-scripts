@@ -20,6 +20,7 @@ import re
 import shutil
 import socket
 import sys
+import zipfile
 from distutils.spawn import find_executable
 
 from packaging import version
@@ -76,6 +77,15 @@ class ProgressTracker(object):
             diff = current - prog["current"]
             prog["current"] = current
             prog["tqdm"].update(diff)
+
+def extract_zip(fname, path):
+    zip_file = zipfile.ZipFile(fname)
+    print("Extracting: {} -> {}".format(fname, path))
+    for info in tqdm(iterable=zip_file.infolist(), total=len(zip_file.infolist())):
+        filename = zip_file.extract(info, path=path)
+        mode = info.external_attr >> 16
+        if mode:
+            os.chmod(filename, mode)
 
 
 class DockerDevice(object):
@@ -228,10 +238,10 @@ class DockerDevice(object):
             shutil.rmtree(self.dest)
         mkdir_p(self.dest)
 
-        logging.info("Copying zips to docker src dir: %s", self.dest)
-        shutil.copy2(self.emulator.fname, self.dest)
-        shutil.copy2(self.sysimg.fname, self.dest)
-        logging.info("Done copying")
+        logging.info("Unzipping zips to docker src dir: %s", self.dest)
+        extract_zip(self.emulator.fname, os.path.join(self.dest, 'emu'))
+        extract_zip(self.sysimg.fname, os.path.join(self.dest, 'sys'))
+        logging.info("Done unzipping")
 
         self._copy_adb_to(self.dest)
 
