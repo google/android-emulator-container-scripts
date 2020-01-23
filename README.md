@@ -311,13 +311,14 @@ the `create_web_container.sh` script:
 
 ```sh
 $ ./create_web_container.sh -h
-   usage: create_web_container.sh [-h] [-a] [-s] -p user1,pass1,user2,pass2,...
+   usage: create_web_container.sh [-h] [-a] [-s] [-i] -p user1,pass1,user2,pass2,...
 
    optional arguments:
    -h        show this help message and exit.
    -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
    -s        start the container after creation.
    -p        list of username password pairs.  Defaults to: [jansene,hello]
+   -i        install systemd service, with definition in /opt/emulator
 ```
 
 For example:
@@ -331,12 +332,21 @@ This will do the following:
 - Configure the token service to give access to the passed in users.
 - Generate a public and private key pair, used to encrypt/decrypt JWT tokens
 - Create the set of containers to interact with the emulator.
+- Note that the systemd service has only been tested on debian/ubuntu.
 
 You can now launch the container as follows:
 
 ```sh
 docker-compose -f js/docker/docker-compose.yaml up
 ```
+
+If you wish to make ADB available you can apply the overlay found in
+js/docker/development.yaml as follows:
+
+```sh
+docker-compose -f js/docker/docker-compose.yaml -f js/docker/development.yaml up
+```
+
 
 Point your browser to [localhost](http://localhost). You will likely get
 a warning due to the usage of the self signed certificate. Once you accept the
@@ -345,9 +355,8 @@ cert you should be able to login and start using the emulator.
 Keep the following things in mind when you make the emulator accessible over adb:
 
 - Port 5555 will be exposed in the container.
-- The container must have access to the file: `~/.android/adbkey.pub`. This is
-  the public key used by adb. If this file does not exist you can launch the
-  emulator once to generate one for you.
+- The container must have access to the file: `~/.android/adbkey`. This is
+  the *PRIVATE* key used by adb.
 - The adb client you use to connect to the container must have access to the
   private key (~/.android/adbkey).  This is usually the case if you are on the same machine.
 - You must run: `adb connect ip-address-of-container:5555` before you can
