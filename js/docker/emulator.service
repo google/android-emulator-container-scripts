@@ -15,6 +15,7 @@ ExecStartPre=-/bin/bash -c 'docker network ls -qf "name=emulator_" | xargs docke
 ExecStartPre=-/bin/bash -c 'docker ps -aqf "name=emulator_*" | xargs docker rm'
 # Compose up
 ExecStart=/usr/local/bin/docker-compose up
+ExecStartPost=/bin/bash -c 'echo "VIRTUAL_DEVICE_BOOT_STARTED"'
 
 # Compose down, remove containers and volumes
 ExecStop=/usr/local/bin/docker-compose down -v
