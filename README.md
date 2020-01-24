@@ -6,6 +6,7 @@ with both Python version 2 and 3.
 
 *Note that this is still an experimental feature and we recommend installing
 this tool in a [python virtual environment](https://docs.python.org/3/tutorial/venv.html).
+Please file issues if you notice that anything is not working as expected.
 
 # Requirements
 
