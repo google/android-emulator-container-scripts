@@ -22,7 +22,7 @@ class NopAuthenticator {
     return {};
   };
 
-  unauthorized = () => {};
+  unauthorized = () => { };
 }
 
 /**
@@ -51,7 +51,8 @@ class EmulatorWebClient extends GrpcWebClientBase {
     return super.rpcCall(method, request, meta, methodinfo, (err, res) => {
       if (err) {
         if (err.code === 401) self.auth.unauthorized();
-        self.events.emit("error", err);
+        if (self.events)
+          self.events.emit("error", err);
       }
       if (callback) callback(err, res);
     });
@@ -75,7 +76,7 @@ class EmulatorWebClient extends GrpcWebClientBase {
 }
 
 /**
- * An EmulatorControllerService is an EmulatorControllerClient that inject authentication headers. 
+ * An EmulatorControllerService is an EmulatorControllerClient that inject authentication headers.
  * You can provide your own authenticator service that must implement the following mehtods:
  *
  * - `authHeader()` which must return a set of headers that should be send along with a request.
@@ -95,11 +96,13 @@ export class EmulatorControllerService extends EmulatorControllerClient {
    *Creates an instance of EmulatorControllerService.
    * @param {string} uri of the emulator controller endpoint.
    * @param {Authenticator} authenticator used to authenticate with the emulator endpoint.
+   * @param onError callback that will be invoked when a low level gRPC error arises.
    * @memberof EmulatorControllerService
    */
-  constructor(uri, authenticator) {
+  constructor(uri, authenticator, onError) {
     super(uri);
     if (!authenticator) authenticator = new NopAuthenticator();
     this.client_ = new EmulatorWebClient({}, authenticator);
+    if (onError) this.client_.on('error', e => { onError(e); });
   }
 }

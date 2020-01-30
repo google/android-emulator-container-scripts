@@ -19,7 +19,7 @@ static_resources:
               routes:
                 # This is the emulator endpoint for grpc requests.
               - match: { prefix: "/android.emulation.control.EmulatorController" }
-                route: 
+                route:
                    cluster: emulator_service_grpc
                    max_grpc_timeout: 0s
 
@@ -28,7 +28,10 @@ static_resources:
                 route: { cluster: npm }
 
               cors:
-                allow_origin: ["*"]
+                allow_origin_string_match:
+                  safe_regex:
+                    google_re2: {}
+                    regex: ".*"
                 allow_methods: GET, PUT, DELETE, POST, OPTIONS
                 allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,custom-header-1,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout
                 max_age: "1728000"
@@ -57,7 +60,7 @@ static_resources:
             address:
               socket_address:
                 address: host.docker.internal
-                port_value: 5556
+                port_value: 8556
   - name: npm
     connect_timeout: 0.25s
     type: strict_dns
