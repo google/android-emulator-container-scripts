@@ -74,16 +74,8 @@ You can now connect to the running device using adb:
 
 Do not forget to stop the docker container once you are done!
 
-If you wish to interact with the emulator via the web, and you have port 80 and
-443 available you can run:
-
-    docker-compose -f js/docker/docker-compose.yaml build
-
-After building the containers, you can launch the emulator as follows
-
-    docker-compose -f js/docker/docker-compose.yaml up
-
-The emulator should be available at [http://localhost](http://localhost).
+Read the [section](#Make-the-emulator-accessible-on-the-web) on making the emulator available on the web to run the emulator
+using webrtc
 
 ## Obtaining URLs for emulator/system image zip files
 
