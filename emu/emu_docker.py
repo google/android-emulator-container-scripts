@@ -27,6 +27,8 @@ import emu
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
 from emu.docker_device import DockerDevice
+from emu.cloud_build import cloud_build
+from emu.utils import mkdir_p
 
 
 def list_images(args):
@@ -50,6 +52,9 @@ def accept_licenses(args):
         for l in to_accept:
             l.force_accept()
 
+
+def create_cloud_build_distribuition(args):
+    cloud_build(args)
 
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image.
@@ -99,7 +104,6 @@ def create_docker_image(args):
         devices.append(device)
 
     return devices
-
 
 
 def create_docker_image_interactive(args):
@@ -234,6 +238,23 @@ def main():
     )
     create_inter.set_defaults(func=create_docker_image_interactive)
 
+    dist_parser = subparsers.add_parser(
+        "cloud-build",
+        help="Create a cloud builder distribution. This will create a distribution for publishing container images to a GCE repository."
+        "This is likely only useful if you are within Google.",
+    )
+    dist_parser.add_argument("--repo", default="", help="Repo prefix, for example: us.gcr.io/emu-dev/")
+    dist_parser.add_argument(
+        "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
+    )
+    dist_parser.add_argument(
+        "img",
+        default="P google_apis_playstore x86_64|Q google_apis_playstore x86_64",
+        help="A regexp matching the image to retrieve. "
+        "All the matching images will be selected when using a regex. "
+        'Use the list command to show all available images. For example "P google_apis_playstore x86_64".',
+    )
+    dist_parser.set_defaults(func=create_cloud_build_distribuition)
     args = parser.parse_args()
 
     # Configure logger.

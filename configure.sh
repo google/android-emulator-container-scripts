@@ -29,7 +29,7 @@ if [ ! -f "./venv/bin/activate" ]; then
      [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade pip
      [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade setuptools
   else
-    echo "Using python 2"
+    echo "Using python 2 ----<< Deprecated! See: https://python3statement.org/.."
     $PYTHON -m virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
     $PYTHON -m virtualenv venv
   fi
