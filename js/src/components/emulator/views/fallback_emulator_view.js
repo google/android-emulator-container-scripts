@@ -25,6 +25,7 @@ import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
 export default class EmulatorFallbackView extends Component {
   static propTypes = {
     emulator: PropTypes.object, // emulator service
+    rtc: PropTypes.object // rtc service.
     width: PropTypes.number,
     height: PropTypes.number,
     refreshRate: PropTypes.number
@@ -42,7 +43,7 @@ export default class EmulatorFallbackView extends Component {
 
   componentDidMount = () => {
     this.jsep = new JsepProtocolDriver(
-      this.props.emulator,
+      this.props.rtc,
       this.onConnect,
       this.onDisconnect
     );

@@ -32,6 +32,7 @@ export default class Emulator extends Component {
 
   static propTypes = {
     emulator: PropTypes.object, // emulator service
+    rtc: PropTypes.object, // rtc service
     width: PropTypes.number,
     height: PropTypes.number,
     scale: PropTypes.number,
@@ -68,6 +69,7 @@ export default class Emulator extends Component {
           height={height * scale}
           refreshRate={refreshRate}
           emulator={emulator}
+          rtc={rtc}
         />
       </div>
     );

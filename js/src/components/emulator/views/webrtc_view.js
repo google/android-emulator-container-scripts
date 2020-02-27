@@ -24,7 +24,7 @@ import * as Proto from "../../../android_emulation_control/emulator_controller_p
  */
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
-    emulator: PropTypes.object, // emulator service
+    rtc: PropTypes.object, // rtc service
     width: PropTypes.number,
     height: PropTypes.number
   };
@@ -40,11 +40,16 @@ export default class EmulatorWebrtcView extends Component {
     ypos: 0
   };
 
-  componentDidMount = () => {
-    const { emulator } = this.props;
-    this.jsep = new JsepProtocolDriver(emulator, this.onConnect);
+  componentWillUnmount = () => {
     this.jsep.startStream();
   };
+
+  componentDidMount = () => {
+    const { rtc } = this.props;
+    this.jsep = new JsepProtocolDriver(rtc, this.onConnect);
+    this.jsep.startStream();
+  };
+
 
   onConnect = stream => {
     console.log(

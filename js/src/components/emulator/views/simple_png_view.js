@@ -48,23 +48,28 @@ export default class EmulatorPngView extends Component {
 
   componentDidMount() {
     const { refreshRate } = this.props;
-    this.updateView();
-    this.timerID = setInterval(
-      () => this.updateView(),
-      Math.round(1000 / refreshRate)
-    );
+    this.startStream();
   }
 
   componentWillUnmount() {
-    clearInterval(this.timerID);
+    if (this.screen) {
+      this.screen.cancel();
+    }
+
   }
 
   /* Makes a grpc call to get a screenshot */
-  updateView() {
+  startStream() {
     /* eslint-disable */
-    var request = new proto.google.protobuf.Empty();
+    const { width, height, emulator } = this.props;
+
+    var request = new Proto.ImageFormat();
+    request.setWidth(width);
+    request.setHeigth(height);
+
     var self = this;
-    this.props.emulator.getScreenshot(request).on("data", response => {
+    this.screen = emulator.streamScreenshot(request);
+    this.screen.on("data", response => {
       // Update the image with the one we just received.
       self.setState({
         png: "data:image/jpeg;base64," + response.getImage_asB64()
