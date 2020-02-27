@@ -12,16 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-GOCMD=go
-GOPATH = $(shell $(GOCMD) env GOPATH)
-
-DEP=dep
 PROTOC=protoc
 PROTOC_CMD = which $(PROTOC)
 
 # Check that the minimum protocol version >3.6
-MIN_PROTOC_VERSION=3.6
-PROTOC_VERSION=($(PROTOC_CMD) --version |  sed 's/[[:alpha:]|(|[:space:]]//g'; echo $(MIN_PROTOC_VERSION)) | sort -V | head -n 1
 PROTOHEADER=$(shell pkg-config --variable prefix protobuf)/include
 PROTOLIB=$(shell pkg-config --variable prefix protobuf)/lib
 
@@ -29,10 +23,6 @@ HAS_PROTOC = $(shell $(PROTOC_CMD) > /dev/null && echo true || echo false)
 HAS_DEP = $(shell which $(DEP) > /dev/null && echo true || echo false)
 
 ifeq ($(HAS_PROTOC),true)
-	HAS_VALID_PROTOC := $(subst $(MIN_PROTOC_VERSION),true,$(shell $(PROTOC_VERSION)))
-endif
-
-ifeq ($(HAS_VALID_PROTOC),true)
 	ifneq (,$(wildcard $(PROTOHEADER)/google/protobuf/compiler/code_generator.h))
 		HAS_VALID_PROTOC := true
 	else
@@ -40,21 +30,24 @@ ifeq ($(HAS_VALID_PROTOC),true)
 	endif
 endif
 
-
 SYSTEM_OK = false
 ifeq ($(HAS_VALID_PROTOC),true)
   	SYSTEM_OK = true
 endif
 
-
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-QEMU_ROOT := $(abspath $(MAKEFILE_PATH)/../../../../../..)
 CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
-OUT_DIR := $(CURRENT_DIR)/src/
-CONTROLPB = $(OUT_DIR)/android_emulation_control/emulator_controller_pb.js
-GRPCPB = $(OUT_DIR)/android_emulation_control/emulator_controller_grpc_web_pb.js
-PROTODIR = $(CURRENT_DIR)/android_emulation_control
-PROTO = $(PROTODIR)/emulator_controller.proto
+QEMU_ROOT := $(abspath $(AOSP)/external/qemu)
+DOCKER_SRC_ROOT := $(abspath $(CURRENT_DIR)/../src/emu)
+GRPC_ROOT := $(QEMU_ROOT)/objs/distribution/emulator/lib
+
+# Protobuf settings. If you are running this in the AOSP tree you will want to run ninja install first.
+PROTODIR 	  := $(CURRENT_DIR)/src/android_emulation_control/
+PROTOSRCDIR   := $(if $(wildcard $(GRPC_ROOT)/*.proto), $(GRPC_ROOT), $(DOCKER_SRC_ROOT)/emulator/lib)
+PROTO_SRC     := $(wildcard $(PROTOSRCDIR)/*.proto)
+PROTO_OBJS    := $(addprefix $(PROTODIR)/, $(notdir $(PROTO_SRC:.proto=_pb.js)))
+PROXY_OBJS    := $(addprefix $(PROTODIR)/, $(notdir $(PROTO_SRC:.proto=_grpc_web_pb.js)))
+
 
 CXX = g++
 CPPFLAGS += -I$(PROTOHEADER) -pthread
@@ -66,38 +59,44 @@ LDFLAGS += -L$(PROTOLIB) -lprotoc -lprotobuf -lpthread -ldl
 all: develop
 
 clean:
-	rm $(PROTO) $(CONTROLPB) $(GRPCPB)
+	rm -f $(PROTO) $(PROTO_OBJS) $(PROXY_OBJS)
 
-$(PROTO):
-		mkdir -p $(PROTODIR)
-ifeq (,$(wildcard $(QEMU_ROOT)/android/android-grpc/android/emulation/control/emulator_controller.proto))
-		cp  $(ANDROID_SDK_ROOT)/emulator/lib/emulator_controller.proto  $(PROTO)
-else
-		cp  $(QEMU_ROOT)/android/android-grpc/android/emulation/control/emulator_controller.proto  $(PROTO)
-endif
+
+$(PROTODIR):
+	@mkdir -p $(PROTODIR)
+
+# Protobuf --> js (note technically this produces 2 files.) which is not
+# the way you are supposed to do things in gnumake
+# https://www.gnu.org/software/automake/manual/html_node/Multiple-Outputs.html
+# Use sed to insert the /* eslint-disable */ at the start of the file
+# \`$$`\n` forces a real newline char, because make.
+$(PROTODIR)/%_pb.js  : $(PROTOSRCDIR)/%.proto $(PROTODIR) protoc-gen-grpc-web
+	$(PROTOC) \
+	        -I/usr/local/include -I$(PROTODIR) -I$(PROTOSRCDIR) \
+			--plugin=protoc-gen-grpc-web=$(CURRENT_DIR)/protoc-gen-grpc-web \
+			--js_out=import_style=commonjs:$(PROTODIR) \
+			--grpc-web_out=import_style=commonjs,mode=grpcwebtext:$(PROTODIR) \
+			$<
+	@sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n''' $@
+
+# Fix up the proxies _grpc_web files by prefixing  /* eslint-disable */
+# Not evey source produces a _grpc_web, so we onle do the replace if them file exists, otherwise it is a nop.
+$(PROTODIR)/%_grpc_web_pb.js : $(PROTODIR)/%_pb.js
+	@test -f $@  && sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n''' $@ || true
+
+
+protoc: $(PROTO_OBJS) $(PROXY_OBJS)
 
 protoc-gen-grpc-web: protoc-plugin/grpc_generator.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-$(CONTROLPB) $(GRPCPB): $(PROTO) protoc-gen-grpc-web
-	@mkdir -p $(OUT_DIR)/android_emulation_control
-	$(PROTOC)  -I/usr/local/include -I$(PROTODIR) \
-			--plugin=protoc-gen-grpc-web=$(CURRENT_DIR)/protoc-gen-grpc-web \
-			--js_out=import_style=commonjs:/tmp \
-			--grpc-web_out=import_style=commonjs,mode=grpcwebtext:/tmp \
-			$(PROTO)
-	@echo "/* eslint-disable */" > $(CONTROLPB)
-	@cat /tmp/emulator_controller_pb.js >>  $(CONTROLPB)
-	@cp  /tmp/emulator_controller_grpc_web_pb.js $(GRPCPB)
-
-
-deps: $(CONTROLPB) $(GRPCPB) system-check
+deps: protoc system-check
 	@npm install
 
-develop: $(CONTROLPB) $(GRPCPB)
+develop: protoc
 	./develop.sh
 
-build-release:  $(CONTROLPB) $(GRPCPB) system-check
+build-release:  protoc system-check
 	 docker-compose -f docker/docker-compose.yaml build
 
 run-release: build-release
@@ -107,17 +106,16 @@ stop:
 	docker stop emu-dev-grpc-web; pkill -9 npm; pkill -9 js; pkill -9 node; true
 
 
-
 system-check:
 ifneq ($(HAS_VALID_PROTOC),true)
 	@echo " DEPENDENCY ERROR"
 	@echo
-	@echo "You don't have protoc 3.6.0 installed in your path."
-	@echo "Please install Google protocol buffers 3.6.0 and its compiler."
+	@echo "You don't have protoc 3.6.0 > installed in your path."
+	@echo "Please install Google protocol buffers 3.6.0> and its compiler."
 	@echo "You can find it here:"
 	@echo
 	@echo "   https://github.com/google/protobuf/releases/tag/v3.6.0"
-	@echo "   or try $ brew install protoc"
+	@echo "   or try $ brew install protobuf"
 	@echo
 	@echo "Here is what I get when trying to evaluate your version of protoc:"
 	@echo
