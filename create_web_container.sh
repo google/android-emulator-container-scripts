@@ -84,6 +84,13 @@ while getopts 'hasip:' flag; do
     esac
 done
 
+
+# Create the javascript protobufs
+cd js
+make deps
+cd ..
+
+
 # Make sure we have all we need for adb to succeed.
 generate_keys
 
