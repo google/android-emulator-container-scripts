@@ -149,7 +149,9 @@ setup(
     package_data={  # Optional
         "emu": [
             "templates/Dockerfile",
+            "templates/Dockerfile.from_zip",
             "templates/README.md",
+            "templates/cloudbuild.README.MD",
             "templates/default.pa",
             "templates/launch-emulator.sh",
             "templates/avd/Pixel2.ini",
