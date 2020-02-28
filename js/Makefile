@@ -89,13 +89,17 @@ protoc: $(PROTO_OBJS) $(PROXY_OBJS)
 protoc-gen-grpc-web: protoc-plugin/grpc_generator.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-deps: protoc system-check
+deps: src/config.js protoc system-check
 	@npm install
 
-develop: protoc
+# This transforms
+src/config.js:
+	python config_gen.py firebase_config.json
+
+develop: src/config.js protoc
 	./develop.sh
 
-build-release:  protoc system-check
+build-release:  deps
 	 docker-compose -f docker/docker-compose.yaml build
 
 run-release: build-release

@@ -1,10 +1,10 @@
 import "./App.css";
 
-import { NoAuthService, TokenAuthService } from "./service/auth_service";
+import { TokenProviderService } from "./service/auth_service";
 import React, { Component } from "react";
 
 import EmulatorScreen from "./components/emulator_screen";
-import LoginPage from "./components/login_page";
+import LoginPage from "./components/login_firebase";
 import { EmulatorControllerService } from "./components/emulator/net/emulator_web_client";
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
@@ -25,11 +25,7 @@ if (development) {
 export default class App extends Component {
   constructor(props) {
     super(props);
-    if (development) {
-      this.auth = new NoAuthService();
-    } else {
-      this.auth = new TokenAuthService(EMULATOR_GRPC + "/token");
-    }
+    this.auth = new TokenProviderService();
     this.emulator = new EmulatorControllerService(EMULATOR_GRPC, this.auth, this.onError);
 
     this.state = {

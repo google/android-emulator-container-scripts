@@ -1,7 +1,0 @@
-pyjwt
-flask
-flask-cors
-absl-py
-Flask-HTTPAuth
-Werkzeug
-JWCrypto

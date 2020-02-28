@@ -127,7 +127,7 @@ socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:5557 &
 # Kick off the emulator
 exec emulator/emulator @Pixel2 -no-audio -verbose -wipe-data \
   -ports 5556,5557 \
-  -grpc 8556 -no-window -skip-adb-auth \
+  -grpc 8554 -no-window -skip-adb-auth \
   -no-snapshot \
   -shell-serial file:/tmp/android-unknown/kernel.log \
   -logcat-output /tmp/android-unknown/logcat.log \

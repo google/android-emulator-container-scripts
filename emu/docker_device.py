@@ -213,7 +213,7 @@ class DockerDevice(object):
                 privileged=True,
                 publish_all_ports=True,
                 detach=True,
-                ports={"5555/tcp": port, "5556/tcp": port + 1},
+                ports={"5555/tcp": port, "8554/tcp": 8554},
                 environment={"ADBKEY": self._read_adb_key()},
             )
             self.container = container

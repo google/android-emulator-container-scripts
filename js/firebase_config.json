@@ -1,0 +1,10 @@
+{
+    "apiKey": "AIzaSyApOjVnuRBNO7x5UP-Cq7VSzcylCMjDBng",
+    "authDomain": "android-emulator-webrtc-demo.firebaseapp.com",
+    "databaseURL": "https://android-emulator-webrtc-demo.firebaseio.com",
+    "projectId": "android-emulator-webrtc-demo",
+    "storageBucket": "android-emulator-webrtc-demo.appspot.com",
+    "messagingSenderId": "431559312508",
+    "appId": "1:431559312508:web:c9aaa2a9ac2f48657e35f9",
+    "measurementId": "G-MTCT6N00FV"
+}

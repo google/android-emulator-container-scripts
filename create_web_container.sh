@@ -49,7 +49,6 @@ help() {
        -h        show this help message and exit.
        -a        expose adb. Requires ~/.android/adbkey to be available at container launch
        -s        start the container after creation.
-       -p        list of username password pairs.  Defaults to: [${PASSWDS}]
        -i        install systemd service, with definition in /opt/emulator
 EOF
     exit 1
@@ -90,18 +89,10 @@ cd js
 make deps
 cd ..
 
-
 # Make sure we have all we need for adb to succeed.
 generate_keys
 
 . ./configure.sh >/dev/null
-
-# Now generate the public/private keys and salt the password
-cd js/jwt-provider
-pip install -r requirements.txt >/dev/null
-python gen-passwords.py --pairs "${PASSWDS}" || exit 1
-cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
-cd ../..
 
 # Copy the private adbkey over
 cp ~/.android/adbkey js/docker/certs

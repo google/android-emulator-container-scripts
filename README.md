@@ -155,13 +155,13 @@ We provide the following run script:
 It does the following:
 
     docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
-    5556:5556/tcp --publish 5555:5555/tcp <docker-image-id>
+    8554:8554/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
 - Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
-  host ports 5556/5555 to container ports 5556/5555 respectively.
+  host ports 8554/5555 to container ports 8554/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
@@ -230,7 +230,7 @@ For example:
 
 
 ```sh
-    docker run --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp \
+    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
     us.gcr.io/emulator-project/q-playstore-x86:29.3.2
 ```
 
@@ -271,8 +271,10 @@ composing the following set of docker containers:
     - Redirect other requests to the Nginx component which hosts
       a [React](https://reactjs.org/) application.
 - [Nginx](https://www.nginx.com/), a webserver hosting a compiled React App
-- [Token Service](js/jwt-provider/README.md) a simple token service that hands out
-  [JWT](https://en.wikipedia.org/wiki/JSON_Web_Token) tokens to grant access to the emulator.
+- [Firebase](https://firebase.google.com/). We use firebase for
+  authentication and authorization. Firebase will hand out JWT tokens that
+  allow access to the emulator. If you use firebase you must configure
+  your project properly!
 - The emulator with a gRPC endpoint and a WebRTC video bridge.
 
 ## Important Notice!
@@ -296,6 +298,15 @@ keep the following in mind:
   internal network and expose the http and https ports.
 - You will need to create an emulator docker image, as described in the
   documentation above.
+- We are currently using firebase to handle authentication and authorization.
+  you will need to provide a JSON configuation of the project you wish to use.
+  You can use the sample provided here, but it will only work on localhost.
+  You can get the firebase configuration from the [console](https://console.firebase.google.com/project/)
+  Place the firebase josn configuration here:
+
+  ./js/firebase_config.json
+
+  This will be used to generate the configuration and envoy settings.
 
 ## Running the emulator on the web
 
@@ -310,20 +321,17 @@ $ ./create_web_container.sh -h
    -h        show this help message and exit.
    -a        expose adb. Requires ~/.android/adbkey.pub to be available at run.
    -s        start the container after creation.
-   -p        list of username password pairs.  Defaults to: [jansene,hello]
    -i        install systemd service, with definition in /opt/emulator
 ```
 
 For example:
 
 ```sh
-./create_web_container.sh -p user1,passwd1,user2,passwd2,....
+./create_web_container.sh
 ```
 This will do the following:
 
 - Create a virtual environment
-- Configure the token service to give access to the passed in users.
-- Generate a public and private key pair, used to encrypt/decrypt JWT tokens
 - Create the set of containers to interact with the emulator.
 - Note that the systemd service has only been tested on debian/ubuntu.
 

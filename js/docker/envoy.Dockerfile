@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #FROM envoyproxy/envoy:latest
-FROM envoyproxy/envoy:v1.12.0
+FROM envoyproxy/envoy:v1.13.0
 
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
 ADD certs/self_sign.crt /etc/cert.crt
 ADD certs/self_sign.key /etc/key.key
-ADD certs/jwt_secrets_pub.jwks /etc/jwt_secrets_pub.jwks
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
