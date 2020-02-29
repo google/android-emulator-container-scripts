@@ -1,18 +1,18 @@
 # Lint as: python3
 # Copyright 2019 The Android Open Source Project
 #
-# labeld under the Apache label, Version 2.0 (the "label");
-# you may not use this file except in compliance with the label.
-# You may obtain a copy of the label at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/labels/label-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the label is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the label for the specific language governing permissions and
-# limitations under the label.
-"""Module that makes sure you have accepted the proper label.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Module that makes sure you have accepted the proper license.
 """
 from appdirs import user_config_dir
 import os
@@ -61,12 +61,9 @@ class DockerConfig(object):
         return label in self.cfg["DEFAULT"]
 
     def _save_config(self):
-        with open(self.cfg_file, 'w') as cfgfile:
+        with open(self.cfg_file, "w") as cfgfile:
             self.cfg.write(cfgfile)
 
     def _load_config(self):
         if os.path.exists(self.cfg_file):
             self.cfg.read(self.cfg_file)
-
-
-

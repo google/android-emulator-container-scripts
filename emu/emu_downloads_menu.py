@@ -125,6 +125,8 @@ class AndroidReleaseZip(object):
         return self.props.get("SystemImage.Abi", "")
 
     def short_abi(self):
+        if self.abi() not in self.SHORT_MAP:
+            logging.error("%s not in short map", self)
         return self.SHORT_MAP[self.abi()]
 
     def cpu(self):
@@ -138,7 +140,7 @@ class AndroidReleaseZip(object):
     def tag(self):
         """The tag associated with this release."""
         tag = self.props.get("SystemImage.TagId", "")
-        if tag == "default":
+        if tag == "default" or tag.strip() == "":
             tag = "android"
         return tag
 
@@ -217,8 +219,8 @@ class License(object):
         self.cfg.accept_license(self.name)
 
     def __str__(self):
-      # encode to utf-8 for python 2
-      return str(self.text.encode('utf-8'))
+        # encode to utf-8 for python 2
+        return str(self.text.encode("utf-8"))
 
     def __hash__(self):
         return hash(self.name)

@@ -130,6 +130,7 @@ setup(
         "click",
         "colorlog",
         "packaging",
+        "pyyaml",
     ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -148,7 +149,9 @@ setup(
     package_data={  # Optional
         "emu": [
             "templates/Dockerfile",
+            "templates/Dockerfile.from_zip",
             "templates/README.md",
+            "templates/cloudbuild.README.MD",
             "templates/default.pa",
             "templates/launch-emulator.sh",
             "templates/avd/Pixel2.ini",
