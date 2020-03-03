@@ -103,7 +103,7 @@ static_resources:
             address:
               socket_address:
                 address: emulator
-                port_value: 8556
+                port_value: 8554
   - name: jwt_signer
     connect_timeout: 0.250s
     type: strict_dns

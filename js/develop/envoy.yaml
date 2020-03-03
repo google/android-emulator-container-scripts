@@ -60,7 +60,7 @@ static_resources:
             address:
               socket_address:
                 address: host.docker.internal
-                port_value: 8556
+                port_value: 8554
   - name: npm
     connect_timeout: 0.25s
     type: strict_dns

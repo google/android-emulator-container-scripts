@@ -409,7 +409,7 @@ def list_all_downloads(arm):
     emu_infos = get_emus_info()
 
     for img_info in img_infos:
-        print("SYSIMG {} {} {} {} {}".format(img_info.api, img_info.letter, img_info.tag, img_info.abi, img_info.url))
+        print("SYSIMG {} {} {} {} {}".format(img_info.letter, img_info.tag, img_info.abi, img_info.api, img_info.url))
 
     for emu_info in emu_infos:
         for (hostos, url) in list(emu_info.urls.items()):

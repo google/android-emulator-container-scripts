@@ -188,7 +188,7 @@ class DockerDevice(object):
         return {"name": "gcr.io/cloud-builders/docker", "args": ["build", "-t", self.tag, os.path.basename(self.dest)]}
 
     def launch(self, image_sha, port=5555):
-        """Launches the container with the given sha, publishing abd on port, and grpc on port + 1.
+        """Launches the container with the given sha, publishing abd on port, and grpc on port 8554
 
            Returns the container.
         """
@@ -199,7 +199,7 @@ class DockerDevice(object):
                 privileged=True,
                 publish_all_ports=True,
                 detach=True,
-                ports={"5555/tcp": port, "5556/tcp": port + 1},
+                ports={"5555/tcp": port, "8554/tcp": 8554},
                 environment={"ADBKEY": self._read_adb_key()},
             )
             self.container = container
