@@ -19,4 +19,4 @@ shift
 PARAMS="$@"
 # Allow display access from the container.
 xhost +si:localuser:root
-docker run --gpus all -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix  -e "TOKEN=$(cat ~/.emulator_console_auth_token)" -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=-gpu host ${PARAMS}" --device /dev/kvm --publish 8556:8556/tcp --publish 5555:8555/tcp ${CONTAINER_ID}
+docker run --gpus all -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix  -e "TOKEN=$(cat ~/.emulator_console_auth_token)" -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=-gpu host ${PARAMS}" --device /dev/kvm --publish 8554:8554/tcp --publish 5555:8555/tcp ${CONTAINER_ID}

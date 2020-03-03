@@ -155,13 +155,13 @@ We provide the following run script:
 It does the following:
 
     docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
-    5556:5556/tcp --publish 5555:5555/tcp <docker-image-id>
+    8554:8554/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
 - Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
-  host ports 5556/5555 to container ports 5556/5555 respectively.
+  host ports 8554/5555 to container ports 8554/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
@@ -230,7 +230,7 @@ For example:
 
 
 ```sh
-    docker run --device /dev/kvm --publish 5556:5556/tcp --publish 5555:5555/tcp \
+    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
     us.gcr.io/emulator-project/q-playstore-x86:29.3.2
 ```
 

@@ -24,7 +24,7 @@ services:
     devices: [/dev/kvm]
     shm_size: 128M
     expose:
-      - "8556"
+      - "8554"
 
   jwt_signer:
     image: emulator_jwt_signer:latest
