@@ -17,6 +17,7 @@ import PropTypes from "prop-types";
 import React, { Component } from "react";
 import JsepProtocolDriver from "../net/jsep_protocol_driver.js";
 import * as Proto from "../../../android_emulation_control/emulator_controller_pb.js";
+import EmulatorStatus from "../net/emulator_status";
 
 /**
  * A view on the emulator that is using WebRTC. It will use the Jsep protocol over gRPC to
@@ -29,22 +30,38 @@ export default class EmulatorWebrtcView extends Component {
     height: PropTypes.number
   };
 
-  static defaultProps = {
-    width: 1080,
-    height: 1920
-  };
-
   state = {
     mouseDown: false, // Current state of mouse
     xpos: 0,
-    ypos: 0
+    ypos: 0,
+    deviceWidth: 1080,
+    deviceHeight: 1920,
+    elemHeight: 1,
+    elemWidth: 1
   };
 
   componentDidMount = () => {
+    this.getScreenSize();
+    this.setState({
+      elemHeight: this.video.clientHeight,
+      elemWidth: this.video.clientWidth
+    });
+
     const { emulator } = this.props;
     this.jsep = new JsepProtocolDriver(emulator, this.onConnect);
     this.jsep.startStream();
   };
+
+  getScreenSize() {
+    const { emulator } = this.props;
+    const state = new EmulatorStatus(emulator);
+    state.updateStatus(state => {
+      this.setState({
+        deviceWidth: parseInt(state.hardwareConfig["hw.lcd.width"]) || 1080,
+        deviceHeight: parseInt(state.hardwareConfig["hw.lcd.height"]) || 1920
+      });
+    });
+  }
 
   onConnect = stream => {
     console.log(
@@ -82,28 +99,28 @@ export default class EmulatorWebrtcView extends Component {
     e.preventDefault();
   };
 
-
   setCoordinates = (down, xp, yp) => {
     // It is totally possible that we send clicks that are offscreen..
-    const { width, height } = this.props;
-    // TODO(jansene): This needs to come from the emulator.
-    let scale = height / 1920;
-    const x = Math.round((xp * width) / (width * scale));
-    const y = Math.round((yp * height) / (height * scale));
+    const { deviceWidth, deviceHeight, elemWidth, elemHeight } = this.state;
+
+    const scaleX = deviceWidth / elemWidth;
+    const scaleY = deviceHeight / elemHeight;
+    const x = Math.round(xp * scaleX);
+    const y = Math.round(yp * scaleY);
 
     // Make the grpc call.
     var request = new Proto.MouseEvent();
     request.setX(x);
     request.setY(y);
     request.setButtons(down ? 1 : 0);
-    this.jsep.send("mouse", request)
+    this.jsep.send("mouse", request);
   };
 
   handleKeyDown = e => {
     var request = new Proto.KeyboardEvent();
     request.setKey(e.key);
     request.setEventtype(2);
-    this.jsep.send("keyboard", request)
+    this.jsep.send("keyboard", request);
   };
 
   // Properly handle the mouse events.
