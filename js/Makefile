@@ -22,6 +22,16 @@ PROTOLIB=$(shell pkg-config --variable prefix protobuf)/lib
 HAS_PROTOC = $(shell $(PROTOC_CMD) > /dev/null && echo true || echo false)
 HAS_DEP = $(shell which $(DEP) > /dev/null && echo true || echo false)
 
+# Prefixing works differently on mac vs linux, so let us account for that.
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	PREFIX_ESLINT = sed -i -e '1i\'$$'\n''/* eslint-disable */'$$'\n'''
+endif
+ifeq ($(UNAME_S),Darwin)
+	PREFIX_ESLINT = sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n'''
+endif
+
 ifeq ($(HAS_PROTOC),true)
 	ifneq (,$(wildcard $(PROTOHEADER)/google/protobuf/compiler/code_generator.h))
 		HAS_VALID_PROTOC := true
@@ -77,13 +87,12 @@ $(PROTODIR)/%_pb.js  : $(PROTOSRCDIR)/%.proto $(PROTODIR) protoc-gen-grpc-web
 			--js_out=import_style=commonjs:$(PROTODIR) \
 			--grpc-web_out=import_style=commonjs,mode=grpcwebtext:$(PROTODIR) \
 			$<
-	@sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n''' $@
+	$(PREFIX_ESLINT) $@
 
 # Fix up the proxies _grpc_web files by prefixing  /* eslint-disable */
 # Not evey source produces a _grpc_web, so we onle do the replace if them file exists, otherwise it is a nop.
 $(PROTODIR)/%_grpc_web_pb.js : $(PROTODIR)/%_pb.js
-	@test -f $@  && sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n''' $@ || true
-
+	@test -f $@  && $(PREFIX_ESLINT) $@ || true
 
 protoc: $(PROTO_OBJS) $(PROXY_OBJS)
 
