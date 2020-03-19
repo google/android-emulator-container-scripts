@@ -28,13 +28,8 @@ import EmulatorStatus from "../net/emulator_status";
 export default class EmulatorPngView extends Component {
   static propTypes = {
     emulator: PropTypes.object, // emulator service  width: PropTypes.number,
-    refreshRate: PropTypes.number,
     width: PropTypes.number,
     height: PropTypes.number
-  };
-
-  static defaultProps = {
-    refreshRate: 1
   };
 
   state = {
@@ -49,14 +44,7 @@ export default class EmulatorPngView extends Component {
   };
 
   componentDidMount() {
-    const { refreshRate } = this.props;
     this.getScreenSize();
-    this.updateView();
-    this.timerID = setInterval(
-      () => this.updateView(),
-      Math.round(1000 / refreshRate)
-    );
-
     this.setState({
       elemHeight: this.imgRef.clientHeight,
       elemWidth: this.imgRef.clientWidth
@@ -72,18 +60,29 @@ export default class EmulatorPngView extends Component {
         deviceHeight: parseInt(state.hardwareConfig["hw.lcd.height"]) || 1920
       });
     });
+
+    this.startStream();
   }
 
   componentWillUnmount() {
-    clearInterval(this.timerID);
+    if (this.screen) {
+      this.screen.cancel();
+    }
+
   }
 
   /* Makes a grpc call to get a screenshot */
-  updateView() {
+  startStream() {
     /* eslint-disable */
-    var request = new proto.google.protobuf.Empty();
+    const { width, height, emulator } = this.props;
+
+    var request = new Proto.ImageFormat();
+    request.setWidth(width);
+    request.setHeight(height);
+
     var self = this;
-    this.props.emulator.getScreenshot(request).on("data", response => {
+    this.screen = emulator.streamScreenshot(request);
+    this.screen.on("data", response => {
       // Update the image with the one we just received.
       self.setState({
         png: "data:image/jpeg;base64," + response.getImage_asB64()

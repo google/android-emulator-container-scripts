@@ -25,6 +25,7 @@ import EmulatorStatus from "../net/emulator_status";
  */
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
+    rtc: PropTypes.object, // rtc service
     emulator: PropTypes.object, // emulator service
     width: PropTypes.number,
     height: PropTypes.number
@@ -40,6 +41,10 @@ export default class EmulatorWebrtcView extends Component {
     elemWidth: 1
   };
 
+  componentWillUnmount = () => {
+    this.jsep.disconnect();
+  };
+
   componentDidMount = () => {
     this.getScreenSize();
     this.setState({
@@ -47,8 +52,8 @@ export default class EmulatorWebrtcView extends Component {
       elemWidth: this.video.clientWidth
     });
 
-    const { emulator } = this.props;
-    this.jsep = new JsepProtocolDriver(emulator, this.onConnect);
+    const { rtc } = this.props;
+    this.jsep = new JsepProtocolDriver(rtc, this.onConnect);
     this.jsep.startStream();
   };
 

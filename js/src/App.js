@@ -5,7 +5,7 @@ import React, { Component } from "react";
 
 import EmulatorScreen from "./components/emulator_screen";
 import LoginPage from "./components/login_page";
-import { EmulatorControllerService } from "./components/emulator/net/emulator_web_client";
+import { EmulatorControllerService, RtcService } from "./components/emulator/net/emulator_web_client";
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 
@@ -31,6 +31,7 @@ export default class App extends Component {
       this.auth = new TokenAuthService(EMULATOR_GRPC + "/token");
     }
     this.emulator = new EmulatorControllerService(EMULATOR_GRPC, this.auth, this.onError);
+    this.rtc = new RtcService(EMULATOR_GRPC, this.auth, this.onError);
 
     this.state = {
       authorized: this.auth.authorized(),
@@ -55,7 +56,7 @@ export default class App extends Component {
     return (
       <div>
         {authorized ? (
-          <EmulatorScreen emulator={this.emulator} auth={this.auth} />
+          <EmulatorScreen emulator={this.emulator} rtc={this.rtc} auth={this.auth} />
         ) : (
           <LoginPage auth={this.auth} />
         )}

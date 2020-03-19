@@ -32,6 +32,7 @@ export default class Emulator extends Component {
 
   static propTypes = {
     emulator: PropTypes.object, // emulator service
+    rtc: PropTypes.object, // rtc service
     width: PropTypes.number,
     height: PropTypes.number,
     scale: PropTypes.number,
@@ -55,7 +56,7 @@ export default class Emulator extends Component {
 
 
   render() {
-    const { width, height, scale, refreshRate, view, emulator } = this.props;
+    const { width, height, scale, refreshRate, view, emulator, rtc } = this.props;
     const SpecificView = this.components[view];
     const styled = { outline: "none", maxWidth: width * scale };
     return (
@@ -68,6 +69,7 @@ export default class Emulator extends Component {
           height={height * scale}
           refreshRate={refreshRate}
           emulator={emulator}
+          rtc={rtc}
         />
       </div>
     );

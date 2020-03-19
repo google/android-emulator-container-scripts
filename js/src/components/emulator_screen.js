@@ -49,11 +49,12 @@ class EmulatorScreen extends React.Component {
 
   static propTypes = {
     emulator: PropTypes.object, // emulator service
+    rtc: PropTypes.object, // webt rtc service
     auth: PropTypes.object
   };
 
   render() {
-    const { emulator, auth, classes } = this.props;
+    const { emulator, rtc, auth, classes } = this.props;
     const { view } = this.state;
     return (
       <div className={classes.root}>
@@ -93,7 +94,7 @@ class EmulatorScreen extends React.Component {
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <Container maxWidth="sm">
-                <Emulator emulator={emulator} view={this.state.view} />
+                <Emulator emulator={emulator} rtc={rtc} view={this.state.view} />
               </Container>
             </Grid>
 
