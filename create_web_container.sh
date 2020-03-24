@@ -87,6 +87,7 @@ done
 
 # Create the javascript protobufs
 cd js
+make clean
 make deps
 cd ..
 

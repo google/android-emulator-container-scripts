@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import { EventEmitter } from "events";
-import "../../../android_emulation_control/rtc_service_pb";
-
+import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 /**
  * This drives the jsep protocol with the emulator. The jsep protocol is described here:
  * https://rtcweb-wg.github.io/jsep/. Note that we use a message pump to the grpc endpoint
@@ -39,16 +38,16 @@ import "../../../android_emulation_control/rtc_service_pb";
 export default class JsepProtocol {
   /**
    * Creates an instance of JsepProtocol.
-   * @param {RtcService} rtc Service used to make the gRPC calls
+   * @param {RtcService} emulator Service used to make the gRPC calls
    * @param {callback} onConnect optional callback that is invoked when a stream is available
    * @param {callback} onDisconnect optional callback that is invoked when the stream is closed.
    * @memberof JsepProtocol
    */
-  constructor(rtc, onConnect, onDisconnect) {
-    this.rtc = rtc;
+  constructor(emulator, onConnect, onDisconnect) {
+    this.emulator = emulator;
     this.events = new EventEmitter();
     /* eslint-disable */
-    this.guid = new proto.android.emulation.control.RtcId();
+    this.guid = null;
     this.event_forwarders = {};
 
     if (onConnect) this.events.on("connected", onConnect);
@@ -67,7 +66,6 @@ export default class JsepProtocol {
   disconnect = () => {
     this.connected = false;
     if (this.peerConnection) this.peerConnection.close();
-    if (this.receive) this.receive.cancel();
     this.active = false;
     this.events.emit("disconnected", this);
   };
@@ -83,14 +81,22 @@ export default class JsepProtocol {
     this.peerConnection = null;
     this.active = true;
 
-    var request = new proto.google.protobuf.Empty();
-    this.rtc.requestRtcStream(request).on("data", response => {
+    // Fallback for older emulators that do not support webrtc data channels.
+    this.grpc_fallback = typeof this.emulator.sendMouse == "function";
+
+    var request = new Empty();
+    this.emulator.requestRtcStream(request).on("data", response => {
       // Configure
-      self.guid.setGuid(response.getGuid());
+      self.guid = response;
       self.connected = true;
 
-      // And pump messages
-      self._receiveJsepMessage();
+      if (typeof this.emulator.receiveJsepMessages === "function") {
+        // V2, stream messages, envoy based proxy.
+        self._streamJsepMessage();
+      } else {
+        // V1, pump messages, go/envoy based proxy.
+        self._receiveJsepMessage();
+      }
     });
   };
 
@@ -138,8 +144,19 @@ export default class JsepProtocol {
     // Send via data channel/gRPC bridge.
     if (forwarder && forwarder.readyState == "open") {
       this.event_forwarders[label].send(bytes);
-    } else {
-      console.log("Unexpected: data channel: " + label + "not available");
+    } else if (this.grpc_fallback) {
+      // Fallback to using the gRPC protocol (V1, deprecated.)
+      switch (label) {
+        case "mouse":
+          this.emulator.sendMouse(msg);
+          break;
+        case "keyboard":
+          this.emulator.sendKey(msg);
+          break;
+        case "touch":
+          this.emulator.sendTouch(msg);
+          break;
+      }
     }
   }
 
@@ -213,14 +230,14 @@ export default class JsepProtocol {
     var request = new proto.android.emulation.control.JsepMsg();
     request.setId(this.guid);
     request.setMessage(JSON.stringify(jsonObject));
-    this.rtc.sendJsepMessage(request);
+    this.emulator.sendJsepMessage(request);
   };
 
-  _receiveJsepMessage = () => {
+  _streamJsepMessage = () => {
     if (!this.connected) return;
     var self = this;
 
-    const stream = this.rtc.receiveJsepMessages(this.guid, {});
+    const stream = this.emulator.receiveJsepMessages(this.guid, {});
     stream.on("data", response => {
       const msg = response.getMessage();
       self._handleJsepMessage(msg);
@@ -233,5 +250,30 @@ export default class JsepProtocol {
     });
 
     this.receive = stream;
+  };
+
+  // This function is a fallback for v1 (go based proxy), that does not support streaming.
+  _receiveJsepMessage = () => {
+    if (!this.connected) return;
+
+    var self = this;
+
+    // This is a blocking call, that will return as soon as a series
+    // of messages have been made available, or if we reach a timeout
+    this.emulator.receiveJsepMessage(this.guid, {}).on("data", response => {
+      const msg = response.getMessage();
+      // Handle only if we received a useful message.
+      // it is possible to get nothing if the server decides
+      // to kick us out.
+      if (msg) {
+        self._handleJsepMessage(response.getMessage());
+      }
+
+      // And pump messages. Note we must continue the message pump as we
+      // can receive new ICE candidates at any point in time.
+      if (self.active) {
+        self._receiveJsepMessage();
+      }
+    });
   };
 }

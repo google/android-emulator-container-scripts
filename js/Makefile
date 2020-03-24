@@ -69,7 +69,7 @@ LDFLAGS += -L$(PROTOLIB) -lprotoc -lprotobuf -lpthread -ldl
 all: develop
 
 clean:
-	rm -f $(PROTO) $(PROTO_OBJS) $(PROXY_OBJS)
+	rm -rf $(PROTODIR)
 
 
 $(PROTODIR):
@@ -94,12 +94,21 @@ $(PROTODIR)/%_pb.js  : $(PROTOSRCDIR)/%.proto $(PROTODIR) protoc-gen-grpc-web
 $(PROTODIR)/%_grpc_web_pb.js : $(PROTODIR)/%_pb.js
 	@test -f $@  && $(PREFIX_ESLINT) $@ || true
 
-protoc: $(PROTO_OBJS) $(PROXY_OBJS)
+$(PROTODIR)/emulator_web_client.js:
+	if [ -f "$(PROTODIR)/rtc_service_pb.js" ]; then  \
+		cp src/ext/emulator_web_client_v2.js $(PROTODIR)/emulator_web_client.js; \
+	else  \
+		cp src/ext/emulator_web_client_v1.js $(PROTODIR)/emulator_web_client.js; \
+	fi
+
+
+protoc: $(PROTO_OBJS) $(PROXY_OBJS) $(PROTODIR)/emulator_web_client.js
 
 protoc-gen-grpc-web: protoc-plugin/grpc_generator.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 deps: protoc system-check
+
 	@npm install
 
 develop: protoc

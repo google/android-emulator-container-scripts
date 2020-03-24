@@ -5,7 +5,7 @@ import React, { Component } from "react";
 
 import EmulatorScreen from "./components/emulator_screen";
 import LoginPage from "./components/login_page";
-import { EmulatorControllerService, RtcService } from "./components/emulator/net/emulator_web_client";
+import { EmulatorControllerService, RtcService } from "./android_emulation_control/emulator_web_client"
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 
@@ -38,7 +38,7 @@ export default class App extends Component {
       error_snack: false,
       error_msg: "",
     };
-    this.auth.on("authorized", a => {
+this.auth.on("authorized", a => {
       this.setState({ authorized: a });
     });
   }

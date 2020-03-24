@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { EmulatorControllerClient } from "../../../android_emulation_control/emulator_controller_grpc_web_pb";
-import { RtcClient } from "../../../android_emulation_control/rtc_service_grpc_web_pb";
+
+
+ // This class is a stub for V1 compatibility.
+import { EmulatorControllerClient } from "./emulator_controller_grpc_web_pb";
 import { GrpcWebClientBase } from "grpc-web";
 import { EventEmitter } from "events";
 
@@ -108,8 +110,9 @@ export class EmulatorControllerService extends EmulatorControllerClient {
   }
 }
 
+
 /**
- * An EmulatorControllerService is an EmulatorControllerClient that inject authentication headers.
+ * An RtcService is an EmulatorControllerClient that inject authentication headers.
  * You can provide your own authenticator service that must implement the following mehtods:
  *
  * - `authHeader()` which must return a set of headers that should be send along with a request.
@@ -117,14 +120,11 @@ export class EmulatorControllerService extends EmulatorControllerClient {
  *
  * You can use this to simplify handling authentication failures.
  *
- * TODO(jansene): Maybe expose error handling? That way it does
- * not have to be repeated at every function call.
- *
  * @export
  * @class EmulatorControllerService
- * @extends {EmulatorControllerClient}
+ * @extends {RtcClient}
  */
-export class RtcService extends RtcClient {
+export class RtcService extends EmulatorControllerClient {
   /**
    *Creates an instance of RtcService.
    * @param {string} uri of the emulator controller endpoint.
