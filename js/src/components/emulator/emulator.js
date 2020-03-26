@@ -17,6 +17,11 @@ import PropTypes from "prop-types";
 import React, { Component } from "react";
 import EmulatorPngView from "./views/simple_png_view.js";
 import EmulatorWebrtcView from "./views/webrtc_view.js";
+import withMouseKeyHandler from "./views/event_handler";
+import JsepProtocol from "./net/jsep_protocol_driver.js";
+
+const PngView = withMouseKeyHandler(EmulatorPngView);
+const RtcView = withMouseKeyHandler(EmulatorWebrtcView);
 
 /**
  * An emulator object that displays the screen and sends mouse events via gRPC.
@@ -28,47 +33,41 @@ import EmulatorWebrtcView from "./views/webrtc_view.js";
  * The size of this component will be: (width * scale) x (height * scale)
  */
 export default class Emulator extends Component {
-
   static propTypes = {
     emulator: PropTypes.object, // emulator service, used to control emulator
-    rtc: PropTypes.object,      // rtc service, responsible for setting up WebRTC
-    width: PropTypes.number,
-    height: PropTypes.number,
-    scale: PropTypes.number,
+    rtc: PropTypes.object, // rtc service, responsible for setting up WebRTC
+    width: PropTypes.number,  // The width of the displayed emulator
+    height: PropTypes.number, // The height of the displayed emulator
     view: PropTypes.oneOf(["webrtc", "png"]).isRequired
   };
 
   static defaultProps = {
-    width: 1080, // The width of the emulator display
-    height: 1920, // The height of the emulator display
-    scale: 0.35, // Scale factor of the emulator image
-    refreshRate: 5, // Desired refresh rate if using screenshots.
+    width: 378, // The width of the emulator display
+    height: 672, // The height of the emulator display
     view: "webrtc" // Default view to be used.
   };
 
   components = {
-    webrtc: EmulatorWebrtcView,
-    png: EmulatorPngView
+    webrtc: RtcView,
+    png: PngView
   };
 
+  constructor(props) {
+    super(props);
+    this.jsep = new JsepProtocol(props.emulator, props.rtc);
+  }
 
   render() {
-    const { width, height, scale, refreshRate, view, emulator, rtc } = this.props;
-    const SpecificView = this.components[view] || EmulatorWebrtcView;
-    const styled = { outline: "none", maxWidth: width * scale };
+    const { width, height, view, emulator } = this.props;
+    const SpecificView = this.components[view] || RtcView;
+    //const styled = { outline: "none", maxWidth: width * scale };
     return (
-      <div
-        tabIndex="1"
-        style={styled}
-      >
         <SpecificView
-          width={width * scale}
-          height={height * scale}
-          refreshRate={refreshRate}
+          width={width}
+          height={height}
           emulator={emulator}
-          rtc={rtc}
+          jsep={this.jsep}
         />
-      </div>
     );
   }
 }
