@@ -35,20 +35,13 @@ export default class EmulatorPngView extends Component {
   state = {
     png: "",
     mouseDown: false, // Current state of mouse
-    xpos: 0,
-    ypos: 0,
     deviceWidth: 1080,
     deviceHeight: 1920,
-    elemHeight: 1,
-    elemWidth: 1
   };
 
   componentDidMount() {
     this.getScreenSize();
-    this.setState({
-      elemHeight: this.imgRef.clientHeight,
-      elemWidth: this.imgRef.clientWidth
-    });
+    this.startStream();
   }
 
   getScreenSize() {
@@ -60,15 +53,12 @@ export default class EmulatorPngView extends Component {
         deviceHeight: parseInt(state.hardwareConfig["hw.lcd.height"]) || 1920
       });
     });
-
-    this.startStream();
   }
 
   componentWillUnmount() {
     if (this.screen) {
       this.screen.cancel();
     }
-
   }
 
   /* Makes a grpc call to get a screenshot */
@@ -92,8 +82,9 @@ export default class EmulatorPngView extends Component {
 
   setCoordinates = (down, xp, yp) => {
     // It is totally possible that we send clicks that are offscreen..
-    const { emulator } = this.props;
-    const { deviceWidth, deviceHeight, elemWidth, elemHeight } = this.state;
+    const { deviceWidth, deviceHeight } = this.state;
+    const elemHeight = this.img.clientHeight;
+    const elemWidth = this.img.clientWidth;
 
     const scaleX = deviceWidth / elemWidth;
     const scaleY = deviceHeight / elemHeight;
@@ -149,6 +140,7 @@ export default class EmulatorPngView extends Component {
         tabIndex="0"
       >
         <img
+          ref={node => (this.img = node)}
           style={{ pointerEvents: "all" }}
           src={this.state.png}
           width={width}

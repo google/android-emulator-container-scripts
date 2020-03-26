@@ -33,12 +33,8 @@ export default class EmulatorWebrtcView extends Component {
 
   state = {
     mouseDown: false, // Current state of mouse
-    xpos: 0,
-    ypos: 0,
     deviceWidth: 1080,
-    deviceHeight: 1920,
-    elemHeight: 1,
-    elemWidth: 1
+    deviceHeight: 1920
   };
 
   componentWillUnmount = () => {
@@ -47,11 +43,6 @@ export default class EmulatorWebrtcView extends Component {
 
   componentDidMount = () => {
     this.getScreenSize();
-    this.setState({
-      elemHeight: this.video.clientHeight,
-      elemWidth: this.video.clientWidth
-    });
-
     const { rtc } = this.props;
     this.jsep = new JsepProtocolDriver(rtc, this.onConnect);
     this.jsep.startStream();
@@ -106,14 +97,15 @@ export default class EmulatorWebrtcView extends Component {
 
   setCoordinates = (down, xp, yp) => {
     // It is totally possible that we send clicks that are offscreen..
-    const { deviceWidth, deviceHeight, elemWidth, elemHeight } = this.state;
-
+    const { deviceWidth, deviceHeight } = this.state;
+    const elemHeight = this.video.clientHeight;
+    const elemWidth = this.video.clientWidth;
     const scaleX = deviceWidth / elemWidth;
     const scaleY = deviceHeight / elemHeight;
     const x = Math.round(xp * scaleX);
     const y = Math.round(yp * scaleY);
 
-    // Make the grpc call.
+    // Forward the request to the jsep engine.
     var request = new Proto.MouseEvent();
     request.setX(x);
     request.setY(y);

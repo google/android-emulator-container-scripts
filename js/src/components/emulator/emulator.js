@@ -17,12 +17,11 @@ import PropTypes from "prop-types";
 import React, { Component } from "react";
 import EmulatorPngView from "./views/simple_png_view.js";
 import EmulatorWebrtcView from "./views/webrtc_view.js";
-import EmulatorFallbackView from "./views/fallback_emulator_view.js";
 
 /**
  * An emulator object that displays the screen and sends mouse events via gRPC.
  *
- * The emulator will mount a png, webrtc or fallback view component to display the current state
+ * The emulator will mount a png or webrtc view component to display the current state
  * of the emulator. It will translate mouse events on this component and send them
  * to the actual emulator.
  *
@@ -31,13 +30,12 @@ import EmulatorFallbackView from "./views/fallback_emulator_view.js";
 export default class Emulator extends Component {
 
   static propTypes = {
-    emulator: PropTypes.object, // emulator service
-    rtc: PropTypes.object, // rtc service
+    emulator: PropTypes.object, // emulator service, used to control emulator
+    rtc: PropTypes.object,      // rtc service, responsible for setting up WebRTC
     width: PropTypes.number,
     height: PropTypes.number,
     scale: PropTypes.number,
-    refreshRate: PropTypes.number, // Refresh rate to use when falling back to screenshots.
-    view: PropTypes.oneOf(["webrtc", "png", "fallback"]).isRequired
+    view: PropTypes.oneOf(["webrtc", "png"]).isRequired
   };
 
   static defaultProps = {
@@ -50,14 +48,13 @@ export default class Emulator extends Component {
 
   components = {
     webrtc: EmulatorWebrtcView,
-    png: EmulatorPngView,
-    fallback: EmulatorFallbackView
+    png: EmulatorPngView
   };
 
 
   render() {
     const { width, height, scale, refreshRate, view, emulator, rtc } = this.props;
-    const SpecificView = this.components[view];
+    const SpecificView = this.components[view] || EmulatorWebrtcView;
     const styled = { outline: "none", maxWidth: width * scale };
     return (
       <div
