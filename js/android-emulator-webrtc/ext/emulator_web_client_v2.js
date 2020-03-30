@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
- // This class is a stub for V1 compatibility.
-import { EmulatorControllerClient } from "./emulator_controller_grpc_web_pb";
+import { EmulatorControllerClient } from "../proto/emulator_controller_grpc_web_pb";
+import { RtcClient } from "../proto/rtc_service_grpc_web_pb";
+import { SnapshotServiceClient } from "../proto/snapshot_service_grpc_web_pb"
 import { GrpcWebClientBase } from "grpc-web";
 import { EventEmitter } from "events";
 
-class NopAuthenticator {
+export class NopAuthenticator {
   authHeader = () => {
     return {};
   };
@@ -112,7 +111,7 @@ export class EmulatorControllerService extends EmulatorControllerClient {
 
 
 /**
- * An RtcService is an EmulatorControllerClient that inject authentication headers.
+ * An RtcService is an RtcClient that inject authentication headers.
  * You can provide your own authenticator service that must implement the following mehtods:
  *
  * - `authHeader()` which must return a set of headers that should be send along with a request.
@@ -124,7 +123,38 @@ export class EmulatorControllerService extends EmulatorControllerClient {
  * @class EmulatorControllerService
  * @extends {RtcClient}
  */
-export class RtcService extends EmulatorControllerClient {
+export class RtcService extends RtcClient {
+  /**
+   *Creates an instance of RtcService.
+   * @param {string} uri of the emulator controller endpoint.
+   * @param {Authenticator} authenticator used to authenticate with the emulator endpoint.
+   * @param onError callback that will be invoked when a low level gRPC error arises.
+   * @memberof RtcService
+   */
+  constructor(uri, authenticator, onError) {
+    super(uri);
+    if (!authenticator) authenticator = new NopAuthenticator();
+    this.client_ = new EmulatorWebClient({}, authenticator);
+    if (onError) this.client_.on('error', e => { onError(e); });
+  }
+}
+
+
+
+/**
+ * An SnapshotService is an SnapshotServiceClient that inject authentication headers.
+ * You can provide your own authenticator service that must implement the following mehtods:
+ *
+ * - `authHeader()` which must return a set of headers that should be send along with a request.
+ * - `unauthorized()` a function that gets called when a 401 was received.
+ *
+ * You can use this to simplify handling authentication failures.
+ *
+ * @export
+ * @class EmulatorControllerService
+ * @extends {RtcClient}
+ */
+export class SnapshotService extends SnapshotServiceClient {
   /**
    *Creates an instance of RtcService.
    * @param {string} uri of the emulator controller endpoint.

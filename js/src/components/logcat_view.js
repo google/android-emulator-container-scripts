@@ -15,10 +15,10 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import Logcat from "../net/logcat.js";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
+import { Logcat } from "android-emulator-webrtc/emulator";
 /**
  * A very simple logcat viewer. It displays all logcat items in a material list.
  */
@@ -26,18 +26,22 @@ export default class LogcatView extends Component {
   state = { lines: [] };
 
   static propTypes = {
-    emulator: PropTypes.object, // emulator service
+    uri: PropTypes.string, // grpc endpoint
+    auth: PropTypes.object, // auth module to use.
     maxHistory: PropTypes.number
   };
 
   static defaultProps = {
     maxHistory: 64 // Number of loglines to keep.
   };
+  constructor(props) {
+    super(props);
+    const { uri, auth } = this.props;
+    this.buffer = []
+    this.logcat = new Logcat(uri, auth);
+  }
 
   componentDidMount = () => {
-    const { emulator } = this.props;
-    this.buffer = []
-    this.logcat = new Logcat(emulator);
     this.logcat.start(this.onLogcat);
   };
 
@@ -46,9 +50,9 @@ export default class LogcatView extends Component {
   };
 
   onLogcat = logline => {
-    this.buffer.push(logline)
+    this.buffer.push(logline);
     if (this.buffer.length > this.props.maxHistory) {
-      this.buffer.shift()
+      this.buffer.shift();
     }
     this.setState({ lines: this.buffer });
   };

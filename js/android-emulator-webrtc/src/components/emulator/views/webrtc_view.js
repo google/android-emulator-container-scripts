@@ -22,9 +22,12 @@ import React, { Component } from "react";
  */
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
-    jsep: PropTypes.object, // Jsep protocol driver
+    /** Jsep protocol driver, used to establish the video stream. */
+    jsep: PropTypes.object,
+    /** The width of the component */
     width: PropTypes.number,
-    height: PropTypes.number
+    /** The height of the component */
+    height: PropTypes.number,
   };
 
   constructor(props) {

@@ -4,12 +4,12 @@ import AppBar from "@material-ui/core/AppBar";
 import Box from "@material-ui/core/Box";
 import Container from "@material-ui/core/Container";
 import Copyright from "./copyright";
-import Emulator from "./emulator/emulator.js";
+import { Emulator } from "android-emulator-webrtc/emulator";
+import LogcatView from "./logcat_view";
 import ExitToApp from "@material-ui/icons/ExitToApp";
 import Grid from "@material-ui/core/Grid";
 import IconButton from "@material-ui/core/IconButton";
 import ImageIcon from "@material-ui/icons/Image";
-import LogcatView from "./emulator/views/logcat_view";
 import OndemandVideoIcon from "@material-ui/icons/OndemandVideo";
 import PropTypes from "prop-types";
 import React from "react";
@@ -48,13 +48,12 @@ class EmulatorScreen extends React.Component {
   };
 
   static propTypes = {
-    emulator: PropTypes.object, // emulator service
-    rtc: PropTypes.object, // webt rtc service
-    auth: PropTypes.object
+    uri: PropTypes.string, // grpc endpoint
+    auth: PropTypes.object // auth module to use.
   };
 
   render() {
-    const { emulator, rtc, auth, classes } = this.props;
+    const { uri, auth, classes } = this.props;
     const { view } = this.state;
     return (
       <div className={classes.root}>
@@ -94,12 +93,12 @@ class EmulatorScreen extends React.Component {
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <Container maxWidth="sm">
-                <Emulator emulator={emulator} rtc={rtc} view={this.state.view} />
+                <Emulator uri={uri} auth={auth} view={this.state.view} />
               </Container>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <LogcatView emulator={emulator} maxHistory={8} />
+              <LogcatView uri={uri} auth={auth} maxHistory={8} />
             </Grid>
           </Grid>
         </div>

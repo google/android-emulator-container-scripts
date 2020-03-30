@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import React from "react";
-import * as Proto from "../../../android_emulation_control/emulator_controller_pb.js";
+import * as Proto from "../../../proto/emulator_controller_pb";
 import EmulatorStatus from "../net/emulator_status";
 
 /**
  * A handler that extends a view to send key/mouse events to the emulator.
- * It wrapps the inner component in a div, and will use the jsep handler
+ * It wraps the inner component in a div, and will use the jsep handler
  * to send key/mouse/touch events over the proper channel.
  *
  * It will translate the mouse events based upon the returned display size of
@@ -32,8 +32,8 @@ export default function withMouseKeyHandler(WrappedComponent) {
     constructor(props) {
       super(props);
       this.state = {
-        deviceHeight: 1080,
-        deviceWidth: 1920
+        deviceHeight: 1920,
+        deviceWidth: 1080
       };
       this.handler = React.createRef();
     }
@@ -120,7 +120,14 @@ export default function withMouseKeyHandler(WrappedComponent) {
           onDragStart={this.preventDragHandler}
           tabIndex="0"
           ref={this.handler}
-          style={{ pointerEvents: "all", outline: "none", margin: "0", padding: "0", border: "0" , display: "inline-block"}}
+          style={{
+            pointerEvents: "all",
+            outline: "none",
+            margin: "0",
+            padding: "0",
+            border: "0",
+            display: "inline-block"
+          }}
         >
           <WrappedComponent {...this.props} />
         </div>

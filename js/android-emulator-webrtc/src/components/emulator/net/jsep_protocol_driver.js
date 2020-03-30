@@ -45,15 +45,16 @@ export default class JsepProtocol {
    * Creates an instance of JsepProtocol.
    * @param {EmulatorService} emulator Service used to make the gRPC calls
    * @param {RtcService} rtc Service used to open up the rtc calls.
+   * @param {boolean} poll True if we should use polling
    * @param {callback} onConnect optional callback that is invoked when a stream is available
    * @param {callback} onDisconnect optional callback that is invoked when the stream is closed.
    * @memberof JsepProtocol
    */
-  constructor(emulator, rtc, onConnect, onDisconnect) {
+  constructor(emulator, rtc, poll, onConnect, onDisconnect) {
     this.emulator = emulator;
     this.rtc = rtc;
     this.events = new EventEmitter();
-    /* eslint-disable */
+    this.poll = poll;
     this.guid = null;
     this.event_forwarders = {};
 
@@ -94,11 +95,11 @@ export default class JsepProtocol {
       self.guid = response;
       self.connected = true;
 
-      if (typeof this.rtc.receiveJsepMessages === "function") {
-        // V2, stream messages, envoy based proxy.
+      if (!this.poll) {
+        // Streaming envoy based.
         self._streamJsepMessage();
       } else {
-        // V1, pump messages, go/envoy based proxy.
+        // Poll pump messages, go/envoy based proxy.
         self._receiveJsepMessage();
       }
     });

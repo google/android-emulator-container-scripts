@@ -14,18 +14,35 @@
  * limitations under the License.
  */
 import { EventEmitter } from "events";
-import "../../../android_emulation_control/emulator_controller_pb"
+import "../../../proto/emulator_controller_pb";
+import { EmulatorControllerService } from "../../../proto/emulator_web_client";
 
 /**
  * Gets the logcat stream from the emulator. Register for the 'data' event to receive a logline
  * when one is available.
  *
+ * This requires streaming and will not work with the go grpc webproxy.
+ *
  * @export
  * @class Logcat
  */
 export default class Logcat {
-  constructor(emulator) {
-    this.emulator = emulator;
+  /**
+   * Creates a logcat stream.
+   *
+   * @param {object} uriOrEmulator An emulator controller service, or a URI to a gRPC endpoint.
+   * @param {object} auth The authentication service to use, or null for no authentication.
+   *
+   *  The authentication service should implement the following methods:
+   * - `authHeader()` which must return a set of headers that should be send along with a request.
+   * - `unauthorized()` a function that gets called when a 401 was received.
+   */
+  constructor(uriOrEmulator, auth) {
+    if (uriOrEmulator instanceof EmulatorControllerService) {
+      this.emulator = uriOrEmulator;
+    } else {
+      this.emulator = new EmulatorControllerService(uriOrEmulator, auth);
+    }
     this.offset = 0;
     this.lastline = "";
     this.events = new EventEmitter();
@@ -81,7 +98,7 @@ export default class Logcat {
       }
     });
     this.stream.on("error", error => {
-      if (error.code = 1) {
+      if ((error.code = 1)) {
         // Ignore we got cancelled.
       }
     });
