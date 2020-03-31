@@ -38,7 +38,8 @@ const RtcView = withMouseKeyHandler(EmulatorWebrtcView);
  */
 export default class Emulator extends Component {
   static propTypes = {
-    uri: PropTypes.string, // endpoint where we can reach the emulator.
+    /** gRPC Endpoint where we can reach the emulator. */
+    uri: PropTypes.string,
     /** The authentication service to use, or null for no authentication.
      *
      * The authentication service should implement the following methods:
@@ -54,10 +55,7 @@ export default class Emulator extends Component {
      *
      * You usually want this to be webrtc as this will make use of the efficient
      * webrtc implementation. The png view will request screenshots, which are
-     * very slow.
-     *
-     * Note: The pngview does NOT support polling of screenshots and requires
-     * the envoy proxy.
+     * very slow. You should not use this for remote emulators.
      */
     view: PropTypes.oneOf(["webrtc", "png"]).isRequired,
     /** True if polling should be used, only set this to true if you are using the gowebrpc proxy. */
@@ -82,9 +80,9 @@ export default class Emulator extends Component {
 
   constructor(props) {
     super(props);
-    const { uri, auth, poll } = props;
-    this.emulator = new EmulatorControllerService(uri, auth, this.onError);
-    this.rtc = new RtcService(uri, auth, this.onError);
+    const { uri, auth, poll, onError } = props;
+    this.emulator = new EmulatorControllerService(uri, auth, onError);
+    this.rtc = new RtcService(uri, auth, onError);
     this.jsep = new JsepProtocol(this.emulator, this.rtc, poll);
   }
 

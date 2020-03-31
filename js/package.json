@@ -9,8 +9,6 @@
     "@material-ui/styles": "^4.9.6",
     "android-emulator-webrtc": "file:.yalc/android-emulator-webrtc",
     "axios": "^0.19.2",
-    "google-protobuf": "^3.11.4",
-    "grpc-web": "^1.0.7",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "^3.4.1"

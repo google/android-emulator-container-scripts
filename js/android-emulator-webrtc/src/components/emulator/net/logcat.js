@@ -18,24 +18,21 @@ import "../../../proto/emulator_controller_pb";
 import { EmulatorControllerService } from "../../../proto/emulator_web_client";
 
 /**
- * Gets the logcat stream from the emulator. Register for the 'data' event to receive a logline
- * when one is available.
+ * Observe the logcat stream from the emulator.
  *
- * This requires streaming and will not work with the go grpc webproxy.
- *
- * @export
- * @class Logcat
+ * This requires server side streaming and will only work with the envoy proxy.
  */
 export default class Logcat {
   /**
    * Creates a logcat stream.
    *
-   * @param {object} uriOrEmulator An emulator controller service, or a URI to a gRPC endpoint.
-   * @param {object} auth The authentication service to use, or null for no authentication.
-   *
    *  The authentication service should implement the following methods:
    * - `authHeader()` which must return a set of headers that should be send along with a request.
    * - `unauthorized()` a function that gets called when a 401 was received.
+   *
+   * @constructor
+   * @param {object} uriOrEmulator
+   * @param {object} auth
    */
   constructor(uriOrEmulator, auth) {
     if (uriOrEmulator instanceof EmulatorControllerService) {
@@ -49,12 +46,19 @@ export default class Logcat {
     this.stream = null;
   }
 
+  /**
+   * Register a listener.
+   *
+   * @param {string} name Name of the event.
+   * @param  {Callback} fn Function to notify on the given event.
+   * @memberof Logcat
+   */
   on = (name, fn) => {
     this.events.on(name, fn);
   };
 
   /**
-   * Stops the ongoing stream by canceling it. This will raise an error.
+   * Cancel the currently active logcat stream.
    *
    * @memberof Logcat
    */
@@ -65,7 +69,7 @@ export default class Logcat {
   };
 
   /**
-   * Requests the logcat stream.
+   * Requests the logcat stream, invoking the callback when a log line arrives.
    *
    * @param  {Callback} fnNotify when a new log line arrives.
    * @memberof Logcat

@@ -40,6 +40,7 @@ class EmulatorWebClient extends GrpcWebClientBase {
     super(options);
     this.auth = auth;
     this.events = new EventEmitter();
+    this.events.on("error", e => {console.log("low level gRPC error: " + JSON.stringify(e));})
   }
 
   on = (name, fn) => {
