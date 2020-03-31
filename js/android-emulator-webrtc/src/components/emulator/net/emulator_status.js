@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
-import {
-  EmulatorControllerService
-} from "../../../proto/emulator_web_client";
+import { EmulatorControllerService } from "../../../proto/emulator_web_client";
 
 /**
  * Gets the status of the emulator, parsing the hardware config into something
@@ -58,10 +56,15 @@ export default class EmulatorStatus {
    * Retrieves the current status from the emulator.
    *
    * @param  {Callback} fnNotify when the status is available, returns the retrieved status.
+   * @param  {boolean} cache True if the cache can be used.
    * @memberof EmulatorStatus
    */
-  updateStatus = fnNotify => {
+  updateStatus = (fnNotify, cache) => {
     const request = new Empty();
+    if (cache && this.status) {
+      fnNotify(this.status);
+      return this.status;
+    }
     this.emulator.getStatus(request).on("data", response => {
       var hwConfig = {};
       const entryList = response.getHardwareconfig().getEntryList();

@@ -67,8 +67,6 @@ export default class Emulator extends Component {
   };
 
   static defaultProps = {
-    width: 378,
-    height: 672,
     view: "webrtc",
     auth: null,
     poll: false,
@@ -91,15 +89,15 @@ export default class Emulator extends Component {
   }
 
   render() {
-    const { width, height, view } = this.props;
+    const { width, height, view, poll } = this.props;
     const SpecificView = this.components[view] || RtcView;
-    //const styled = { outline: "none", maxWidth: width * scale };
     return (
       <SpecificView
         width={width}
         height={height}
         emulator={this.emulator}
         jsep={this.jsep}
+        poll={poll}
       />
     );
   }

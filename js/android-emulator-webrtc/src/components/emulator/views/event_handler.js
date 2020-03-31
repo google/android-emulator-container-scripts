@@ -36,6 +36,8 @@ export default function withMouseKeyHandler(WrappedComponent) {
         deviceWidth: 1080
       };
       this.handler = React.createRef();
+      const { emulator } = this.props;
+      this.status = new EmulatorStatus(emulator);
     }
 
     componentDidMount() {
@@ -43,9 +45,7 @@ export default function withMouseKeyHandler(WrappedComponent) {
     }
 
     getScreenSize() {
-      const { emulator } = this.props;
-      const state = new EmulatorStatus(emulator);
-      state.updateStatus(state => {
+      this.status.updateStatus(state => {
         this.setState({
           deviceWidth: parseInt(state.hardwareConfig["hw.lcd.width"]) || 1080,
           deviceHeight: parseInt(state.hardwareConfig["hw.lcd.height"]) || 1920
@@ -66,12 +66,18 @@ export default function withMouseKeyHandler(WrappedComponent) {
       const x = Math.round(xp * scaleX);
       const y = Math.round(yp * scaleY);
 
+      if (isNaN(x) || isNaN(y)) {
+        console.log("Ignoring: x: " + x + ", y:" + y);
+        return;
+      }
+
       // Forward the request to the jsep engine.
       var request = new Proto.MouseEvent();
       request.setX(x);
       request.setY(y);
       request.setButtons(down ? 1 : 0);
 
+    console.log("Send: " + request);
       const { jsep } = this.props;
       jsep.send("mouse", request);
     };
@@ -126,7 +132,8 @@ export default function withMouseKeyHandler(WrappedComponent) {
             margin: "0",
             padding: "0",
             border: "0",
-            display: "inline-block"
+            display: "inline-block",
+            width: "100%"
           }}
         >
           <WrappedComponent {...this.props} />

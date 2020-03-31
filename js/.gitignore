@@ -12,6 +12,10 @@ coverage
 # production
 build
 
+# yalc
+.yalc
+yalc.lock
+
 # misc
 .DS_Store
 .env.local

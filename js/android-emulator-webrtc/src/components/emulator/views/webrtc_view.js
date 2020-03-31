@@ -23,11 +23,7 @@ import React, { Component } from "react";
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
     /** Jsep protocol driver, used to establish the video stream. */
-    jsep: PropTypes.object,
-    /** The width of the component */
-    width: PropTypes.number,
-    /** The height of the component */
-    height: PropTypes.number,
+    jsep: PropTypes.object
   };
 
   constructor(props) {
@@ -90,12 +86,17 @@ export default class EmulatorWebrtcView extends Component {
   };
 
   render() {
-    const { width, height } = this.props;
     return (
       <video
         ref={this.video}
-        width={width}
-        height={height}
+        style={{
+        display: "block",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+        objectPosition: "center"
+      }}
         muted="muted"
         onContextMenu={this.onContextMenu}
         onCanPlay={this.onCanPlay}
