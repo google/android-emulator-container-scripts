@@ -146,7 +146,7 @@ export default class JsepProtocol {
   send(label, msg) {
     let bytes = msg.serializeBinary();
     let forwarder = this.event_forwarders[label];
-    console.log("Send " + label + " " + msg.toObject());
+    console.log("Send " + label + " " + JSON.stringify(msg.toObject()));
     // Send via data channel/gRPC bridge.
     if (this.connected && forwarder && forwarder.readyState == "open") {
       this.event_forwarders[label].send(bytes);

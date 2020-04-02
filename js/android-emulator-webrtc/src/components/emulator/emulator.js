@@ -47,6 +47,15 @@ export default class Emulator extends Component {
      * - `unauthorized()` a function that gets called when a 401 was received.
      */
     auth: PropTypes.object,
+    /** Function called when the state of the emulator changes,
+     *
+     * The state will be one of:
+     *
+     * - "connecting"
+     * - "connected"
+     * - "disconnected"
+     */
+    onStateChange: PropTypes.func,
     /** The width of the component */
     width: PropTypes.number,
     /** The height of the component */
@@ -87,7 +96,7 @@ export default class Emulator extends Component {
   }
 
   render() {
-    const { width, height, view, poll } = this.props;
+    const { width, height, view, poll, onStateChange } = this.props;
     const SpecificView = this.components[view] || RtcView;
     return (
       <SpecificView
@@ -95,6 +104,7 @@ export default class Emulator extends Component {
         height={height}
         emulator={this.emulator}
         jsep={this.jsep}
+        onStateChange={onStateChange}
         poll={poll}
       />
     );

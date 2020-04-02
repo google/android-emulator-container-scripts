@@ -23,7 +23,16 @@ import React, { Component } from "react";
 export default class EmulatorWebrtcView extends Component {
   static propTypes = {
     /** Jsep protocol driver, used to establish the video stream. */
-    jsep: PropTypes.object
+    jsep: PropTypes.object,
+    /** Function called when the state of the emulator changes,
+     *
+     * The state will be one of:
+     *
+     * - "connecting"
+     * - "connected"
+     * - "disconnected"
+     */
+    onStateChange: PropTypes.func
   };
 
   constructor(props) {
@@ -31,16 +40,30 @@ export default class EmulatorWebrtcView extends Component {
     this.video = React.createRef();
   }
 
-  componentWillUnmount = () => {
-    this.props.jsep.disconnect();
-  };
+  broadcastState() {
+    const { onStateChange } = this.props;
+    if (onStateChange) {
+      onStateChange(this.state.connect);
+    }
+  }
 
-  componentDidMount = () => {
+  componentWillUnmount() {
+    this.props.jsep.disconnect();
+  }
+
+  componentDidMount() {
     this.props.jsep.on("connected", this.onConnect);
+    this.props.jsep.on("disconnected", this.onDisconnect);
+    this.setState({ connect: "connecting" }, this.broadcastState);
     this.props.jsep.startStream();
+  }
+
+  onDisconnect = () => {
+    this.setState({ connect: "disconnected" }, this.broadcastState);
   };
 
   onConnect = stream => {
+    this.setState({ connect: "connected" }, this.broadcastState);
     const video = this.video.current;
     if (!video) {
       // Component was unmounted.
@@ -90,13 +113,13 @@ export default class EmulatorWebrtcView extends Component {
       <video
         ref={this.video}
         style={{
-        display: "block",
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        objectFit: "contain",
-        objectPosition: "center"
-      }}
+          display: "block",
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          objectPosition: "center"
+        }}
         muted="muted"
         onContextMenu={this.onContextMenu}
         onCanPlay={this.onCanPlay}

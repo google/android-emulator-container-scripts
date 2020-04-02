@@ -31,25 +31,44 @@ export default class EmulatorPngView extends Component {
     emulator: PropTypes.object,
     /** The width of the component */
     width: PropTypes.number,
+    /** Function called when the state of the emulator changes,
+     *
+     * The state will be one of:
+     *
+     * - "connecting"
+     * - "connected"
+     * - "disconnected"
+     */
+    onStateChange: PropTypes.func,
     /** True if polling should be used, only set this to true if you are using the gowebrpc proxy.
      * Note: Deprecated, setting this to true results in poor performance.
      */
-    poll: PropTypes.bool,
+    poll: PropTypes.bool
   };
 
   state = {
     /** Currently displayed image, retrieved from the emulator. */
     png: "",
     width: null,
-    height: null
+    height: null,
+    connect: "disconnected"
   };
 
+  broadcastState() {
+    const { onStateChange } = this.props;
+    if (onStateChange) {
+      onStateChange(this.state.connect);
+    }
+  }
+
   componentDidMount() {
+    this.setState({ connect: "connecting" }, this.broadcastState);
     this.startStream();
   }
 
   componentWillUnmount() {
     if (this.screen) {
+      this.setState({ connect: "disconnected" }, this.broadcastState);
       this.screen.cancel();
     }
   }
@@ -74,6 +93,7 @@ export default class EmulatorPngView extends Component {
       this.screen = emulator.streamScreenshot(request);
     }
     this.screen.on("data", response => {
+      this.setState({ connect: "connected" }, this.broadcastState);
       // Update the image with the one we just received.
       self.setState({
         png: "data:image/jpeg;base64," + response.getImage_asB64()
