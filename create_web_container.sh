@@ -91,7 +91,6 @@ make clean
 make deps
 cd ..
 
-[ -f src/android_emulation_control/rtc_service_pb.js ] || panic "Discovered older release, please git revert 9e78e30"
 # Make sure we have all we need for adb to succeed.
 generate_keys
 

@@ -22,6 +22,7 @@ all: develop
 
 deps:
 	cd android-emulator-webrtc; $(MAKE) build
+	yalc add android-emulator-webrtc
 	@npm install
 
 develop:

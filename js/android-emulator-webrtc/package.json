@@ -12,7 +12,8 @@
     "prop-types": "^15.6.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-resize-observer": "^1.1.1"
+    "react-resize-observer": "^1.1.1",
+    "yalc": "^1.0.0-pre.35"
   },
   "devDependencies": {
     "babel-core": "^6.21.0",

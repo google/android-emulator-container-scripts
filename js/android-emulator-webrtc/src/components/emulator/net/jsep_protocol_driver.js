@@ -57,7 +57,7 @@ export default class JsepProtocol {
     this.poll = poll;
     this.guid = null;
     this.event_forwarders = {};
-
+    if (typeof this.rtc.receiveJsepMessages !== "function") this.poll = true;
     if (onConnect) this.events.on("connected", onConnect);
     if (onDisconnect) this.events.on("disconnected", onDisconnect);
   }
@@ -118,7 +118,7 @@ export default class JsepProtocol {
       );
       this.peerConnection = null;
     }
-    this.event_forwarders = {}
+    this.event_forwarders = {};
   };
 
   _handlePeerConnectionTrack = e => {
@@ -146,7 +146,7 @@ export default class JsepProtocol {
   send(label, msg) {
     let bytes = msg.serializeBinary();
     let forwarder = this.event_forwarders[label];
-
+    console.log("Send " + label + " " + msg.toObject());
     // Send via data channel/gRPC bridge.
     if (this.connected && forwarder && forwarder.readyState == "open") {
       this.event_forwarders[label].send(bytes);

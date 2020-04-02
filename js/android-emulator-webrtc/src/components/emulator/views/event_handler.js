@@ -33,7 +33,15 @@ export default function withMouseKeyHandler(WrappedComponent) {
       super(props);
       this.state = {
         deviceHeight: 1920,
-        deviceWidth: 1080
+        deviceWidth: 1080,
+        mouse: {
+          xp: 0,
+          yp: 0,
+          mouseDown: false, // Current state of mouse
+          // Current button pressed.
+          // In proto, 0 is "no button", 1 is left, and 2 is right.
+          mouseButton: 0
+        }
       };
       this.handler = React.createRef();
       const { emulator } = this.props;
@@ -57,9 +65,10 @@ export default function withMouseKeyHandler(WrappedComponent) {
       e.preventDefault();
     };
 
-    setCoordinates = (down, xp, yp) => {
+    setCoordinates = () => {
       // It is totally possible that we send clicks that are offscreen..
       const { deviceWidth, deviceHeight } = this.state;
+      const { mouseDown, mouseButton, xp, yp } = this.state.mouse;
       const { clientHeight, clientWidth } = this.handler.current;
       const scaleX = deviceWidth / clientWidth;
       const scaleY = deviceHeight / clientHeight;
@@ -75,40 +84,65 @@ export default function withMouseKeyHandler(WrappedComponent) {
       var request = new Proto.MouseEvent();
       request.setX(x);
       request.setY(y);
-      request.setButtons(down ? 1 : 0);
-
-    console.log("Send: " + request);
+      request.setButtons(mouseDown ? mouseButton : 0);
       const { jsep } = this.props;
       jsep.send("mouse", request);
     };
 
-    handleKeyDown = e => {
-      var request = new Proto.KeyboardEvent();
-      request.setKey(e.key);
-      request.setEventtype(2);
-
-      const { jsep } = this.props;
-      jsep.send("keyboard", request);
+    handleKey = eventType => {
+      return e => {
+        var request = new Proto.KeyboardEvent();
+        request.setEventtype(
+          eventType === "KEYDOWN"
+            ? Proto.KeyboardEvent.KeyEventType.KEYDOWN
+            : eventType === "KEYUP"
+            ? Proto.KeyboardEvent.KeyEventType.KEYUP
+            : Proto.KeyboardEvent.KeyEventType.KEYPRESS
+        );
+        request.setKey(e.key);
+        const { jsep } = this.props;
+        jsep.send("keyboard", request);
+      };
     };
 
     // Properly handle the mouse events.
     handleMouseDown = e => {
-      this.setState({ mouseDown: true });
       const { offsetX, offsetY } = e.nativeEvent;
-      this.setCoordinates(true, offsetX, offsetY);
+      this.setState(
+        {
+          mouse: {
+            xp: offsetX,
+            yp: offsetY,
+            mouseDown: true,
+            // In browser's MouseEvent.button property,
+            // 0 stands for left button and 2 stands for right button.
+            mouseButton: e.button === 0 ? 1 : e.button === 2 ? 2 : 0
+          }
+        },
+        this.setCoordinates
+      );
     };
 
     handleMouseUp = e => {
-      this.setState({ mouseDown: false });
       const { offsetX, offsetY } = e.nativeEvent;
-      this.setCoordinates(false, offsetX, offsetY);
+      this.setState(
+        {
+          mouse: { xp: offsetX, yp: offsetY, mouseDown: false, mouseButton: 0 }
+        },
+        this.setCoordinates
+      );
     };
 
     handleMouseMove = e => {
-      const { mouseDown } = this.state;
-      if (!mouseDown) return;
+      // Let's not overload the endpoint with useless events.
+      if (!this.state.mouse.mouseDown)
+        return;
+
       const { offsetX, offsetY } = e.nativeEvent;
-      this.setCoordinates(true, offsetX, offsetY);
+      var mouse = this.state.mouse;
+      mouse.xp = offsetX;
+      mouse.yp = offsetY;
+      this.setState({ mouse: mouse }, this.setCoordinates);
     };
 
     preventDragHandler = e => {
@@ -122,7 +156,8 @@ export default function withMouseKeyHandler(WrappedComponent) {
           onMouseMove={this.handleMouseMove}
           onMouseUp={this.handleMouseUp}
           onMouseOut={this.handleMouseUp}
-          onKeyDown={this.handleKeyDown}
+          onKeyDown={this.handleKey("KEYDOWN")}
+          onKeyUp={this.handleKey("KEYUP")}
           onDragStart={this.preventDragHandler}
           tabIndex="0"
           ref={this.handler}

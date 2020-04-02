@@ -108,7 +108,7 @@ protoc-gen-grpc-web: protoc-plugin/grpc_generator.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 deps: protoc system-check
-	@npm install -g yalc
+	@npm install yalc
 	@npm install
 
 

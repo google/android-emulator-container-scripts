@@ -17,7 +17,6 @@
 
  // This class is a stub for V1 compatibility.
  import { EmulatorControllerClient } from "../proto/emulator_controller_grpc_web_pb";
- import { RtcClient } from "../proto/rtc_service_grpc_web_pb";
  import { SnapshotServiceClient } from "../proto/snapshot_service_grpc_web_pb"
  import { GrpcWebClientBase } from "grpc-web";
  import { EventEmitter } from "events";
@@ -124,7 +123,6 @@ export class EmulatorControllerService extends EmulatorControllerClient {
  *
  * @export
  * @class EmulatorControllerService
- * @extends {RtcClient}
  */
 export class RtcService extends EmulatorControllerClient {
   /**
@@ -153,7 +151,6 @@ export class RtcService extends EmulatorControllerClient {
  *
  * @export
  * @class EmulatorControllerService
- * @extends {RtcClient}
  */
 export class SnapshotService extends SnapshotServiceClient {
   /**
