@@ -70,6 +70,7 @@ all: build
 
 clean:
 	rm -rf $(PROTODIR)
+	rm -rf emulator
 
 
 $(PROTODIR):

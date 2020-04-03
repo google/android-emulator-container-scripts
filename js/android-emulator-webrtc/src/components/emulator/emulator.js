@@ -34,40 +34,34 @@ const RtcView = withMouseKeyHandler(EmulatorWebrtcView);
  * of the emulator. It will translate mouse events on this component and send them
  * to the actual emulator.
  *
- * The size of this component will be: width x height
+ * #### Authentication Service
+ *
+ * The authentication service should implement the following methods:
+ *
+ * - `authHeader()` which must return a set of headers that should be send along with a request.
+ * - `unauthorized()` a function that gets called when a 401 was received.
+ *
+ * #### Type of view
+ *
+ * You usually want this to be webrtc as this will make use of the efficient
+ * webrtc implementation. The png view will request screenshots, which are
+ * very slow, and require the envoy proxy. You should not use this for remote emulators.
  */
 export default class Emulator extends Component {
   static propTypes = {
     /** gRPC Endpoint where we can reach the emulator. */
-    uri: PropTypes.string,
-    /** The authentication service to use, or null for no authentication.
-     *
-     * The authentication service should implement the following methods:
-     * - `authHeader()` which must return a set of headers that should be send along with a request.
-     * - `unauthorized()` a function that gets called when a 401 was received.
-     */
+    uri: PropTypes.string.isRequired,
+    /** The authentication service to use, or null for no authentication. */
     auth: PropTypes.object,
-    /** Function called when the state of the emulator changes,
-     *
-     * The state will be one of:
-     *
-     * - "connecting"
-     * - "connected"
-     * - "disconnected"
-     */
+    /** Called upon state change, one of ["connecting", "connected", "disconnected"] */
     onStateChange: PropTypes.func,
     /** The width of the component */
     width: PropTypes.number,
     /** The height of the component */
     height: PropTypes.number,
-    /** The underlying view used to display the emulator.
-     *
-     * You usually want this to be webrtc as this will make use of the efficient
-     * webrtc implementation. The png view will request screenshots, which are
-     * very slow. You should not use this for remote emulators.
-     */
+    /** The underlying view used to display the emulator, one of ["webrtc", "png"] */
     view: PropTypes.oneOf(["webrtc", "png"]).isRequired,
-    /** True if polling should be used, only set this to true if you are using the gowebrpc proxy. */
+    /** True if polling should be used, only set this to true if you are using the go webgrpc proxy. */
     poll: PropTypes.bool,
     /** Callback that will be invoked in case of gRPC errors. */
     onError: PropTypes.func

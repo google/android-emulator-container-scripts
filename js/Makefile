@@ -20,8 +20,11 @@ CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 
 all: develop
 
+clean:
+	rm -rf .yalc
+
 deps:
-	cd android-emulator-webrtc; $(MAKE) build
+	$(MAKE) -C android-emulator-webrtc build
 	yalc add android-emulator-webrtc
 	@npm install
 

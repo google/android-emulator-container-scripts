@@ -24,14 +24,7 @@ export default class EmulatorWebrtcView extends Component {
   static propTypes = {
     /** Jsep protocol driver, used to establish the video stream. */
     jsep: PropTypes.object,
-    /** Function called when the state of the emulator changes,
-     *
-     * The state will be one of:
-     *
-     * - "connecting"
-     * - "connected"
-     * - "disconnected"
-     */
+    /** Function called when the state of the emulator changes */
     onStateChange: PropTypes.func
   };
 

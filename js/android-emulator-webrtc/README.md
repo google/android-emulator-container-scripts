@@ -1,78 +1,172 @@
-Android Emulator WebRTC
+android-emulator-webrtc
 =======================
 
-This contains an node module that can be used to interact with the emulator from the browser. It is
-intended to be used with an envoy proxy.
-
-### Do I need TURN?
-
-The most important thing to is to figure out if you need a [Turn Server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT). **You usually only need this if your server running the emulator is behind a firewall, and not publicly accessible.** Most of the time there is no need for a turn server.
-
-If for example you are running the emulator in a private Google GCE project, you will need to make use of a turn server. You can take the following steps to enable turn:
-
-1. Enable a turn service. There are many services you could use. A quick [Google search](https://www.google.com/search?q=webrtc+turn+server+cloud+providers) will provide a series of provides. If you are internal at google you could use the [GCE turn api](http://go/turnaas).
-2. Launch the emulator with the `-turncfg` flag.
-
-   This will inform the videobridge to execute the given command for every new incoming connection to obtain the JSON turn configuration that will be used.
-
-    This command must do the following:
-
-    - Produce a result on stdout.
-    - Produce a result within 1000 ms.
-    - Produce a valid [JSON RTCConfiguration object](https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration).
-    - That contain at least an "iceServers" array.
-    - The exit value should be 0 on success
-
-    For example:
-
-    ```sh
-    emulator -grpc 8554 -turncfg "curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec"
-    ```
-
-You can create the docker container with the `--extra` flag to pass in the turn configuration. For example:
-
-```sh
-emu-docker create stable \
-           "O google_apis_playstore x86" \
-           --extra  \
-           '-turncfg "curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=mykey"' \
-           --metrics
-```
-
-Would use the given curl command to obtain the the json snippet.
-
-*NOTE: If you do not obtain ice configuration through curl you might need to modify the docker template
-to make sure you can obtain the proper turn configuration.8
-
-
-You will likely need to modify `App.js` and `index.html` to suit your needs.
-
-## As a Developer
-
-As a developer you will make use of an envoy docker container and use node.js to serve the react app.  First you must
-make sure you create a containerized version of the emulator as follows:
-
-```sh
-emu-docker create stable "Q google_apis_playstore x86"
-```
-
-This will binplace all the files needed for development under the src directory.
-Next you can get the development environment ready by:
-
-
-```sh
-  $ make deps
-```
-
-And start envoy + nodejs as follows:
+This contains a set of React components that can be used to interact with the emulator from the browser. It is
+intended to be used with an [envoy proxy](https://blog.envoyproxy.io/envoy-and-grpc-web-a-fresh-new-alternative-to-rest-6504ce7eb880)
+that is connected to a running emulator.
 
 ```
-  $ make develop
+npm install --save android-emulator-webrtc
 ```
 
-This should open up a browser, and detect any change made to the webpages and JavaScript sources. Hit ctrl-c to stop the dev environment. Note that shutdown takes a bit as a docker container needs to shut down.
+[Full reference](#full-reference)
 
-## Limitations
+Features
+--
 
-gRPC is not well supported in the browser and has only support for unary calls and server side streaming. This restricts support for other services
-such as [Waterfall](https://github.com/google/devx-tools/tree/master/waterfall).
+- Display and interact with android emulator over the web.
+- Retrieve logcat from remote emulator.
+- Retrieve emulator status
+
+---
+
+## Usage
+
+You can connect to remote unsecured emulator as follows:
+
+
+```js
+import { Emulator } from "android-emulator-webrtc/emulator";
+
+class EmulatorScreen extends React.Component {
+
+  render() {
+    return (
+        <Emulator uri='https://my.emulator' />
+     );
+  }
+}
+```
+
+In order to connect to a secure endpoint you will have to provide an authorization service that provides the following functions:
+
+- `authHeader()` which must return a set of headers that should be send along with a request. For example:
+
+```js
+ authHeader = () => {
+    return { Authorization: 'Some Token' };
+  };
+}
+```
+
+- `unauthorized()` a function that gets called when a 401 was received. Here you can provide logic to handle token refresh, re-login etc.
+
+
+---------------
+
+Full Reference
+---
+
+## Emulator
+A React component that displays a remote android emulator.
+
+The emulator will mount a png or webrtc view component to display the current state
+of the emulator. It will translate mouse events on this component and send them
+to the actual emulator.
+
+#### Authentication Service
+
+The authentication service should implement the following methods:
+
+- `authHeader()` which must return a set of headers that should be send along with a request.
+- `unauthorized()` a function that gets called when a 401 was received.
+
+#### Type of view
+
+You usually want this to be webrtc as this will make use of the efficient
+webrtc implementation. The png view will request screenshots, which are
+very slow, and require the envoy proxy. You should not use this for remote emulators.
+
+
+
+
+Property | Type | Required | Default value | Description
+:--- | :--- | :--- | :--- | :---
+uri|string|yes||gRPC Endpoint where we can reach the emulator.
+auth|object|no|null|The authentication service to use, or null for no authentication.
+onStateChange|func|no||Called upon state change, one of [&quot;connecting&quot;, &quot;connected&quot;, &quot;disconnected&quot;]
+width|number|no||The width of the component
+height|number|no||The height of the component
+view|enum|no|"webrtc"|The underlying view used to display the emulator, one of [&quot;webrtc&quot;, &quot;png&quot;]
+poll|bool|no|false|True if polling should be used, only set this to true if you are using the go webgrpc proxy.
+onError|func|no|&lt;See the source code&gt;|Callback that will be invoked in case of gRPC errors.
+-----
+
+<a name="EmulatorStatus"></a>
+
+## EmulatorStatus
+**Kind**: global class
+
+* [EmulatorStatus](#EmulatorStatus)
+    * [new EmulatorStatus()](#new_EmulatorStatus_new)
+    * [.getStatus](#EmulatorStatus.getStatus)
+    * [.updateStatus](#EmulatorStatus.updateStatus)
+
+<a name="new_EmulatorStatus_new"></a>
+
+### new EmulatorStatus()
+Gets the status of the emulator, parsing the hardware config into something
+easy to digest.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
+| auth | <code>object</code> | authorization class. |
+
+<a name="EmulatorStatus.getStatus"></a>
+
+### EmulatorStatus.getStatus
+Gets the cached status.
+
+**Kind**: static property of [<code>EmulatorStatus</code>](#EmulatorStatus)
+<a name="EmulatorStatus.updateStatus"></a>
+
+### EmulatorStatus.updateStatus
+Retrieves the current status from the emulator.
+
+**Kind**: static property of [<code>EmulatorStatus</code>](#EmulatorStatus)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| fnNotify | <code>Callback</code> | when the status is available, returns the retrieved status. |
+| cache | <code>boolean</code> | True if the cache can be used. |
+
+
+
+
+## Logcat
+**Kind**: global class
+
+* [Logcat](#Logcat)
+    * [new Logcat()](#new_Logcat_new)
+    * [.stop](#Logcat.stop)
+    * [.start](#Logcat.start)
+
+<a name="new_Logcat_new"></a>
+
+### new Logcat()
+Observe the logcat stream from the emulator.
+
+This requires server side streaming and will only work with the envoy proxy.
+
+| Param | Type | Description |
+| --- | --- | --- |
+| uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
+| auth | <code>object</code> | authorization class. |
+
+<a name="Logcat.stop"></a>
+
+### Logcat.stop
+ Cancel the currently active logcat stream.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+<a name="Logcat.start"></a>
+
+### Logcat.start
+Requests the logcat stream.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| fnNotify | <code>Callback</code> | when a new log line arrives. |
