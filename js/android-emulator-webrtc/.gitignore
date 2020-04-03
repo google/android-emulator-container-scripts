@@ -1,4 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+src/proto/*
+emulator
 
 # dependencies
 node_modules
@@ -27,5 +29,3 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 protoc-gen-grpc-web
-src/android_emulation_control/*
-docker/certs/jwt_secrets_pub.jwks

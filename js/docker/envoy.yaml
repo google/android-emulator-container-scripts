@@ -43,7 +43,7 @@ static_resources:
               domains: ["*"]
               routes:
                 # This is the emulator endpoint for grpc requests.
-              - match: { prefix: "/android.emulation.control.EmulatorController" }
+              - match: { prefix: "/android.emulation.control" }
                 route:
                    cluster: emulator_service_grpc
                    max_grpc_timeout: 0s

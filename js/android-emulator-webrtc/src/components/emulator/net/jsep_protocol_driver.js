@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 import { EventEmitter } from "events";
-import "../../../android_emulation_control/emulator_controller_pb";
-
+import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 /**
- * This drives the jsep protocol with the emulator. The jsep protocol is described here:
- * https://rtcweb-wg.github.io/jsep/. Note that we use a message pump to the grpc endpoint
- * to receive jsep messages that must remain active for the duration of the connection.
+ * This drives the jsep protocol with the emulator, and can be used to
+ * send key/mouse/touch events to the emulator. Events will be send
+ * over the data channel if open, otherwise they will be send via the
+ * grpc endpoint.
+ *
+ *  The jsep protocol is described here:
+ * https://rtcweb-wg.github.io/jsep/.
  *
  *  This class can fire two events:
  *
@@ -28,6 +31,7 @@ import "../../../android_emulation_control/emulator_controller_pb";
  *
  * You usually want to start the stream after instantiating this object. Do not forget to
  * disconnect once you are finished to terminate the message pump.
+ *
  *
  * @example
  *  jsep = new JsepProtocolDriver(emulator, s => { video.srcObject = s; video.play() });
@@ -39,22 +43,24 @@ import "../../../android_emulation_control/emulator_controller_pb";
 export default class JsepProtocol {
   /**
    * Creates an instance of JsepProtocol.
-   * @param {EmulatorControllerService} emulator Service used to make the gRPC calls
+   * @param {EmulatorService} emulator Service used to make the gRPC calls
+   * @param {RtcService} rtc Service used to open up the rtc calls.
+   * @param {boolean} poll True if we should use polling
    * @param {callback} onConnect optional callback that is invoked when a stream is available
    * @param {callback} onDisconnect optional callback that is invoked when the stream is closed.
    * @memberof JsepProtocol
    */
-  constructor(emulator, onConnect, onDisconnect) {
+  constructor(emulator, rtc, poll, onConnect, onDisconnect) {
     this.emulator = emulator;
+    this.rtc = rtc;
     this.events = new EventEmitter();
-    /* eslint-disable */
-    this.guid = new proto.android.emulation.control.RtcId();
-    this.event_forwarders = {}
-
+    this.poll = poll;
+    this.guid = null;
+    this.event_forwarders = {};
+    if (typeof this.rtc.receiveJsepMessages !== "function") this.poll = true;
     if (onConnect) this.events.on("connected", onConnect);
     if (onDisconnect) this.events.on("disconnected", onDisconnect);
   }
-
 
   on = (name, fn) => {
     this.events.on(name, fn);
@@ -83,14 +89,19 @@ export default class JsepProtocol {
     this.peerConnection = null;
     this.active = true;
 
-    var request = new proto.google.protobuf.Empty();
-    this.emulator.requestRtcStream(request).on("data", response => {
+    var request = new Empty();
+    this.rtc.requestRtcStream(request).on("data", response => {
       // Configure
-      self.guid.setGuid(response.getGuid());
+      self.guid = response;
       self.connected = true;
 
-      // And pump messages
-      self._receiveJsepMessage();
+      if (!this.poll) {
+        // Streaming envoy based.
+        self._streamJsepMessage();
+      } else {
+        // Poll pump messages, go/envoy based proxy.
+        self._receiveJsepMessage();
+      }
     });
   };
 
@@ -107,6 +118,7 @@ export default class JsepProtocol {
       );
       this.peerConnection = null;
     }
+    this.event_forwarders = {};
   };
 
   _handlePeerConnectionTrack = e => {
@@ -133,10 +145,10 @@ export default class JsepProtocol {
 
   send(label, msg) {
     let bytes = msg.serializeBinary();
-    let forwarder = this.event_forwarders[label]
-
+    let forwarder = this.event_forwarders[label];
+    console.log("Send " + label + " " + JSON.stringify(msg.toObject()));
     // Send via data channel/gRPC bridge.
-    if (forwarder && forwarder.readyState == "open") {
+    if (this.connected && forwarder && forwarder.readyState == "open") {
       this.event_forwarders[label].send(bytes);
     } else {
       // Fallback to using the gRPC protocol
@@ -160,9 +172,9 @@ export default class JsepProtocol {
   };
 
   _handleDataChannel = e => {
-    let channel = e.channel
+    let channel = e.channel;
     this.event_forwarders[channel.label] = channel;
-  }
+  };
 
   _handleStart = signal => {
     this.peerConnection = new RTCPeerConnection(signal.start);
@@ -181,9 +193,10 @@ export default class JsepProtocol {
       this._handlePeerConnectionStateChange,
       false
     );
-    this.peerConnection.ondatachannel = e => { this._handleDataChannel(e); }
+    this.peerConnection.ondatachannel = e => {
+      this._handleDataChannel(e);
+    };
   };
-
 
   _handleSDP = async signal => {
     this.peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
@@ -223,9 +236,29 @@ export default class JsepProtocol {
     var request = new proto.android.emulation.control.JsepMsg();
     request.setId(this.guid);
     request.setMessage(JSON.stringify(jsonObject));
-    this.emulator.sendJsepMessage(request);
+    this.rtc.sendJsepMessage(request);
   };
 
+  _streamJsepMessage = () => {
+    if (!this.connected) return;
+    var self = this;
+
+    const stream = this.rtc.receiveJsepMessages(this.guid, {});
+    stream.on("data", response => {
+      const msg = response.getMessage();
+      self._handleJsepMessage(msg);
+    });
+    stream.on("error", e => {
+      self.cleanup();
+    });
+    stream.on("end", e => {
+      self.cleanup();
+    });
+
+    this.receive = stream;
+  };
+
+  // This function is a fallback for v1 (go based proxy), that does not support streaming.
   _receiveJsepMessage = () => {
     if (!this.connected) return;
 
@@ -233,7 +266,7 @@ export default class JsepProtocol {
 
     // This is a blocking call, that will return as soon as a series
     // of messages have been made available, or if we reach a timeout
-    this.emulator.receiveJsepMessage(this.guid, {}).on("data", response => {
+    this.rtc.receiveJsepMessage(this.guid, {}).on("data", response => {
       const msg = response.getMessage();
       // Handle only if we received a useful message.
       // it is possible to get nothing if the server decides

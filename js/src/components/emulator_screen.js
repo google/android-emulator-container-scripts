@@ -4,17 +4,19 @@ import AppBar from "@material-ui/core/AppBar";
 import Box from "@material-ui/core/Box";
 import Container from "@material-ui/core/Container";
 import Copyright from "./copyright";
-import Emulator from "./emulator/emulator.js";
+import { Emulator } from "android-emulator-webrtc/emulator";
+import LogcatView from "./logcat_view";
 import ExitToApp from "@material-ui/icons/ExitToApp";
 import Grid from "@material-ui/core/Grid";
 import IconButton from "@material-ui/core/IconButton";
 import ImageIcon from "@material-ui/icons/Image";
-import LogcatView from "./emulator/views/logcat_view";
 import OndemandVideoIcon from "@material-ui/icons/OndemandVideo";
 import PropTypes from "prop-types";
 import React from "react";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
+import Snackbar from "@material-ui/core/Snackbar";
+import Alert from "@material-ui/lab/Alert";
 
 const styles = theme => ({
   root: {
@@ -44,17 +46,35 @@ const styles = theme => ({
 // It uses the material-ui to display a toolbar.
 class EmulatorScreen extends React.Component {
   state = {
-    view: "webrtc"
+    view: "webrtc",
+    error_snack: false,
+    error_msg: "",
+    emuState: "connecting"
   };
 
   static propTypes = {
-    emulator: PropTypes.object, // emulator service
-    auth: PropTypes.object
+    uri: PropTypes.string, // grpc endpoint
+    auth: PropTypes.object // auth module to use.
+  };
+
+  stateChange = s => {
+    this.setState({ emuState: s });
+  };
+
+  onError = err => {
+    this.setState({
+      error_snack: true,
+      error_msg: "Low level gRPC error: " + JSON.stringify(err)
+    });
+  };
+
+  handleClose = e => {
+    this.setState({ error_snack: false });
   };
 
   render() {
-    const { emulator, auth, classes } = this.props;
-    const { view } = this.state;
+    const { uri, auth, classes } = this.props;
+    const { view, emuState, error_snack, error_msg } = this.state;
     return (
       <div className={classes.root}>
         <AppBar position="static">
@@ -93,19 +113,29 @@ class EmulatorScreen extends React.Component {
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <Container maxWidth="sm">
-                <Emulator emulator={emulator} view={this.state.view} />
+                <Emulator
+                  uri={uri}
+                  auth={auth}
+                  view={this.state.view}
+                  onStateChange={this.stateChange}
+                  onError={this.onError}
+                />
+                <p>State: {emuState} </p>
               </Container>
             </Grid>
-
             <Grid item xs={12} sm={6}>
-              <LogcatView emulator={emulator} maxHistory={8} />
+              <LogcatView uri={uri} auth={auth} maxHistory={8} />
             </Grid>
           </Grid>
         </div>
-
         <Box mt={8}>
           <Copyright />
         </Box>
+        <Snackbar open={error_snack} autoHideDuration={6000}>
+          <Alert onClose={this.handleClose} severity="error">
+            {error_msg}
+          </Alert>
+        </Snackbar>
       </div>
     );
   }
