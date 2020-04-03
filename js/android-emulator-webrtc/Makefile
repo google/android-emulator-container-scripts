@@ -48,7 +48,7 @@ endif
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 QEMU_ROOT := $(abspath $(AOSP)/external/qemu)
-DOCKER_SRC_ROOT := $(abspath $(CURRENT_DIR)../../src/emu)
+DOCKER_SRC_ROOT := $(abspath $(CURRENT_DIR)/../../src/emu)
 GRPC_ROOT := $(QEMU_ROOT)/objs/distribution/emulator/lib
 
 # Protobuf settings. If you are running this in the AOSP tree you will want to run ninja install first.

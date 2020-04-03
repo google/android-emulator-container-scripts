@@ -86,7 +86,7 @@ done
 
 
 # Create the javascript protobufs
-make -C js/android-emulator-webrtc clean build
+make -C js/android-emulator-webrtc clean
 make -C js deps
 
 # Make sure we have all we need for adb to succeed.
