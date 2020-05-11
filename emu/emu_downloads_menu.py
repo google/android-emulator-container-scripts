@@ -54,6 +54,7 @@ API_LETTER_MAPPING = {
     "27": "O",
     "28": "P",
     "29": "Q",
+    "30": "R",
 }
 
 # Older versions might not work as expected.
@@ -254,7 +255,7 @@ class SysImgInfo(LicensedObject):
             if self.api in API_LETTER_MAPPING:
                 self.letter = API_LETTER_MAPPING[self.api]
             else:
-                self.letter = "_"
+                self.letter = "A" # A indicates unknown code.
         else:
             self.letter = codename.text
 
