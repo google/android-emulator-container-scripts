@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-PROTOC=protoc
+PROTOC = protoc
 PROTOC_CMD = which $(PROTOC)
+PYTHON = python
 
 # Check that the minimum protocol version >3.6
-PROTOHEADER=$(shell pkg-config --variable prefix protobuf)/include
-PROTOLIB=$(shell pkg-config --variable prefix protobuf)/lib
+PROTOHEADER = $(shell pkg-config --variable prefix protobuf)/include
+PROTOLIB = $(shell pkg-config --variable prefix protobuf)/lib
 
 HAS_PROTOC = $(shell $(PROTOC_CMD) > /dev/null && echo true || echo false)
 HAS_DEP = $(shell which $(DEP) > /dev/null && echo true || echo false)
@@ -25,12 +26,7 @@ HAS_DEP = $(shell which $(DEP) > /dev/null && echo true || echo false)
 # Prefixing works differently on mac vs linux, so let us account for that.
 
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-	PREFIX_ESLINT = sed -i -e '1i\'$$'\n''/* eslint-disable */'$$'\n'''
-endif
-ifeq ($(UNAME_S),Darwin)
-	PREFIX_ESLINT = sed -i '' -e '1i\'$$'\n''/* eslint-disable */'$$'\n'''
-endif
+PREFIX_ESLINT = $(PYTHON) eslint_prefix.py
 
 ifeq ($(HAS_PROTOC),true)
 	ifneq (,$(wildcard $(PROTOHEADER)/google/protobuf/compiler/code_generator.h))
@@ -129,6 +125,7 @@ ifneq ($(HAS_VALID_PROTOC),true)
 	@echo
 	@echo "   https://github.com/google/protobuf/releases/tag/v3.6.0"
 	@echo "   or try $ brew install protobuf"
+	@echo "   or sudo apt-get install libprotoc-dev protobuf-compiler"
 	@echo
 	@echo "Here is what I get when trying to evaluate your version of protoc:"
 	@echo
