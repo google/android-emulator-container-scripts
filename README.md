@@ -299,6 +299,27 @@ keep the following in mind:
 
 ## Running the emulator on the web
 
+
+In order to create the web containers you must have the following tools available:
+
+- A protobuf compiler and headers
+- GNUmake
+- NodeJS
+- Package config
+- Npm
+
+On debian based systems you can install these as follows:
+
+    sudo apt-get install build-essential nodejs npm libprotoc-dev protobuf-compiler pkg-config
+
+
+Next you must create a container with the emulator & system image version you wish to
+use. For example:
+
+    . ./configure.sh && emu-docker create canary "P.*x64"
+
+### Running the create script
+
 Once you have taken care of the steps above you can create the containers using
 the `create_web_container.sh` script:
 
