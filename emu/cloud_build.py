@@ -24,6 +24,13 @@ import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
 from emu.docker_device import DockerDevice
 from emu.template_writer import TemplateWriter
+from emu.process import run
+
+
+def git_commit_and_push(dest):
+    run(["git", "add", "--verbose", "*"], dest)
+    run(["git", "commit", "-F", "README.MD"], dest)
+    run(["git", "push"], dest)
 
 
 def cloud_build(args):
@@ -41,6 +48,7 @@ def cloud_build(args):
 
     steps = []
     images = []
+    desserts = set()
     emulators = set()
 
     for (img, emu) in itertools.product(imgzip, emuzip):
@@ -54,6 +62,7 @@ def cloud_build(args):
             raise Exception("{} is not a zip file with an emulator".format(emu))
 
         emulators.add(emu_rel.build_id())
+        desserts.add(img_rel.codename())
         for metrics in [True, False]:
             name = img_rel.repo_friendly_name()
             if not metrics:
@@ -66,14 +75,16 @@ def cloud_build(args):
             steps.append(device.create_cloud_build_step())
             images.append(device.tag)
 
-    cloudbuild = {"steps": steps, "images": images}
+    cloudbuild = {"steps": steps, "images": images, "timeout": "21600"}
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
     writer = TemplateWriter(args.dest)
     writer.write_template(
         "cloudbuild.README.MD",
-        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(images)},
+        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in images])},
         rename_as="README.MD",
     )
 
+    if args.git:
+        git_commit_and_push(args.dest)
