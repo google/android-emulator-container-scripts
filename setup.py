@@ -122,7 +122,7 @@ setup(
     # installed, so they must be valid existing projects.
     install_requires=[
         "urlfetch",
-        "jinja2",
+        "jinja2==2.11.1",
         "console-menu",
         "tqdm",
         "docker",
