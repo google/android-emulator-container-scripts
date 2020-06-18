@@ -1,5 +1,7 @@
-Release Notes
-=============
+Emulator version: {{emu_version}}
+=================================
+
+## Release Notes
 
 This contains the release notes that accompanies the `cloudbuild.yaml` file.
 
@@ -14,8 +16,3 @@ Emulator version: {{emu_version}}:
 
 Follow the instructions [here](https://cloud.google.com/cloud-build/docs/build-debug-locally) if
 you wish to build all the images locally.
-
-
-## TODO
-
-This file needs to be extended more details can be found here b/149339300

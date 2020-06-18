@@ -56,6 +56,7 @@ def accept_licenses(args):
 def create_cloud_build_distribuition(args):
     cloud_build(args)
 
+
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image.
 
@@ -247,6 +248,7 @@ def main():
     dist_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
+    dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
     dist_parser.add_argument(
         "img",
         default="P google_apis_playstore x86_64|Q google_apis_playstore x86_64",

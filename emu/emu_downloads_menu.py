@@ -115,6 +115,8 @@ class AndroidReleaseZip(object):
 
     def codename(self):
         """First letter of the desert, if any."""
+        if 'AndroidVersion.CodeName' in self.props:
+            return self.props['AndroidVersion.CodeName']
         api = self.api()
         if api in API_LETTER_MAPPING:
             return API_LETTER_MAPPING[api]
