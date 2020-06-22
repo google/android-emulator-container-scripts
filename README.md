@@ -68,10 +68,18 @@ a docker file will be created. The system image and emulator will be downloaded
 to the current directory if needed. The script will provide you with a command
 to see the logs as well as the command to stop the container.
 
-You can now connect to the running device using adb:
+If the local adb server detected the started container automatically,
+you have nothing to do to query it through adb. If that's not the case,
+you can now connect to the running device using adb:
 
     adb connect localhost:5555
 
+To check if adb has seen the container, you can use the:
+
+    adb devices
+
+command and check if a device is detected.
+    
 Do not forget to stop the docker container once you are done!
 
 Read the [section](#Make-the-emulator-accessible-on-the-web) on making the emulator available on the web to run the emulator
