@@ -11,6 +11,9 @@ import Grid from "@material-ui/core/Grid";
 import IconButton from "@material-ui/core/IconButton";
 import ImageIcon from "@material-ui/icons/Image";
 import OndemandVideoIcon from "@material-ui/icons/OndemandVideo";
+import Slider from "@material-ui/core/Slider";
+import VolumeDown from "@material-ui/icons/VolumeDown";
+import VolumeUp from "@material-ui/icons/VolumeUp";
 import PropTypes from "prop-types";
 import React from "react";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -18,26 +21,39 @@ import Typography from "@material-ui/core/Typography";
 import Snackbar from "@material-ui/core/Snackbar";
 import Alert from "@material-ui/lab/Alert";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   menuButton: {
-    marginRight: theme.spacing(2)
+    marginRight: theme.spacing(2),
   },
   title: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   nofocusborder: {
-    outline: "none !important;"
+    outline: "none !important;",
   },
   paper: {
     marginTop: theme.spacing(4),
     display: "flex",
     flexDirection: "column",
-    alignItems: "center"
-  }
+    alignItems: "center",
+  },
 });
+
+// We want a white slider, otherwise it will be invisible in the appbar.
+const WhiteSlider = withStyles({
+  thumb: {
+    color: "white",
+  },
+  track: {
+    color: "white",
+  },
+  rail: {
+    color: "white",
+  },
+})(Slider);
 
 // This class is responsible for hosting two emulator components next to each other:
 // One the left it will display the emulator, and on the right it will display the
@@ -49,32 +65,53 @@ class EmulatorScreen extends React.Component {
     view: "webrtc",
     error_snack: false,
     error_msg: "",
-    emuState: "connecting"
+    emuState: "connecting",
+    muted: true,
+    volume: 0.0,
+    hasAudio: false,
   };
 
   static propTypes = {
     uri: PropTypes.string, // grpc endpoint
-    auth: PropTypes.object // auth module to use.
+    auth: PropTypes.object, // auth module to use.
   };
 
-  stateChange = s => {
+  stateChange = (s) => {
     this.setState({ emuState: s });
   };
 
-  onError = err => {
+  onAudioStateChange = (s) => {
+    console.log("Received an audio state change from the emulator.");
+    this.setState({ hasAudio: s });
+  };
+
+  onError = (err) => {
     this.setState({
       error_snack: true,
-      error_msg: "Low level gRPC error: " + JSON.stringify(err)
+      error_msg: "Low level gRPC error: " + JSON.stringify(err),
     });
   };
 
-  handleClose = e => {
+  handleClose = (e) => {
     this.setState({ error_snack: false });
+  };
+
+  handleVolumeChange = (e, newVolume) => {
+    const muted = newVolume === 0;
+    this.setState({ volume: newVolume, muted: muted });
   };
 
   render() {
     const { uri, auth, classes } = this.props;
-    const { view, emuState, error_snack, error_msg } = this.state;
+    const {
+      view,
+      emuState,
+      error_snack,
+      error_msg,
+      muted,
+      volume,
+      hasAudio,
+    } = this.state;
     return (
       <div className={classes.root}>
         <AppBar position="static">
@@ -82,6 +119,33 @@ class EmulatorScreen extends React.Component {
             <Typography variant="h6" className={classes.title}>
               Using emulator view: {view}
             </Typography>
+
+            {hasAudio ? ( // Only display volume control if this emulator supports audio.
+              <Box width={200} paddingTop={1}>
+                <Grid container spacing={2}>
+                  <Grid item>
+                    <VolumeDown />
+                  </Grid>
+                  <Grid item xs>
+                    <WhiteSlider
+                      value={volume}
+                      onChange={this.handleVolumeChange}
+                      min={0.0}
+                      max={1.0}
+                      step={0.01}
+                      aria-labelledby="continuous-slider"
+                    />
+                  </Grid>
+                  <Grid item>
+                    <VolumeUp />
+                  </Grid>
+                </Grid>
+              </Box>
+            ) : (
+              // No audio track, so no volume slider.
+              <div />
+            )}
+
             <div className={classes.grow} />
             <div className={classes.sectionDesktop}>
               <IconButton
@@ -109,6 +173,7 @@ class EmulatorScreen extends React.Component {
             </div>
           </Toolbar>
         </AppBar>
+
         <div className={classes.paper}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
@@ -118,7 +183,10 @@ class EmulatorScreen extends React.Component {
                   auth={auth}
                   view={this.state.view}
                   onStateChange={this.stateChange}
+                  onAudioStateChange={this.onAudioStateChange}
                   onError={this.onError}
+                  muted={muted}
+                  volume={volume}
                 />
                 <p>State: {emuState} </p>
               </Container>
