@@ -1,9 +1,11 @@
-android-emulator-webrtc
-=======================
+# android-emulator-webrtc
 
-This contains a set of React components that can be used to interact with the emulator from the browser. It is
+This contains a set of React components that can be used to interact with the android emulator from the browser. It is
 intended to be used with an [envoy proxy](https://blog.envoyproxy.io/envoy-and-grpc-web-a-fresh-new-alternative-to-rest-6504ce7eb880)
 that is connected to a running emulator.
+
+See the [android container](https://github.com/google/android-emulator-container-scripts) scripts for an example on how to run
+an emulator that is accessible via the web.
 
 ```
 npm install --save android-emulator-webrtc
@@ -11,10 +13,9 @@ npm install --save android-emulator-webrtc
 
 [Full reference](#full-reference)
 
-Features
---
+## Features
 
-- Display and interact with android emulator over the web.
+- Display and interact with android emulator over the web, including audio if available.
 - Retrieve logcat from remote emulator.
 - Retrieve emulator status
 
@@ -24,16 +25,12 @@ Features
 
 You can connect to remote unsecured emulator as follows:
 
-
 ```js
 import { Emulator } from "android-emulator-webrtc/emulator";
 
 class EmulatorScreen extends React.Component {
-
   render() {
-    return (
-        <Emulator uri='https://my.emulator' />
-     );
+    return <Emulator uri="https://my.emulator" />;
   }
 }
 ```
@@ -51,13 +48,24 @@ In order to connect to a secure endpoint you will have to provide an authorizati
 
 - `unauthorized()` a function that gets called when a 401 was received. Here you can provide logic to handle token refresh, re-login etc.
 
+For example:
 
----------------
+```js
+import { Emulator } from "android-emulator-webrtc/emulator";
 
-Full Reference
+class EmulatorScreen extends React.Component {
+  render() {
+    return <Emulator uri="https://my.emulator" auth={my_auth_object} />;
+  }
+}
+```
+
 ---
 
+## Full Reference
+
 ## Emulator
+
 A React component that displays a remote android emulator.
 
 The emulator will mount a png or webrtc view component to display the current state
@@ -77,96 +85,108 @@ You usually want this to be webrtc as this will make use of the efficient
 webrtc implementation. The png view will request screenshots, which are
 very slow, and require the envoy proxy. You should not use this for remote emulators.
 
+| prop                   |          type           |                      default                      |      required      | description                                                                                  |
+| ---------------------- | :---------------------: | :-----------------------------------------------: | :----------------: | -------------------------------------------------------------------------------------------- |
+| **auth**               |        `Object`         |                      `null`                       |        :x:         | The authentication service to use, or null for no authentication.                            |
+| **height**             |        `Number`         |                                                   |        :x:         | The height of the component                                                                  |
+| **muted**              |        `Boolean`        |                      `true`                       |        :x:         | True if the audio should be disabled. This is only relevant when using the webrtc engine.    |
+| **onAudioStateChange** |       `Function`        | `(s) => { console.log("emulator audio: " + s); }` |        :x:         | Called when the audio becomes (un)available. True if audio is available, false otherwise.    |
+| **onError**            |       `Function`        |          `(e) => { console.error(e); }`           |        :x:         | Callback that will be invoked in case of gRPC errors.                                        |
+| **onStateChange**      |       `Function`        | `(s) => { console.log("emulator state: " + s); }` |        :x:         | Called upon state change, one of ["connecting", "connected", "disconnected"]                 |
+| **poll**               |        `Boolean`        |                      `false`                      |        :x:         | True if polling should be used, only set this to true if you are using the go webgrpc proxy. |
+| **uri**                |        `String`         |                                                   | :white_check_mark: | gRPC Endpoint where we can reach the emulator.                                               |
+| **view**               | `Enum("webrtc", "png")` |                    `"webrtc"`                     |        :x:         | The underlying view used to display the emulator, one of ["webrtc", "png"]                   |
+| **volume**             |        `Number`         |                       `1.0`                       |        :x:         | Volume between [0, 1] when audio is enabled. 0 is muted, 1.0 is 100%                         |
+| **width**              |        `Number`         |                                                   |        :x:         | The width of the component                                                                   |
 
+**Note**: The user must have interacted with the page before you can set the volume to "unmuted" (muted = false). Otherwise the video
+will not play and will throw an error, which is currently not handled.
 
+**Note**: The volume is the volume of the video element that is displayed, this is not the actual volume used inside the emulator. See this [support](https://support.google.com/android/answer/9082609?hl=en) document
+on how to change the audio volume.
 
-Property | Type | Required | Default value | Description
-:--- | :--- | :--- | :--- | :---
-uri|string|yes||gRPC Endpoint where we can reach the emulator.
-auth|object|no|null|The authentication service to use, or null for no authentication.
-onStateChange|func|no||Called upon state change, one of [&quot;connecting&quot;, &quot;connected&quot;, &quot;disconnected&quot;]
-width|number|no||The width of the component
-height|number|no||The height of the component
-view|enum|no|"webrtc"|The underlying view used to display the emulator, one of [&quot;webrtc&quot;, &quot;png&quot;]
-poll|bool|no|false|True if polling should be used, only set this to true if you are using the go webgrpc proxy.
-onError|func|no|&lt;See the source code&gt;|Callback that will be invoked in case of gRPC errors.
------
+---
 
 <a name="EmulatorStatus"></a>
 
 ## EmulatorStatus
+
 **Kind**: global class
 
-* [EmulatorStatus](#EmulatorStatus)
-    * [new EmulatorStatus()](#new_EmulatorStatus_new)
-    * [.getStatus](#EmulatorStatus.getStatus)
-    * [.updateStatus](#EmulatorStatus.updateStatus)
+- [EmulatorStatus](#EmulatorStatus)
+  - [new EmulatorStatus()](#new_EmulatorStatus_new)
+  - [.getStatus](#EmulatorStatus.getStatus)
+  - [.updateStatus](#EmulatorStatus.updateStatus)
 
 <a name="new_EmulatorStatus_new"></a>
 
 ### new EmulatorStatus()
+
 Gets the status of the emulator, parsing the hardware config into something
 easy to digest.
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param         | Type                                          | Description           |
+| ------------- | --------------------------------------------- | --------------------- |
 | uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
-| auth | <code>object</code> | authorization class. |
+| auth          | <code>object</code>                           | authorization class.  |
 
 <a name="EmulatorStatus.getStatus"></a>
 
 ### EmulatorStatus.getStatus
+
 Gets the cached status.
 
 **Kind**: static property of [<code>EmulatorStatus</code>](#EmulatorStatus)
 <a name="EmulatorStatus.updateStatus"></a>
 
 ### EmulatorStatus.updateStatus
+
 Retrieves the current status from the emulator.
 
 **Kind**: static property of [<code>EmulatorStatus</code>](#EmulatorStatus)
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param    | Type                  | Description                                                 |
+| -------- | --------------------- | ----------------------------------------------------------- |
 | fnNotify | <code>Callback</code> | when the status is available, returns the retrieved status. |
-| cache | <code>boolean</code> | True if the cache can be used. |
-
-
-
+| cache    | <code>boolean</code>  | True if the cache can be used.                              |
 
 ## Logcat
+
 **Kind**: global class
 
-* [Logcat](#Logcat)
-    * [new Logcat()](#new_Logcat_new)
-    * [.stop](#Logcat.stop)
-    * [.start](#Logcat.start)
+- [Logcat](#Logcat)
+  - [new Logcat()](#new_Logcat_new)
+  - [.stop](#Logcat.stop)
+  - [.start](#Logcat.start)
 
 <a name="new_Logcat_new"></a>
 
 ### new Logcat()
+
 Observe the logcat stream from the emulator.
 
 This requires server side streaming and will only work with the envoy proxy.
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param         | Type                                          | Description           |
+| ------------- | --------------------------------------------- | --------------------- |
 | uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
-| auth | <code>object</code> | authorization class. |
+| auth          | <code>object</code>                           | authorization class.  |
 
 <a name="Logcat.stop"></a>
 
 ### Logcat.stop
- Cancel the currently active logcat stream.
+
+Cancel the currently active logcat stream.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 <a name="Logcat.start"></a>
 
 ### Logcat.start
+
 Requests the logcat stream.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param    | Type                  | Description                  |
+| -------- | --------------------- | ---------------------------- |
 | fnNotify | <code>Callback</code> | when a new log line arrives. |

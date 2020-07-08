@@ -1,6 +1,6 @@
 {
   "name": "android-emulator-webrtc",
-  "version": "0.9.3",
+  "version": "0.9.6",
   "description": "Android Emulator WebRTC module",
   "scripts": {
     "build": "webpack --mode production",
@@ -38,7 +38,7 @@
     "react-dom": ">=16.8.0",
     "webpack": "^4.42.1",
     "webpack-cli": "^3.3.11",
-    "yalc": "^1.0.0-pre.35"
+    "yalc": "^1.0.0-pre.37"
   },
   "repository": {
     "type": "git",

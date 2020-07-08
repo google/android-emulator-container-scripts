@@ -11,7 +11,7 @@ module.exports = {
   },
   optimization: {
     // Set this to false during debuging time..
-    minimize: false,
+    minimize: true,
     usedExports: true
   },
   module: {

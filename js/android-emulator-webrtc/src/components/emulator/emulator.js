@@ -21,7 +21,7 @@ import withMouseKeyHandler from "./views/event_handler";
 import JsepProtocol from "./net/jsep_protocol_driver.js";
 import {
   RtcService,
-  EmulatorControllerService
+  EmulatorControllerService,
 } from "../../proto/emulator_web_client";
 
 const PngView = withMouseKeyHandler(EmulatorPngView);
@@ -46,6 +46,9 @@ const RtcView = withMouseKeyHandler(EmulatorWebrtcView);
  * You usually want this to be webrtc as this will make use of the efficient
  * webrtc implementation. The png view will request screenshots, which are
  * very slow, and require the envoy proxy. You should not use this for remote emulators.
+ *
+ * Note that chrome will not autoplay the video if it is not muted and no interaction
+ * with the page has taken place. See https://developers.google.com/web/updates/2017/09/autoplay-policy-changes.
  */
 export default class Emulator extends Component {
   static propTypes = {
@@ -53,8 +56,14 @@ export default class Emulator extends Component {
     uri: PropTypes.string.isRequired,
     /** The authentication service to use, or null for no authentication. */
     auth: PropTypes.object,
+    /** True if the audio should be disabled. This is only relevant when using the webrtc engine. */
+    muted: PropTypes.bool,
+    /** Volume between [0, 1] when audio is enabled. 0 is muted, 1.0 is 100% */
+    volume: PropTypes.number,
     /** Called upon state change, one of ["connecting", "connected", "disconnected"] */
     onStateChange: PropTypes.func,
+    /** Called when the audio becomes (un)available. True if audio is available, false otherwise. */
+    onAudioStateChange: PropTypes.func,
     /** The width of the component */
     width: PropTypes.number,
     /** The height of the component */
@@ -64,21 +73,33 @@ export default class Emulator extends Component {
     /** True if polling should be used, only set this to true if you are using the go webgrpc proxy. */
     poll: PropTypes.bool,
     /** Callback that will be invoked in case of gRPC errors. */
-    onError: PropTypes.func
+    onError: PropTypes.func,
   };
 
   static defaultProps = {
     view: "webrtc",
     auth: null,
     poll: false,
-    onError: e => {
-      console.log(e);
+    muted: true,
+    volume: 1.0,
+    onError: (e) => {
+      console.error(e);
+    },
+    onAudioStateChange: (s) => {
+      console.log("emulator audio: " + s);
+    },
+    onStateChange: (s) => {
+      console.log("emulator state: " + s);
     }
   };
 
   components = {
     webrtc: RtcView,
-    png: PngView
+    png: PngView,
+  };
+
+  state = {
+    audio: false,
   };
 
   constructor(props) {
@@ -87,19 +108,50 @@ export default class Emulator extends Component {
     this.emulator = new EmulatorControllerService(uri, auth, onError);
     this.rtc = new RtcService(uri, auth, onError);
     this.jsep = new JsepProtocol(this.emulator, this.rtc, poll);
+    this.view = React.createRef();
+  }
+
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (nextProps.view === "png")
+      return {
+        audio: false,
+      };
+
+    return prevState;
+  }
+
+  onAudioStateChange = (s) => {
+    const { onAudioStateChange } = this.props;
+    this.setState({ audio: s }, onAudioStateChange(s));
   }
 
   render() {
-    const { width, height, view, poll, onStateChange } = this.props;
+    const {
+      width,
+      height,
+      view,
+      poll,
+      muted,
+      onStateChange,
+      onAudioStateChange,
+      onError,
+      volume,
+    } = this.props;
     const SpecificView = this.components[view] || RtcView;
+
     return (
       <SpecificView
+        ref={this.view}
         width={width}
         height={height}
         emulator={this.emulator}
         jsep={this.jsep}
-        onStateChange={onStateChange}
+        onStateChange={this.onStateChange}
         poll={poll}
+        muted={muted}
+        volume={volume}
+        onError={onError}
+        onAudioStateChange={this.onAudioStateChange}
       />
     );
   }

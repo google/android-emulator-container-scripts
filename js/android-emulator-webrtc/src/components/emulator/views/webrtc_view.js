@@ -24,8 +24,27 @@ export default class EmulatorWebrtcView extends Component {
   static propTypes = {
     /** Jsep protocol driver, used to establish the video stream. */
     jsep: PropTypes.object,
-    /** Function called when the state of the emulator changes */
-    onStateChange: PropTypes.func
+    /** Function called when the connection state of the emulator changes */
+    onStateChange: PropTypes.func,
+    /** Function called when the audio track becomes available */
+    onAudioStateChange: PropTypes.func,
+    /** True if you wish to mute the audio */
+    muted: PropTypes.bool,
+    /** Volume of the video element, value between 0 and 1.  */
+    volume: PropTypes.number,
+    /** Function called when an error arises, like play failures due to muting */
+    onError: PropTypes.func,
+  };
+
+  state = {
+    audio: false,
+  };
+
+  static defaultProps = {
+    muted: false,
+    volume: 1.0,
+    onError: (e) => console.error("WebRTC error: " + e),
+    onAudioStateChange: (e) => console.log("Webrtc audio became available: " + e),
   };
 
   constructor(props) {
@@ -53,22 +72,29 @@ export default class EmulatorWebrtcView extends Component {
 
   onDisconnect = () => {
     this.setState({ connect: "disconnected" }, this.broadcastState);
+    this.setState({ audio: false }, this.props.onAudioStateChange(false));
   };
 
-  onConnect = stream => {
+  onConnect = (track) => {
     this.setState({ connect: "connected" }, this.broadcastState);
     const video = this.video.current;
     if (!video) {
       // Component was unmounted.
       return;
     }
-    console.log("Connecting video stream: " + video + ":" + video.readyState);
-    video.srcObject = stream;
-    // Kick off playing in case we already have enough data available.
-    video.play();
+
+    if (!video.srcObject) {
+      video.srcObject = new MediaStream();
+    }
+    video.srcObject.addTrack(track);
+    if (track.kind === "audio") {
+      this.setState({ audio: true }, this.props.onAudioStateChange(true));
+    }
   };
 
-  onCanPlay = e => {
+  // Starts playing the video stream, muting it if no interaction has taken
+  // place with this component.
+  safePlay = () => {
     const video = this.video.current;
     if (!video) {
       // Component was unmounted.
@@ -77,31 +103,25 @@ export default class EmulatorWebrtcView extends Component {
 
     video
       .play()
-      .then(_ => {
-        console.log("Automatic playback started!");
+      .then((_) => {
+        console.info("Automatic playback started!");
       })
-      .catch(error => {
-        // Autoplay is likely disabled in chrome
-        // https://developers.google.com/web/updates/2017/09/autoplay-policy-changes
-        // so we should probably show something useful here.
-        // We explicitly set the video stream to muted, so this shouldn't happen,
-        // but is something you will have to fix once enabling audio.
-        alert(
-          "code: " +
-            error.code +
-            ", msg: " +
-            error.message +
-            ", name: " +
-            error.nane
-        );
+      .catch((error) => {
+        // Notify listeners that we cannot start.
+        this.onError(error);
       });
   };
 
-  onContextMenu = e => {
+  onCanPlay = (e) => {
+    this.safePlay();
+  };
+
+  onContextMenu = (e) => {
     e.preventDefault();
   };
 
   render() {
+    const { muted, volume } = this.props;
     return (
       <video
         ref={this.video}
@@ -111,9 +131,10 @@ export default class EmulatorWebrtcView extends Component {
           width: "100%",
           height: "100%",
           objectFit: "contain",
-          objectPosition: "center"
+          objectPosition: "center",
         }}
-        muted="muted"
+        volume={volume}
+        muted={muted}
         onContextMenu={this.onContextMenu}
         onCanPlay={this.onCanPlay}
       />
