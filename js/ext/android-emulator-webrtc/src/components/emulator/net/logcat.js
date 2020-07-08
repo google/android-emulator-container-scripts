@@ -44,6 +44,7 @@ export default class Logcat {
     this.lastline = "";
     this.events = new EventEmitter();
     this.stream = null;
+    this.poll = false;
   }
 
   /**
@@ -58,6 +59,17 @@ export default class Logcat {
   };
 
   /**
+   * Removes a listener.
+   *
+   * @param {string} name Name of the event.
+   * @param  {Callback} fn Function to notify on the given event.
+   * @memberof Logcat
+   */
+  off = (name, fn) => {
+    this.events.off(name, fn);
+  };
+
+  /**
    * Cancel the currently active logcat stream.
    *
    * @memberof Logcat
@@ -66,6 +78,41 @@ export default class Logcat {
     if (this.stream) {
       this.stream.cancel();
     }
+    this.poll = false;
+  };
+
+  pollStream = () => {
+    const self = this;
+    /* eslint-disable */
+    const request = new proto.android.emulation.control.LogMessage();
+    request.setStart(this.offset);
+    this.emulator.getLogcat(request, {}, (err, response) => {
+      self.offset = response.getNext();
+      const contents = response.getContents();
+      self.events.emit("data", contents);
+      if (this.poll) {
+        self.pollStream();
+      }
+    });
+  };
+
+  // Uses streaming, this really locks up the ui, so best not to use for now.
+  stream = () => {
+    const self = this;
+    /* eslint-disable */
+    const request = new proto.android.emulation.control.LogMessage();
+    request.setStart(this.offset);
+    this.stream = this.emulator.streamLogcat(request);
+    this.stream.on("data", (response) => {
+      self.offset = response.getNext();
+      const contents = response.getContents();
+      self.events.emit("data", contents);
+    });
+    this.stream.on("error", (error) => {
+      if ((error.code = 1)) {
+        // Ignore we got cancelled.
+      }
+    });
   };
 
   /**
@@ -74,37 +121,9 @@ export default class Logcat {
    * @param  {Callback} fnNotify when a new log line arrives.
    * @memberof Logcat
    */
-  start = fnNotify => {
+  start = (fnNotify) => {
     if (fnNotify) this.on("data", fnNotify);
-    const self = this;
-    /* eslint-disable */
-    const request = new proto.android.emulation.control.LogMessage();
-    request.setStart(this.offset);
-    this.stream = this.emulator.streamLogcat(request);
-
-    this.stream.on("data", response => {
-      self.offset = response.getNext();
-      const contents = response.getContents();
-      const lines = contents.split("\n");
-      const last = contents[contents.length - 1];
-      var cnt = lines.length;
-      if (last != "\n") {
-        cnt--;
-        self.lastline += lines[Math.max(0, cnt - 1)];
-      }
-      for (var i = 0; i < cnt; i++) {
-        var line = lines[i];
-        if (i === 0) {
-          line = self.lastline + line;
-          self.lastline = "";
-        }
-        if (line.length > 0) self.events.emit("data", line);
-      }
-    });
-    this.stream.on("error", error => {
-      if ((error.code = 1)) {
-        // Ignore we got cancelled.
-      }
-    });
+    this.poll = true;
+    this.pollStream();
   };
 }

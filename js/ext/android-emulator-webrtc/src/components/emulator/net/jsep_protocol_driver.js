@@ -90,7 +90,7 @@ export default class JsepProtocol {
     this.active = true;
 
     var request = new Empty();
-    this.rtc.requestRtcStream(request).on("data", (response) => {
+    this.rtc.requestRtcStream(request, {}, (err, response) => {
       // Configure
       self.guid = response;
       self.connected = true;
@@ -267,7 +267,7 @@ export default class JsepProtocol {
 
     // This is a blocking call, that will return as soon as a series
     // of messages have been made available, or if we reach a timeout
-    this.rtc.receiveJsepMessage(this.guid, {}).on("data", (response) => {
+    this.rtc.receiveJsepMessage(this.guid, {}, (err, response) => {
       const msg = response.getMessage();
       // Handle only if we received a useful message.
       // it is possible to get nothing if the server decides

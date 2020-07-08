@@ -65,7 +65,7 @@ export default class EmulatorStatus {
       fnNotify(this.status);
       return this.status;
     }
-    this.emulator.getStatus(request).on("data", response => {
+    this.emulator.getStatus(request, {}, (err, response) => {
       var hwConfig = {};
       const entryList = response.getHardwareconfig().getEntryList();
       for (var i = 0; i < entryList.length; i++) {

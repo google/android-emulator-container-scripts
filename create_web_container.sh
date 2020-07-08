@@ -85,14 +85,28 @@ while getopts 'hasip:' flag; do
 done
 
 
-# Create the javascript protobufs
-make -C js/android-emulator-webrtc clean
+get_yarn() {
+   if ! command -v yarn ; then
+        version=1.22.4
+        curl -o- -L "https://yarnpkg.com/downloads/$version/yarn-v$version.tar.gz" | tar zxv -C venv
+        export PATH=$PATH:$PWD/venv/yarn-v$version/bin
+     fi
+ }
+
+# Make sure we have all the necessary submodules.
+git submodule update --init --recursive
+
+# create a virtual env.
+. ./configure.sh >/dev/null
+
+# unfortunately we need yarn :-(
+get_yarn
+
+# Create the javascript protobufs etc.
 make -C js deps
 
 # Make sure we have all we need for adb to succeed.
 generate_keys
-
-. ./configure.sh >/dev/null
 
 # Now generate the public/private keys and salt the password
 cd js/jwt-provider

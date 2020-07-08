@@ -21,4 +21,4 @@ case $BUILD_OS in
 esac
 docker rm emu-dev-grpc-web
 docker run  -p 8080:8080 -p 8001:8001  --name emu-dev-grpc-web emu-dev-web &
-npm start
+yarn start

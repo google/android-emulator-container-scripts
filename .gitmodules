@@ -1,0 +1,4 @@
+[submodule "js/ext/react-lazylog"]
+	path = js/ext/react-lazylog
+	url = https://github.com/pokowaka/react-lazylog.git
+	branch = event-emit

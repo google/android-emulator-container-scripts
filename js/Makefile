@@ -16,6 +16,10 @@
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 
+ifeq (, $(shell which yarn))
+ $(error "No yarn in $(PATH), please install yarn from https://classic.yarnpkg.com/en/docs/install")
+endif
+
 .PHONY: build-release run-release develop stop
 
 all: develop
@@ -24,9 +28,12 @@ clean:
 	rm -rf .yalc
 
 deps:
-	$(MAKE) -C android-emulator-webrtc build
+	command -v yalc || yarn global add yalc || npm install -g yalc
+	$(MAKE) -C ext/android-emulator-webrtc build
+	cd ext/react-lazylog && yalc publish --push
+	yalc add react-lazylog
 	yalc add android-emulator-webrtc
-	@npm install
+	yarn
 
 develop:
 	./develop.sh

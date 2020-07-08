@@ -23,9 +23,10 @@ PROTOLIB = $(shell pkg-config --variable prefix protobuf)/lib
 HAS_PROTOC = $(shell $(PROTOC_CMD) > /dev/null && echo true || echo false)
 HAS_DEP = $(shell which $(DEP) > /dev/null && echo true || echo false)
 
-# Prefixing works differently on mac vs linux, so let us account for that.
+ifeq (, $(shell which yarn))
+ $(error "No yarn in $(PATH), please install yarn from https://classic.yarnpkg.com/en/docs/install")
+endif
 
-UNAME_S := $(shell uname -s)
 PREFIX_ESLINT = $(PYTHON) eslint_prefix.py
 
 ifeq ($(HAS_PROTOC),true)
@@ -44,7 +45,7 @@ endif
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 QEMU_ROOT := $(abspath $(AOSP)/external/qemu)
-DOCKER_SRC_ROOT := $(abspath $(CURRENT_DIR)/../../src/emu)
+DOCKER_SRC_ROOT := $(abspath $(CURRENT_DIR)/../../../src/emu)
 GRPC_ROOT := $(QEMU_ROOT)/objs/distribution/emulator/lib
 
 # Protobuf settings. If you are running this in the AOSP tree you will want to run ninja install first.
@@ -105,14 +106,11 @@ protoc-gen-grpc-web: protoc-plugin/grpc_generator.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 deps: protoc system-check
-	@npm install yalc
-	@npm install
-
+	command -v yalc || yarn global add yalc
 
 build: deps
-	@npm run build
-	@yalc publish
-	@yalc push
+	yarn
+	@yalc publish --push
 
 
 system-check:
