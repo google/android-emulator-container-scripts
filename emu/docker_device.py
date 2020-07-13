@@ -31,6 +31,14 @@ from emu.emu_downloads_menu import AndroidReleaseZip, PlatformTools
 from emu.template_writer import TemplateWriter
 from emu.utils import mkdir_p
 
+METRICS_MESSAGE = """
+By using this docker container you authorize Google to collect usage data for the Android Emulator
+— such as how you utilize its features and resources, and how you use it to test applications.
+This data helps improve the Android Emulator and is collected in accordance with
+[Google's Privacy Policy](http://www.google.com/policies/privacy/)
+"""
+NO_METRICS_MESSAGE = "No metrics are collected when running this container."
+
 
 class ProgressTracker(object):
     """Tracks progress using tqdm for a set of layers that are pushed."""
@@ -250,9 +258,24 @@ class DockerDevice(object):
             },
         )
 
+        metrics_msg = NO_METRICS_MESSAGE
         # Only version 29.3.1 >= can collect metrics.
         if metrics and version.parse(self.emulator.revision()) >= version.parse("29.3.1"):
             extra += " -metrics-collection"
+            metrics_msg = METRICS_MESSAGE
+
+        # Include a README.MD message.
+        self.writer.write_template(
+            "emulator.README.MD",
+            {
+                "metrics": metrics_msg,
+                "dessert": self.sysimg.codename(),
+                "tag": self.sysimg.tag(),
+                "container_id": self.tag,
+                "emu_build_id": self.emulator.build_id(),
+            },
+            rename_as="README.MD",
+        )
 
         extra += " {}".format(self.sysimg.logger_flags())
         self.writer.write_template("launch-emulator.sh", {"extra": extra, "version": emu.__version__})
