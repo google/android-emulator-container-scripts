@@ -97,6 +97,5 @@ LABEL maintainer="{{user}}" \
       SystemImage.TagId={{tag}} \
       SystemImage.GpuSupport={{gpu}} \
       AndroidVersion.ApiLevel={{api}} \
-      com.google.android.emulator.build-date="{{date}}" \
       com.google.android.emulator.description="Pixel 2 Emulator, running API {{api}}" \
       com.google.android.emulator.version="{{tag}}-{{api}}-{{abi}}/{{emu_build_id}}"
