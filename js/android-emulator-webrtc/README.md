@@ -85,6 +85,20 @@ You usually want this to be webrtc as this will make use of the efficient
 webrtc implementation. The png view will request screenshots, which are
 very slow, and require the envoy proxy. You should not use this for remote emulators.
 
+#### Pressing hardware buttons
+
+This component has a method `sendKey` to sends a key to the emulator.
+You can use this to send physical hardwar events to the emulator for example:
+
+"AudioVolumeDown" - 	Decreases the audio volume.
+"AudioVolumeUp"   -	Increases the audio volume.
+"Power"	         -  The Power button or key, turn off the device.
+"AppSwitch"       -  Should bring up the application switcher dialog.
+"GoHome"          -  Go to the home screen.
+"GoBack"          -  Open the previous screen you were looking at.
+
+
+
 | prop                   |          type           |                      default                      |      required      | description                                                                                  |
 | ---------------------- | :---------------------: | :-----------------------------------------------: | :----------------: | -------------------------------------------------------------------------------------------- |
 | **auth**               |        `Object`         |                      `null`                       |        :x:         | The authentication service to use, or null for no authentication.                            |
@@ -102,7 +116,8 @@ very slow, and require the envoy proxy. You should not use this for remote emula
 **Note**: The user must have interacted with the page before you can set the volume to "unmuted" (muted = false). Otherwise the video
 will not play and will throw an error, which is currently not handled.
 
-**Note**: The volume is the volume of the video element that is displayed, this is not the actual volume used inside the emulator. See this [support](https://support.google.com/android/answer/9082609?hl=en) document
+**Note**: The volume is the volume of the video element that is displayed, this is not the actual volume used inside the emulator. You can change the audio inside the emulator by sending the proper keys as documented
+above, or follow the steps in the [support](https://support.google.com/android/answer/9082609?hl=en) document
 on how to change the audio volume.
 
 ---
