@@ -50,7 +50,7 @@ const RtcView = withMouseKeyHandler(EmulatorWebrtcView);
  * Note that chrome will not autoplay the video if it is not muted and no interaction
  * with the page has taken place. See https://developers.google.com/web/updates/2017/09/autoplay-policy-changes.
  */
-export default class Emulator extends Component {
+class Emulator extends Component {
   static propTypes = {
     /** gRPC Endpoint where we can reach the emulator. */
     uri: PropTypes.string.isRequired,
@@ -156,3 +156,5 @@ export default class Emulator extends Component {
     );
   }
 }
+
+export default Emulator

@@ -43,7 +43,7 @@ export default class EmulatorPngView extends Component {
     /** True if polling should be used, only set this to true if you are using the gowebrpc proxy.
      * Note: Deprecated, setting this to true results in poor performance.
      */
-    poll: PropTypes.bool
+    poll: PropTypes.bool,
   };
 
   state = {
@@ -51,7 +51,7 @@ export default class EmulatorPngView extends Component {
     png: "",
     width: null,
     height: null,
-    connect: "disconnected"
+    connect: "disconnected",
   };
 
   broadcastState() {
@@ -67,14 +67,14 @@ export default class EmulatorPngView extends Component {
   }
 
   componentWillUnmount() {
+    this.setState({ connect: "disconnected" }, this.broadcastState);
     if (this.screen) {
-      this.setState({ connect: "disconnected" }, this.broadcastState);
       this.screen.cancel();
     }
   }
 
   startStream() {
-    const { width, height } = this.state;
+    const { width, height, connected } = this.state;
     if (this.screen) {
       this.screen.cancel();
     }
@@ -87,21 +87,25 @@ export default class EmulatorPngView extends Component {
 
     var self = this;
     const { emulator, poll } = this.props;
-    if (poll) {
-      this.screen = emulator.getScreenshot(request);
+    if (poll && state !== "disconnected") {
+      emulator.getScreenshot(request, {}, (err, response) => {
+        this.setState({ connect: "connected" }, this.broadcastState);
+        // Update the image with the one we just received.
+        self.setState({
+          png: "data:image/jpeg;base64," + response.getImage_asB64(),
+        });
+        this.startStream(width, height);
+      });
     } else {
       this.screen = emulator.streamScreenshot(request);
-    }
-    this.screen.on("data", response => {
-      this.setState({ connect: "connected" }, this.broadcastState);
-      // Update the image with the one we just received.
-      self.setState({
-        png: "data:image/jpeg;base64," + response.getImage_asB64()
+      this.screen.on("data", (response) => {
+        this.setState({ connect: "connected" }, this.broadcastState);
+        // Update the image with the one we just received.
+        self.setState({
+          png: "data:image/jpeg;base64," + response.getImage_asB64(),
+        });
       });
-      if (poll) {
-        this.startStream(width, height);
-      }
-    });
+    }
   }
 
   render() {
@@ -115,11 +119,11 @@ export default class EmulatorPngView extends Component {
           position: "relative",
           height: "100%",
           objectFit: "contain",
-          objectPosition: "center"
+          objectPosition: "center",
         }}
       >
         <ResizeObserver
-          onResize={rect => {
+          onResize={(rect) => {
             self.setState(
               { width: rect.width, height: rect.height },
               self.startStream

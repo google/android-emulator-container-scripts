@@ -150,43 +150,84 @@ Retrieves the current status from the emulator.
 | fnNotify | <code>Callback</code> | when the status is available, returns the retrieved status. |
 | cache    | <code>boolean</code>  | True if the cache can be used.                              |
 
+<a name="Logcat"></a>
+
 ## Logcat
+Observe the logcat stream from the emulator.
+
+Streaming is done by either polling the emulator endpoint or making a streaming call.
+
+It will send out the following events:
+
+- `start` whenever the start method was called.
+- `data` whenever new data became available.
+- `end` whenever the stream is finished, either because it was stopped, or due to an error.
 
 **Kind**: global class
 
-- [Logcat](#Logcat)
-  - [new Logcat()](#new_Logcat_new)
-  - [.stop](#Logcat.stop)
-  - [.start](#Logcat.start)
+* [Logcat](#Logcat)
+    * [new Logcat(uriOrEmulator, auth)](#new_Logcat_new)
+    * [.on](#Logcat.on)
+    * [.off](#Logcat.off)
+    * [.stop](#Logcat.stop)
+    * [.start](#Logcat.start)
 
 <a name="new_Logcat_new"></a>
 
-### new Logcat()
+### new Logcat(uriOrEmulator, auth)
+Creates a logcat stream.
 
-Observe the logcat stream from the emulator.
+ The authentication service should implement the following methods:
+- `authHeader()` which must return a set of headers that should be send along with a request.
+- `unauthorized()` a function that gets called when a 401 was received.
 
-This requires server side streaming and will only work with the envoy proxy.
 
-| Param         | Type                                          | Description           |
-| ------------- | --------------------------------------------- | --------------------- |
-| uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
-| auth          | <code>object</code>                           | authorization class.  |
+| Param | Type |
+| --- | --- |
+| uriOrEmulator | <code>object</code> |
+| auth | <code>object</code> |
+
+<a name="Logcat.on"></a>
+
+### Logcat.on
+Register a listener.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Name of the event. |
+| fn | <code>Callback</code> | Function to notify on the given event. |
+
+<a name="Logcat.off"></a>
+
+### Logcat.off
+Removes a listener.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Name of the event. |
+| fn | <code>Callback</code> | Function to notify on the given event. |
 
 <a name="Logcat.stop"></a>
 
 ### Logcat.stop
-
 Cancel the currently active logcat stream.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 <a name="Logcat.start"></a>
 
 ### Logcat.start
+Requests the logcat stream, invoking the callback when a log line arrives.
 
-Requests the logcat stream.
+*Note:* Streaming can cause serious UI delays, so best not to use it.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 
-| Param    | Type                  | Description                  |
-| -------- | --------------------- | ---------------------------- |
+| Param | Type | Description |
+| --- | --- | --- |
 | fnNotify | <code>Callback</code> | when a new log line arrives. |
+| refreshRate | <code>number</code> | polling interval, or 0 if you wish to use streaming. |
+
