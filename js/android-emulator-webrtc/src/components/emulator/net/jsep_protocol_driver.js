@@ -15,6 +15,7 @@
  */
 import { EventEmitter } from "events";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
+import { ThemeProvider } from "@material-ui/core";
 /**
  * This drives the jsep protocol with the emulator, and can be used to
  * send key/mouse/touch events to the emulator. Events will be send
@@ -56,6 +57,7 @@ export default class JsepProtocol {
     this.events = new EventEmitter();
     this.poll = poll;
     this.guid = null;
+    this.stream = null;
     this.event_forwarders = {};
     if (typeof this.rtc.receiveJsepMessages !== "function") this.poll = true;
     if (onConnect) this.events.on("connected", onConnect);
@@ -74,6 +76,10 @@ export default class JsepProtocol {
   disconnect = () => {
     this.connected = false;
     if (this.peerConnection) this.peerConnection.close();
+    if (this.stream) {
+      this.stream.cancel();
+      this.stream = null;
+    }
     this.active = false;
     this.events.emit("disconnected", this);
   };
@@ -90,7 +96,13 @@ export default class JsepProtocol {
     this.active = true;
 
     var request = new Empty();
-    this.rtc.requestRtcStream(request).on("data", (response) => {
+    this.rtc.requestRtcStream(request, {}, (err, response) => {
+      if (err) {
+        console.error("Failed to configure rtc stream: " + JSON.stringify(err));
+        this.disconnect();
+        return;
+      }
+
       // Configure
       self.guid = response;
       self.connected = true;
@@ -222,7 +234,12 @@ export default class JsepProtocol {
       if (signal.bye) this._handleBye();
       if (signal.candidate) this._handleCandidate(signal);
     } catch (e) {
-      console.error("Failed to handle message: [" + message + "], due to: " + e);
+      console.error(
+        "Failed to handle message: [" +
+          message +
+          "], due to: " +
+          JSON.stringify(e)
+      );
     }
   };
 
@@ -244,19 +261,17 @@ export default class JsepProtocol {
     if (!this.connected) return;
     var self = this;
 
-    const stream = this.rtc.receiveJsepMessages(this.guid, {});
-    stream.on("data", (response) => {
+    this.stream = this.rtc.receiveJsepMessages(this.guid, {});
+    this.stream.on("data", (response) => {
       const msg = response.getMessage();
       self._handleJsepMessage(msg);
     });
-    stream.on("error", (e) => {
-      self.cleanup();
+    this.stream.on("error", (e) => {
+      self.disconnect();
     });
-    stream.on("end", (e) => {
-      self.cleanup();
+    this.stream.on("end", (e) => {
+      self.disconnect();
     });
-
-    this.receive = stream;
   };
 
   // This function is a fallback for v1 (go based proxy), that does not support streaming.
@@ -267,7 +282,14 @@ export default class JsepProtocol {
 
     // This is a blocking call, that will return as soon as a series
     // of messages have been made available, or if we reach a timeout
-    this.rtc.receiveJsepMessage(this.guid, {}).on("data", (response) => {
+    this.rtc.receiveJsepMessage(this.guid, {}, (err, response) => {
+      if (err) {
+        console.error(
+          "Failed to receive jsep message, disconnecting: " +
+            JSON.stringify(err)
+        );
+        this.disconnect();
+      }
       const msg = response.getMessage();
       // Handle only if we received a useful message.
       // it is possible to get nothing if the server decides

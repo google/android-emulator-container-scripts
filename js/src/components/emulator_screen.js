@@ -192,7 +192,7 @@ class EmulatorScreen extends React.Component {
               </Container>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <LogcatView uri={uri} auth={auth} maxHistory={8} />
+              <LogcatView uri={uri} auth={auth} />
             </Grid>
           </Grid>
         </div>

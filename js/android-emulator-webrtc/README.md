@@ -85,6 +85,20 @@ You usually want this to be webrtc as this will make use of the efficient
 webrtc implementation. The png view will request screenshots, which are
 very slow, and require the envoy proxy. You should not use this for remote emulators.
 
+#### Pressing hardware buttons
+
+This component has a method `sendKey` to sends a key to the emulator.
+You can use this to send physical hardwar events to the emulator for example:
+
+"AudioVolumeDown" - 	Decreases the audio volume.
+"AudioVolumeUp"   -	Increases the audio volume.
+"Power"	         -  The Power button or key, turn off the device.
+"AppSwitch"       -  Should bring up the application switcher dialog.
+"GoHome"          -  Go to the home screen.
+"GoBack"          -  Open the previous screen you were looking at.
+
+
+
 | prop                   |          type           |                      default                      |      required      | description                                                                                  |
 | ---------------------- | :---------------------: | :-----------------------------------------------: | :----------------: | -------------------------------------------------------------------------------------------- |
 | **auth**               |        `Object`         |                      `null`                       |        :x:         | The authentication service to use, or null for no authentication.                            |
@@ -102,7 +116,8 @@ very slow, and require the envoy proxy. You should not use this for remote emula
 **Note**: The user must have interacted with the page before you can set the volume to "unmuted" (muted = false). Otherwise the video
 will not play and will throw an error, which is currently not handled.
 
-**Note**: The volume is the volume of the video element that is displayed, this is not the actual volume used inside the emulator. See this [support](https://support.google.com/android/answer/9082609?hl=en) document
+**Note**: The volume is the volume of the video element that is displayed, this is not the actual volume used inside the emulator. You can change the audio inside the emulator by sending the proper keys as documented
+above, or follow the steps in the [support](https://support.google.com/android/answer/9082609?hl=en) document
 on how to change the audio volume.
 
 ---
@@ -150,43 +165,84 @@ Retrieves the current status from the emulator.
 | fnNotify | <code>Callback</code> | when the status is available, returns the retrieved status. |
 | cache    | <code>boolean</code>  | True if the cache can be used.                              |
 
+<a name="Logcat"></a>
+
 ## Logcat
+Observe the logcat stream from the emulator.
+
+Streaming is done by either polling the emulator endpoint or making a streaming call.
+
+It will send out the following events:
+
+- `start` whenever the start method was called.
+- `data` whenever new data became available.
+- `end` whenever the stream is finished, either because it was stopped, or due to an error.
 
 **Kind**: global class
 
-- [Logcat](#Logcat)
-  - [new Logcat()](#new_Logcat_new)
-  - [.stop](#Logcat.stop)
-  - [.start](#Logcat.start)
+* [Logcat](#Logcat)
+    * [new Logcat(uriOrEmulator, auth)](#new_Logcat_new)
+    * [.on](#Logcat.on)
+    * [.off](#Logcat.off)
+    * [.stop](#Logcat.stop)
+    * [.start](#Logcat.start)
 
 <a name="new_Logcat_new"></a>
 
-### new Logcat()
+### new Logcat(uriOrEmulator, auth)
+Creates a logcat stream.
 
-Observe the logcat stream from the emulator.
+ The authentication service should implement the following methods:
+- `authHeader()` which must return a set of headers that should be send along with a request.
+- `unauthorized()` a function that gets called when a 401 was received.
 
-This requires server side streaming and will only work with the envoy proxy.
 
-| Param         | Type                                          | Description           |
-| ------------- | --------------------------------------------- | --------------------- |
-| uriOrEmulator | <code>string/EmulatorControllerService</code> | uri to gRPC endpoint. |
-| auth          | <code>object</code>                           | authorization class.  |
+| Param | Type |
+| --- | --- |
+| uriOrEmulator | <code>object</code> |
+| auth | <code>object</code> |
+
+<a name="Logcat.on"></a>
+
+### Logcat.on
+Register a listener.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Name of the event. |
+| fn | <code>Callback</code> | Function to notify on the given event. |
+
+<a name="Logcat.off"></a>
+
+### Logcat.off
+Removes a listener.
+
+**Kind**: static property of [<code>Logcat</code>](#Logcat)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Name of the event. |
+| fn | <code>Callback</code> | Function to notify on the given event. |
 
 <a name="Logcat.stop"></a>
 
 ### Logcat.stop
-
 Cancel the currently active logcat stream.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 <a name="Logcat.start"></a>
 
 ### Logcat.start
+Requests the logcat stream, invoking the callback when a log line arrives.
 
-Requests the logcat stream.
+*Note:* Streaming can cause serious UI delays, so best not to use it.
 
 **Kind**: static property of [<code>Logcat</code>](#Logcat)
 
-| Param    | Type                  | Description                  |
-| -------- | --------------------- | ---------------------------- |
+| Param | Type | Description |
+| --- | --- | --- |
 | fnNotify | <code>Callback</code> | when a new log line arrives. |
+| refreshRate | <code>number</code> | polling interval, or 0 if you wish to use streaming. |
+

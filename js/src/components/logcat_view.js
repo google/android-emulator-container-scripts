@@ -32,17 +32,17 @@ export default class LogcatView extends Component {
   };
 
   static defaultProps = {
-    maxHistory: 64 // Number of loglines to keep.
+    maxHistory: 2048 // Max nr of bytes.
   };
   constructor(props) {
     super(props);
     const { uri, auth } = this.props;
-    this.buffer = []
+    this.buffer = ""
     this.logcat = new Logcat(uri, auth);
   }
 
   componentDidMount = () => {
-    this.logcat.start(this.onLogcat);
+    this.logcat.start(this.onLogcat, 1000);
   };
 
   componentWillUnmount = () => {
@@ -50,11 +50,13 @@ export default class LogcatView extends Component {
   };
 
   onLogcat = logline => {
-    this.buffer.push(logline);
-    if (this.buffer.length > this.props.maxHistory) {
-      this.buffer.shift();
+    const  { maxHistory } = this.props
+    this.buffer += logline;
+    const sliceAt = this.buffer.length - maxHistory
+    if (sliceAt > 0) {
+      this.buffer = this.buffer.substr(this.buffer.indexOf('\n', sliceAt));
     }
-    this.setState({ lines: this.buffer });
+    this.setState({ lines: this.buffer.split('\n') });
   };
 
   asItems = loglines => {
