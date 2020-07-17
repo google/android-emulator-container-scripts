@@ -26,7 +26,7 @@ from emu.cloud_build import cloud_build
 from utils import TempDir
 
 
-Arguments = collections.namedtuple("Args", "img, dest, repo")
+Arguments = collections.namedtuple("Args", "img, dest, repo, git")
 
 
 @pytest.mark.slow
@@ -35,7 +35,7 @@ def test_build_container():
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
     with TempDir() as tmp:
-        args = Arguments("(P google_apis_playstore x86_64)|(Q google_apis x86_64)", tmp, "us.gcr.io/emu-dev-tst")
+        args = Arguments("(P google_apis_playstore x86_64)|(Q google_apis x86_64)", tmp, "us.gcr.io/emu-dev-tst", False)
         cloud_build(args)
         expected_files = [
             "cloudbuild.yaml",

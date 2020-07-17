@@ -125,7 +125,7 @@ fi
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:5557 &
 
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -no-audio -verbose -wipe-data \
+exec emulator/emulator @Pixel2 -verbose -wipe-data \
   -ports 5556,5557 \
   -grpc 8554 -no-window -skip-adb-auth \
   -no-snapshot \
