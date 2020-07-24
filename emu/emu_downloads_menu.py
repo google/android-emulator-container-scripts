@@ -93,7 +93,7 @@ class AndroidReleaseZip(object):
 
     ABI_CPU_MAP = {"armeabi-v7a": "arm", "arm64-v8a": "arm64", "x86_64": "x86_64", "x86": "x86"}
     SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
-    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore"}
+    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore", "google_ndk_playstore": "ndk_playstore"}
 
     def __init__(self, fname):
         self.fname = fname
