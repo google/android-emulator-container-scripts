@@ -39,7 +39,24 @@ following requirements:
       to enable nested virtualization.
 
 Keep in mind that you will see reduced performance if you are making use of
-nested virtualization.
+nested virtualization. The containers have been tested under Debian and Ubuntu running kernel 5.2.17.
+
+*NOTE: The images will not run in docker on mac or windows*
+
+# Quick start with hosted containers.
+
+We now host a set of containers in a public repository. You can find details about the containers
+[here](REGISTRY.MD). You can now run these containers without building them. For example:
+
+```sh
+docker run \
+  -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish \
+  8554:8554/tcp --publish 5555:5555/tcp  \
+  us-docker.pkg.dev/android-emulator-268719/images/r-google-x64:30.0.23
+```
+
+The section [below](#communicating-with-the-emulator-in-the-container) describes how
+to interact with the emulator.
 
 # Install in a virtual environment
 
@@ -79,7 +96,7 @@ To check if adb has seen the container, you can use the:
     adb devices
 
 command and check if a device is detected.
-    
+
 Do not forget to stop the docker container once you are done!
 
 Read the [section](#Make-the-emulator-accessible-on-the-web) on making the emulator available on the web to run the emulator
@@ -241,8 +258,6 @@ For example:
     docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
     us.gcr.io/emulator-project/q-playstore-x86:29.3.2
 ```
-
-**Note: The projects above are samples, we are not yet hosting any of these images.**
 
 ## Communicating with the emulator in the container
 
