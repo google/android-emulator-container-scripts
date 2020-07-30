@@ -55,5 +55,5 @@ class TemplateWriter(object):
         template = self.env.get_template(tmpl_file)
         mkdir_p(os.path.dirname(dest_file))
         logging.info("Writing: %s -> %s with %s", tmpl_file, dest_file, template_dict)
-        with open(dest_file, "w") as dfile:
-            dfile.write(template.render(template_dict))
+        with open(dest_file, "wb") as dfile:
+            dfile.write(template.render(template_dict).encode('utf-8'))
