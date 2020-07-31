@@ -16,12 +16,8 @@ import logging
 import os
 
 import yaml
-import click
-import colorlog
 
-import emu
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.docker_config import DockerConfig
 from emu.docker_device import DockerDevice
 from emu.template_writer import TemplateWriter
 from emu.process import run
@@ -44,7 +40,6 @@ def cloud_build(args):
 
     imgzip = [x.download() for x in emu_downloads_menu.find_image(args.img)]
     emuzip = [x.download() for x in emu_downloads_menu.find_emulator("canary")]
-    devices = []
 
     steps = []
     images = []
@@ -55,7 +50,7 @@ def cloud_build(args):
         logging.info("Processing %s, %s", img, emu)
         img_rel = emu_downloads_menu.AndroidReleaseZip(img)
         if not img_rel.is_system_image():
-            logging.warn("{} is not a zip file with a system image (Unexpected description), skipping".format(img))
+            logging.warning("{} is not a zip file with a system image (Unexpected description), skipping".format(img))
             continue
         emu_rel = emu_downloads_menu.AndroidReleaseZip(emu)
         if not emu_rel.is_emulator():
@@ -75,7 +70,7 @@ def cloud_build(args):
             steps.append(device.create_cloud_build_step())
             images.append(device.tag)
 
-    cloudbuild = {"steps": steps, "images": images, "timeout": "21600"}
+    cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
@@ -84,6 +79,15 @@ def cloud_build(args):
         "cloudbuild.README.MD",
         {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in images])},
         rename_as="README.MD",
+    )
+    writer.write_template(
+        "registry.README.MD",
+        {
+            "emu_version": ", ".join(emulators),
+            "emu_images": "\n".join(["* {}".format(x) for x in images]),
+            "first_image": images[0]
+        },
+        rename_as="REGISTRY.MD",
     )
 
     if args.git:

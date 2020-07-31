@@ -16,9 +16,15 @@
 # and is based on having docker unzip the entries. This is a much slower process
 # for creating images.
 FROM alpine AS unzipper
-
 RUN apk add --update unzip
 
+# Barely changes
+FROM unzipper as sys_unzipper
+COPY {{sysimg_zip}} /tmp/
+RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
+
+# Changes per release.
+FROM unzipper as emu_unzipper
 COPY {{emu_zip}} /tmp/
 RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
 
@@ -46,13 +52,10 @@ RUN mkdir -p /android/sdk/platforms && \
 
 # Make sure to place files that do not change often in the higher layers
 # as this will improve caching.
-COPY launch-emulator.sh /android/sdk/
 COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
 RUN gpasswd -a root audio && \
-    chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
-
-COPY --from=unzipper /emu/ /android/sdk/
+    chmod +x  /android/sdk/platform-tools/adb
 
 COPY avd /android-home
 # Create an initial snapshot so we will boot fast next time around,
@@ -83,14 +86,14 @@ HEALTHCHECK --interval=30s \
             --retries=3 \
             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
-FROM unzipper as sys_unzipper
-
-COPY {{sysimg_zip}} /tmp/
-RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
 
 FROM emulator
 
 COPY --from=sys_unzipper /sysimg/ /android/sdk/system-images/android/
+COPY --from=emu_unzipper /emu/ /android/sdk/
+COPY launch-emulator.sh /android/sdk/
+RUN chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
+
 # Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
       SystemImage.Abi={{abi}} \
