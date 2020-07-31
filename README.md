@@ -22,8 +22,7 @@ following requirements:
   user]((https://docs.docker.com/install/linux/linux-postinstall/))
 - [Docker-compose](https://docs.docker.com/compose/install/) must be installed.
 - KVM must be available. You can get access to KVM by running on "bare metal",
-  or on a (virtual) machine that provides [nested
-  virtualization](https://blog.turbonomic.com/blog/). If you are planning to run
+  or on a (virtual) machine that provides nested virtualization. If you are planning to run
   this in the cloud (gce/azure/aws/etc..) you first must make sure you have
   access to KVM. Details on how to get access to KVM on the various cloud
   providers can be found here:
