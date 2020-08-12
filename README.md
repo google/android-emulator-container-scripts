@@ -50,44 +50,12 @@ We now host a set of containers in a public repository. You can find details abo
 ```sh
 docker run \
   -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish \
-  8554:8554/tcp --publish 15555:5555/tcp  \
+  8554:8554/tcp --publish 5555:5555/tcp  \
   us-docker.pkg.dev/android-emulator-268719/images/r-google-x64:30.0.23
 ```
 
-This will pull down the container if it is not locally available and launch it. You can see that is
-starting:
-
-After this you can connect to the device by configuring adb:
-
-```sh
-  adb connect localhost:15555
-```
-
-The device should now show up after a while as:
-
-```sh
-$ adb devices
-
-List of devices attached
-localhost:15555 device
-```
-
-If you wish to use this in a script you could do the following:
-
-```sh
-docker run -d \
-  -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish \
-  8554:8554/tcp --publish 15555:5555/tcp  \
-  us-docker.pkg.dev/android-emulator-268719/images/r-google-x64:30.0.23
-  adb connect localhost:15555
-  adb wait-for-device
-
-  # The device is now booting, or close to be booted
-
-```
-
-A more detailed script can be found in [run-in-script-example.sh](./run-in-script-example.sh).
-
+The section [below](#communicating-with-the-emulator-in-the-container) describes how
+to interact with the emulator.
 
 # Install in a virtual environment
 
@@ -211,13 +179,13 @@ We provide the following run script:
 It does the following:
 
     docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
-    8554:8554/tcp --publish 15555:5555/tcp <docker-image-id>
+    8554:8554/tcp --publish 5555:5555/tcp <docker-image-id>
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
 - Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
-  host ports 8554/15555 to container ports 8554/5555 respectively.
+  host ports 8554/5555 to container ports 8554/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
@@ -286,7 +254,7 @@ For example:
 
 
 ```sh
-    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 15555:5555/tcp \
+    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
     us.gcr.io/emulator-project/q-playstore-x86:29.3.2
 ```
 
@@ -306,7 +274,7 @@ Your device should now show up as:
 $ adb devices
 
 List of devices attached:
-localhost:5555 device
+emulator-5554   device
 ```
 
 # Make the emulator accessible on the web
