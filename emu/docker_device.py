@@ -133,7 +133,7 @@ class DockerDevice(object):
             self.base_img = DockerDevice.GPU_BASEIMG
 
     def push(self, sha, latest=False):
-        repo, tag = self.tag.split(":")
+        repo, tag = self.tag.rsplit(":", 1)
         print("Pushing docker image: {}.. be patient this can take a while!".format(self.tag))
         tracker = ProgressTracker()
         try:
