@@ -54,6 +54,7 @@ class DockerConfig(object):
         return False
 
     def _set_cfg(self, label, state="True"):
+        self._load_config()
         self.cfg["DEFAULT"][label] = state
         self._save_config()
 
