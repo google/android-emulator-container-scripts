@@ -70,6 +70,7 @@ def cloud_build(args):
             steps.append(device.create_cloud_build_step())
             images.append(device.tag)
 
+    steps[-1]["waitFor"] = ["-"]
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
