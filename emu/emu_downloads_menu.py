@@ -165,7 +165,10 @@ class AndroidReleaseZip(object):
         return self.revision()
 
     def repo_friendly_name(self):
-        return "{}-{}-{}".format(self.codename().lower(), self.short_tag(), self.short_abi())
+        if len(self.api()) == 0:
+            return "{}-{}-{}".format(self.codename().lower(), self.short_tag(), self.short_abi())
+        else:
+            return "{}-{}-{}-{}".format(self.codename().lower(), self.api(), self.short_tag(), self.short_abi())
 
     def is_system_image(self):
         return "System Image" in self.desc()
