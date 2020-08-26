@@ -210,14 +210,13 @@ We provide the following run script:
 
 It does the following:
 
-    docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish
-    8554:8554/tcp --publish 15555:5555/tcp <docker-image-id>
+    docker run -e "TOKEN=$(cat ~/.emulator_console_auth_token)" -e "ADBKEY=$(cat ~/.android/adbkey)" -e "EMULATOR_PARAMS=${PARAMS}" --device /dev/kvm --publish 8554:8554/tcp --publish 5554:5554/tcp --publish 5555:5555/tcp ${CONTAINER_ID}
 
 
 - Sets up the ADB key, assuming one exists at ~/.android/adbkey
 - Uses `--device /dev/kvm` to have CPU acceleration
 - Starts the emulator in the docker image with its gRPC service, forwarding the
-  host ports 8554/15555 to container ports 8554/5555 respectively.
+  host ports 8554/6664/5555 to container ports 8554/5554/5555 respectively.
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
@@ -244,7 +243,7 @@ The script is similar as to the one described above with the addition that it wi
   - Enable the domain socket under /tmp/.X11-unix to communicate with hosts X server
 
 Hardware acceleration will significantly improve performance of applications that heavily
-rely on graphics. Note that even though we need a X11 server for gpu acceleratation there
+rely on graphics. Note that even though we need a X11 server for gpu acceleration there
 will be no ui displayed.
 
 ## Pushing images to a repository
@@ -286,7 +285,7 @@ For example:
 
 
 ```sh
-    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 15555:5555/tcp \
+    docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
     us.gcr.io/emulator-project/q-playstore-x86:29.3.2
 ```
 
@@ -295,8 +294,7 @@ For example:
 ## adb
 
 We forward the port 5555 for adb access to the emulator running inside the
-container (TODO: make this configurable per container). Adb might not automatically
-detect the device, so run:
+container. Adb might not automatically detect the device, so run:
 
     adb connect localhost:5555
 
