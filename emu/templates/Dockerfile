@@ -42,8 +42,8 @@ COPY default.pa /etc/pulse/default.pa
 RUN gpasswd -a root audio && \
     chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
 
-COPY avd/ /android-home
 COPY emu/ /android/sdk/
+COPY avd/ /android-home
 COPY sys/ /android/sdk/system-images/android/
 # Create an initial snapshot so we will boot fast next time around,
 # This is currently an experimental feature, and is not easily configurable//
