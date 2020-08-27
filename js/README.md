@@ -16,43 +16,10 @@ For fast video over [WebRTC](www.webrtc.org):
 
 ### Do I need TURN?
 
-The most important thing to is to figure out if you need a [Turn Server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT). **You usually only need this if your server running the emulator is behind a firewall, and not publicly accessible.** Most of the time there is no need for a turn server.
-
-If for example you are running the emulator in a private Google GCE project, you will need to make use of a turn server. You can take the following steps to enable turn:
-
-1. Enable a turn service. There are many services you could use. A quick [Google search](https://www.google.com/search?q=webrtc+turn+server+cloud+providers) will provide a series of provides. If you are internal at google you could use the [GCE turn api](http://go/turnaas).
-2. Launch the emulator with the `-turncfg` flag.
-
-   This will inform the videobridge to execute the given command for every new incoming connection to obtain the JSON turn configuration that will be used.
-
-    This command must do the following:
-
-    - Produce a result on stdout.
-    - Produce a result within 1000 ms.
-    - Produce a valid [JSON RTCConfiguration object](https://developer.mozilla.org/en-US/docs/Web/API/RTCConfiguration).
-    - That contain at least an "iceServers" array.
-    - The exit value should be 0 on success
-
-    For example:
-
-    ```sh
-    emulator -grpc 8554 -turncfg "curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec"
-    ```
-
-You can create the docker container with the `--extra` flag to pass in the turn configuration. For example:
-
-```sh
-emu-docker create stable \
-           "O google_apis_playstore x86" \
-           --extra  \
-           '-turncfg "curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=mykey"' \
-           --metrics
-```
-
-Would use the given curl command to obtain the the json snippet.
-
-*NOTE: If you do not obtain ice configuration through curl you might need to modify the docker template
-to make sure you can obtain the proper turn configuration.8
+The most important thing to is to figure out if you need a [Turn Server](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT).
+**You usually only need this if your server running the emulator is behind a firewall, and not publicly accessible.**
+Most of the time there is no need for a turn server. If you do have needs for a turn server you can follow the steps in the
+[README](turn/README.MD).
 
 # Internal Organization
 
