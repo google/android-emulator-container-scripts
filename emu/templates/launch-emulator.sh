@@ -13,6 +13,78 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+VERBOSE=3
+
+
+# Return the value of a given named variable.
+# $1: variable name
+#
+# example:
+#    FOO=BAR
+#    BAR=ZOO
+#    echo `var_value $FOO`
+#    will print 'ZOO'
+#
+var_value () {
+    eval printf %s \"\$$1\"
+}
+
+
+# Return success if variable $1 is set and non-empty, failure otherwise.
+# $1: Variable name.
+# Usage example:
+#   if var_is_set FOO; then
+#      .. Do something the handle FOO condition.
+#   fi
+var_is_set () {
+    test -n "$(var_value $1)"
+}
+
+_var_quote_value () {
+    printf %s "$1" | sed -e "s|'|\\'\"'\"\\'|g"
+}
+
+
+# Append a space-separated list of items to a given variable.
+# $1: Variable name.
+# $2+: Variable value.
+# Example:
+#   FOO=
+#   var_append FOO foo    (FOO is now 'foo')
+#   var_append FOO bar    (FOO is now 'foo bar')
+#   var_append FOO zoo    (FOO is now 'foo bar zoo')
+var_append () {
+    local _var_append_varname
+    _var_append_varname=$1
+    shift
+    if test "$(var_value $_var_append_varname)"; then
+        eval $_var_append_varname=\$$_var_append_varname\'\ $(_var_quote_value "$*")\'
+    else
+        eval $_var_append_varname=\'$(_var_quote_value "$*")\'
+    fi
+}
+
+# Run a command, output depends on verbosity level
+run () {
+    if [ "$VERBOSE" -lt 0 ]; then
+        VERBOSE=0
+    fi
+    if [ "$VERBOSE" -gt 1 ]; then
+        echo "COMMAND: $@"
+    fi
+    case $VERBOSE in
+        0|1)
+             eval "$@" >/dev/null 2>&1
+             ;;
+        2)
+            eval "$@" >/dev/null
+            ;;
+        *)
+            eval "$@"
+            ;;
+    esac
+}
+
 
 log_version_info() {
   # This function logs version info.
@@ -26,11 +98,11 @@ log_version_info() {
 install_adb_keys() {
   # We do not want to keep adb secrets around, if the emulator
   # ever created the secrets itself we will never be able to connect.
-  rm -f /root/.android/adbkey /root/.android/adbkey.pub
+  run rm -f /root/.android/adbkey /root/.android/adbkey.pub
 
   if [ -s "/run/secrets/adbkey" ]; then
     echo "emulator: Copying private key from secret partition"
-    cp /run/secrets/adbkey /root/.android
+    run cp /run/secrets/adbkey /root/.android
   elif [ ! -z "${ADBKEY}" ]; then
     echo "emulator: Using provided adb private key"
     echo "-----BEGIN PRIVATE KEY-----" >/root/.android/adbkey
@@ -38,9 +110,9 @@ install_adb_keys() {
     echo "-----END PRIVATE KEY-----" >>/root/.android/adbkey
   else
     echo "emulator: No adb key provided, creating internal one, you might not be able connect from adb."
-    adb keygen /root/.android/adbkey
+    run adb keygen /root/.android/adbkey
   fi
-  chmod 600 /root/.android/adbkey
+  run chmod 600 /root/.android/adbkey
 }
 
 # Installs the console tokens, if any. The environment variable |TOKEN| will be
@@ -48,7 +120,7 @@ install_adb_keys() {
 install_console_tokens() {
   if [ -s "/run/secrets/token" ]; then
     echo "emulator: Copying console token from secret partition"
-    cp /run/secrets/token /root/.emulator_console_auth_token
+    run cp /run/secrets/token /root/.emulator_console_auth_token
     TOKEN=yes
   elif [ ! -z "${TOKEN}" ]; then
     echo "emulator: Using provided emulator console token"
@@ -71,8 +143,8 @@ install_grpc_certs() {
 
 clean_up() {
   # Delete any leftovers from hard exits.
-  rm -rf /tmp/*
-  rm -rf /android-home/Pixel2.avd/*.lock
+  run rm -rf /tmp/*
+  run rm -rf /android-home/Pixel2.avd/*.lock
 
   # Check for core-dumps, that might be left over
   if ls core* 1>/dev/null 2>&1; then
@@ -85,24 +157,24 @@ clean_up() {
 
 setup_pulse_audio() {
   # We need pulse audio for the webrtc video bridge, let's configure it.
-  mkdir -p /root/.config/pulse
+  run mkdir -p /root/.config/pulse
   export PULSE_SERVER=unix:/tmp/pulse-socket
-  pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1 --exit-idle-time=-1
+  run pulseaudio -D -vvvv --log-time=1 --log-target=newfile:/tmp/pulseverbose.log --log-time=1 --exit-idle-time=-1
   tail -f /tmp/pulseverbose.log -n +1 | sed -u 's/^/pulse: /g' &
-  pactl list || exit 1
+  run pactl list || exit 1
 }
 
 forward_loggers() {
-  mkdir /tmp/android-unknown
-  mkfifo /tmp/android-unknown/kernel.log
-  mkfifo /tmp/android-unknown/logcat.log
+  run mkdir /tmp/android-unknown
+  run mkfifo /tmp/android-unknown/kernel.log
+  run mkfifo /tmp/android-unknown/logcat.log
   echo "emulator: It is safe to ignore the warnings from tail. The files will come into existence soon."
   tail --retry -f /tmp/android-unknown/goldfish_rtc_0 | sed -u 's/^/video: /g' &
   cat /tmp/android-unknown/kernel.log | sed -u 's/^/kernel: /g' &
   cat /tmp/android-unknown/logcat.log | sed -u 's/^/logcat: /g' &
 }
 
-# Let's log the emulator,script and image version.
+# Let us log the emulator,script and image version.
 log_version_info
 clean_up
 install_console_tokens
@@ -124,14 +196,27 @@ fi
 # All our ports are loopback devices, so setup a simple forwarder
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:5557 &
 
+# Basic launcher command, additional flags can be added.
+LAUNCH_CMD=emulator/emulator
+var_append LAUNCH_CMD -avd Pixel2 -verbose
+var_append LAUNCH_CMD -ports 5556,5557 -grpc 8554 -no-window
+var_append LAUNCH_CMD -skip-adb-auth -no-snapshot
+var_append LAUNCH_CMD -shell-serial file:/tmp/android-unknown/kernel.log
+var_append LAUNCH_CMD -logcat-output /tmp/android-unknown/logcat.log
+var_append LAUNCH_CMD -feature AllowSnapshotMigration
+var_append LAUNCH_CMD -gpu swiftshader_indirect {{extra}}
+
+if [ ! -z "${EMULATOR_PARAMS}" ]; then
+  var_append LAUNCH_CMD $EMULATOR_PARAMS
+fi
+
+if [ ! -z "${TURN}" ]; then
+  var_append LAUNCH_CMD -turncfg \'${TURN}\'
+fi
+
+# Add qemu specific parameters
+var_append LAUNCH_CMD -qemu -append panic=1
+
 # Kick off the emulator
-exec emulator/emulator @Pixel2 -verbose -wipe-data \
-  -ports 5556,5557 \
-  -grpc 8554 -no-window -skip-adb-auth \
-  -no-snapshot \
-  -shell-serial file:/tmp/android-unknown/kernel.log \
-  -logcat-output /tmp/android-unknown/logcat.log \
-  -feature  AllowSnapshotMigration \
-  -gpu swiftshader_indirect \
-  {{extra}} ${EMULATOR_PARAMS} -qemu -append panic=1
+run $LAUNCH_CMD
 # All done!

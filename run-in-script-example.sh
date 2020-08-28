@@ -10,8 +10,12 @@ PORT=15555
 
 # This will launch the container in the background.
 container_id=$(docker run -d \
-  -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish \
-  8554:8554/tcp --publish $PORT:5555/tcp  \
+  --device /dev/kvm \
+  --publish 8554:8554/tcp \
+  --publish $PORT:5555/tcp \
+  -e TOKEN="$(cat ~/.emulator_console_auth_token)" \
+  -e ADBKEY="$(cat ~/.android/adbkey)" \
+  -e EMULATOR_PARAMS="${PARAMS}" \
   $DOCKER_IMAGE)
 
 echo "The container is running with id: $container_id"
@@ -30,10 +34,9 @@ adb wait-for-device
 
 # The device is now booting, or close to be booted
 # We just wait until the sys.boot_completed property is set to 1.
-while [ "`adb shell getprop sys.boot_completed | tr -d '\r' `" != "1" ] ;
-do
+while [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" != "1" ]; do
   echo "Still waiting for boot.."
-  sleep 1;
+  sleep 1
 done
 
 echo "The device is ready"
