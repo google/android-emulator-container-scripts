@@ -218,5 +218,5 @@ fi
 var_append LAUNCH_CMD -qemu -append panic=1
 
 # Kick off the emulator
-run $LAUNCH_CMD
+run exec $LAUNCH_CMD
 # All done!
