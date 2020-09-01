@@ -234,6 +234,8 @@ class DockerDevice(object):
             logging.info("Done unzipping")
 
     def create_docker_file(self, extra="", metrics=False, by_copying_zip_files=False):
+        if type(extra) is list:
+            extra = " ".join(extra)
         logging.info("Emulator zip: %s", self.emulator)
         logging.info("Sysimg zip: %s", self.sysimg)
         logging.info("Docker src dir: %s", self.dest)
@@ -245,7 +247,6 @@ class DockerDevice(object):
             shutil.rmtree(self.dest)
         mkdir_p(self.dest)
 
-        self.bin_place_emulator_files(by_copying_zip_files)
         self._copy_adb_to(self.dest)
         self.writer.write_template("avd/Pixel2.ini", {"api": self.sysimg.api()})
         self.writer.write_template(
@@ -281,6 +282,7 @@ class DockerDevice(object):
         self.writer.write_template("launch-emulator.sh", {"extra": extra, "version": emu.__version__})
         self.writer.write_template("default.pa", {})
 
+        self.bin_place_emulator_files(by_copying_zip_files)
         src_template = "Dockerfile.from_zip" if by_copying_zip_files else "Dockerfile"
         self.writer.write_template(
             src_template,
