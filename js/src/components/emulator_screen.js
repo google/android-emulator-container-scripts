@@ -14,6 +14,7 @@ import OndemandVideoIcon from "@material-ui/icons/OndemandVideo";
 import Slider from "@material-ui/core/Slider";
 import VolumeDown from "@material-ui/icons/VolumeDown";
 import VolumeUp from "@material-ui/icons/VolumeUp";
+import LocationOnIcon from "@material-ui/icons/LocationOn";
 import PropTypes from "prop-types";
 import React from "react";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -69,6 +70,8 @@ class EmulatorScreen extends React.Component {
     muted: true,
     volume: 0.0,
     hasAudio: false,
+    // Let's start at the Googleplex
+    gps: { latitude: 37.4221, longitude: -122.0841 },
   };
 
   static propTypes = {
@@ -92,6 +95,17 @@ class EmulatorScreen extends React.Component {
     });
   };
 
+  updateLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((location) => {
+        const loc = location.coords;
+        this.setState({
+          gps: { latitude: loc.latitude, longitude: loc.longitude },
+        });
+      });
+    }
+  };
+
   handleClose = (e) => {
     this.setState({ error_snack: false });
   };
@@ -111,6 +125,7 @@ class EmulatorScreen extends React.Component {
       muted,
       volume,
       hasAudio,
+      gps,
     } = this.state;
     return (
       <div className={classes.root}>
@@ -148,6 +163,13 @@ class EmulatorScreen extends React.Component {
 
             <div className={classes.grow} />
             <div className={classes.sectionDesktop}>
+              <IconButton
+                aria-label="Get current location"
+                color="inherit"
+                onClick={this.updateLocation}
+              >
+                <LocationOnIcon />
+              </IconButton>
               <IconButton
                 aria-label="Switch to webrtc"
                 color="inherit"
@@ -187,6 +209,7 @@ class EmulatorScreen extends React.Component {
                   onError={this.onError}
                   muted={muted}
                   volume={volume}
+                  gps={gps}
                 />
                 <p>State: {emuState} </p>
               </Container>
