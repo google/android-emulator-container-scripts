@@ -53,7 +53,7 @@ docker run \
   --device /dev/kvm \
   --publish 8554:8554/tcp \
   --publish 5555:5555/tcp  \
-  us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.0
+  us-docker.pkg.dev/android-emulator-268719/images/30-playstore-x64:30.1.2
 ```
 
 This will pull down the container if it is not locally available and launch it. You can see that is
@@ -82,7 +82,7 @@ docker run -d \
   --device /dev/kvm \
   --publish 8554:8554/tcp \
   --publish 5555:5555/tcp  \
-  us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.0
+  us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.2
   adb connect localhost:5555
   adb wait-for-device
 
@@ -273,7 +273,7 @@ Where:
 - abi indicates the underlying CPU architecture, which is one of: _x86_, _x64_, _a32_, _a64_.
   Note that arm images are not hardware accelerated and might not be fast enough.
 
-For example: _29-playstore-x86:30.1.0_ indicates a playstore enabled system
+For example: _29-playstore-x86:30.1.2_ indicates a playstore enabled system
 image with Q running on 32-bit x86.
 
 An example invocation for publishing all Q images to google cloud repo could be:
@@ -287,7 +287,7 @@ For example:
 
 ```sh
     docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
-    us.gcr.io/emulator-project/29-playstore-x86:30.1.0
+    us.gcr.io/emulator-project/29-playstore-x86:30.1.2
 ```
 
 ## Communicating with the emulator in the container
