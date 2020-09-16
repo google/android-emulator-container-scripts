@@ -15,6 +15,26 @@
 # limitations under the License.
 VERBOSE=3
 
+# Make adb and grpc ports configurable.
+# Internal ports and serial port are set transparently based on the adb port.
+# By default, we have:
+# - adb            : 5555 (configurable)
+# - serial         : 5554 (= $adb - 1)
+# - internal adb   : 5553 (= $adb - 2)
+# - internal serial: 5552 (= $adb - 3)
+# - grpc           : 8554 (configurable)
+if [ -z "${ADB_PORT}" ]; then
+    ADB_PORT=5555
+fi
+
+if [ -z "${GRPC_PORT}" ]; then
+    GRPC_PORT=8554
+fi
+
+SERIAL_PORT=$(($ADB_PORT - 1))
+INTERNAL_ADB_PORT=$(($ADB_PORT - 2))
+INTERNAL_SERIAL_PORT=$(($ADB_PORT - 3))
+
 
 # Return the value of a given named variable.
 # $1: variable name
@@ -131,7 +151,7 @@ install_console_tokens() {
 
   if [ ! -z "${TOKEN}" ]; then
     echo "emulator: forwarding the emulator console."
-    socat -d tcp-listen:5554,reuseaddr,fork tcp:127.0.0.1:5556 &
+    socat -d tcp-listen:${SERIAL_PORT},reuseaddr,fork tcp:127.0.0.1:${INTERNAL_SERIAL_PORT} &
   fi
 }
 
@@ -194,12 +214,12 @@ fi
 /android/sdk/platform-tools/adb start-server
 
 # All our ports are loopback devices, so setup a simple forwarder
-socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:5557 &
+socat -d tcp-listen:${ADB_PORT},reuseaddr,fork tcp:127.0.0.1:${INTERNAL_ADB_PORT} &
 
 # Basic launcher command, additional flags can be added.
 LAUNCH_CMD=emulator/emulator
 var_append LAUNCH_CMD -avd Pixel2 -verbose
-var_append LAUNCH_CMD -ports 5556,5557 -grpc 8554 -no-window
+var_append LAUNCH_CMD -ports ${INTERNAL_SERIAL_PORT},${INTERNAL_ADB_PORT} -grpc ${GRPC_PORT} -no-window
 var_append LAUNCH_CMD -skip-adb-auth -no-snapshot
 var_append LAUNCH_CMD -shell-serial file:/tmp/android-unknown/kernel.log
 var_append LAUNCH_CMD -logcat-output /tmp/android-unknown/logcat.log
