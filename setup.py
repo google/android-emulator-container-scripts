@@ -121,7 +121,7 @@ setup(
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
     install_requires=[
-        "urlfetch",
+        "requests",
         "jinja2==2.11.1",
         "console-menu",
         "tqdm",
