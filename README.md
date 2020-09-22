@@ -53,7 +53,7 @@ docker run \
   --device /dev/kvm \
   --publish 8554:8554/tcp \
   --publish 5555:5555/tcp  \
-  us-docker.pkg.dev/android-emulator-268719/images/30-playstore-x64:30.1.2
+  us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.2
 ```
 
 This will pull down the container if it is not locally available and launch it. You can see that is
