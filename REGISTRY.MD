@@ -32,16 +32,16 @@ Keep in mind that you will see reduced performance if you are making use of nest
 
 Here is a list of the latest images.
 
-* us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.2
-* us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64-no-metrics:30.1.2
-* us-docker.pkg.dev/android-emulator-268719/images/29-google-x64:30.1.2
-* us-docker.pkg.dev/android-emulator-268719/images/29-google-x64-no-metrics:30.1.2
-* us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.2
-* us-docker.pkg.dev/android-emulator-268719/images/30-google-x64-no-metrics:30.1.2
+* us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.4
+* us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64-no-metrics:30.1.4
+* us-docker.pkg.dev/android-emulator-268719/images/29-google-x64:30.1.4
+* us-docker.pkg.dev/android-emulator-268719/images/29-google-x64-no-metrics:30.1.4
+* us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.4
+* us-docker.pkg.dev/android-emulator-268719/images/30-google-x64-no-metrics:30.1.4
 
 For example you can now pull a container as follows:
 
-    docker pull us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.2
+    docker pull us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.4
 
 ### Usage
 
@@ -56,7 +56,7 @@ The following ports are available:
 
 An example invocation making the console, adb and the gRPC endpoint available:
 ```sh
-docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish 8554:8554/tcp --publish 5554:5554/tcp --publish 5555:5555/tcp us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.2
+docker run -e "ADBKEY=$(cat ~/.android/adbkey)" --device /dev/kvm --publish 8554:8554/tcp --publish 5554:5554/tcp --publish 5555:5555/tcp us-docker.pkg.dev/android-emulator-268719/images/28-playstore-x64:30.1.4
 ```
 
 You might need to run `adb connect localhost:5555` to enable ADB to discover the device.
