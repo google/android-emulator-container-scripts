@@ -148,14 +148,8 @@ setup(
     # MANIFEST.in as well.
     package_data={  # Optional
         "emu": [
-            "templates/Dockerfile",
-            "templates/Dockerfile.from_zip",
-            "templates/README.md",
-            "templates/cloudbuild.README.MD",
-            "templates/default.pa",
-            "templates/launch-emulator.sh",
-            "templates/avd/Pixel2.ini",
-            "templates/avd/Pixel2.avd/config.ini",
+            "templates/*",
+            "templates/avd/*",
         ],
     },
     # Although 'package_data' is the preferred approach, in some case you may
