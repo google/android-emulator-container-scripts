@@ -20,12 +20,12 @@ import shutil
 import socket
 import sys
 import zipfile
-
+import click
 import docker
 from jinja2 import Environment, PackageLoader
 from packaging import version
 from tqdm import tqdm
-
+from consolemenu import SelectionMenu
 import emu
 from emu.emu_downloads_menu import AndroidReleaseZip, PlatformTools
 from emu.template_writer import TemplateWriter
@@ -89,6 +89,28 @@ def extract_zip(fname, path):
         mode = info.external_attr >> 16
         if mode:
             os.chmod(filename, mode)
+
+
+DEFAULT_RESOLUTION = {'width': 1080, 'height': 1920, 'density': 440}
+
+
+def select_emulator_resolution():
+    while True:
+        selection = SelectionMenu.get_selection(['Default - {} x {}: {}dpi'.format(*DEFAULT_RESOLUTION.values()),
+                                                'Customize...'],
+                                                title="Select the emulator screen resolution:")
+        if selection == 0:
+            return DEFAULT_RESOLUTION
+        elif selection == 1:
+            width = click.prompt('Please enter emulator screen width', type=int)
+            height = click.prompt('Please enter emulator screen height', type=int)
+            density = click.prompt('Please enter emulator screen density', type=int)
+            customized_resolution = {'width': width, 'height': height, 'density': density}
+            if click.confirm("Please confirm your emulator screen resolution - {} x {}: {}dpi.".
+                             format(*customized_resolution.values())):
+                return customized_resolution
+        elif selection == 2:
+            sys.exit(1)
 
 
 class DockerDevice(object):
@@ -233,7 +255,10 @@ class DockerDevice(object):
             extract_zip(self.sysimg.fname, os.path.join(self.dest, "sys"))
             logging.info("Done unzipping")
 
-    def create_docker_file(self, extra="", metrics=False, by_copying_zip_files=False):
+    def create_docker_file(self, extra="", metrics=False, by_copying_zip_files=False,
+                           screen_resolution=None):
+        if screen_resolution is None:
+            screen_resolution = DEFAULT_RESOLUTION
         if type(extra) is list:
             extra = " ".join(extra)
         logging.info("Emulator zip: %s", self.emulator)
@@ -256,6 +281,9 @@ class DockerDevice(object):
                 "abi": self.sysimg.abi(),
                 "cpu": self.sysimg.cpu(),
                 "tag": self.sysimg.tag(),
+                'width': screen_resolution['width'],
+                'height': screen_resolution['height'],
+                'density': screen_resolution['density']
             },
         )
 
