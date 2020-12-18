@@ -26,7 +26,7 @@ import colorlog
 import emu
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
-from emu.docker_device import DockerDevice
+from emu.docker_device import DockerDevice, select_emulator_resolution
 from emu.cloud_build import cloud_build
 from emu.utils import mkdir_p
 
@@ -125,7 +125,8 @@ def create_docker_image_interactive(args):
     img_zip = img.download()
     emu_zip = emulator.download("linux")
     device = DockerDevice(emu_zip, img_zip, args.dest, args.gpu)
-    device.create_docker_file(args.extra, metrics)
+    emu_resolution = select_emulator_resolution()
+    device.create_docker_file(args.extra, metrics, screen_resolution=emu_resolution)
     img = device.create_container()
     if img and args.start:
         device.launch(img)
