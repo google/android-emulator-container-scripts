@@ -420,3 +420,12 @@ def list_all_downloads(arm):
     for emu_info in emu_infos:
         for (hostos, url) in list(emu_info.urls.items()):
             print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
+
+def download_build(build_id, dest=None):
+    """Download a public build with the given build id."""
+    dest = dest or os.path.join(os.getcwd(), "sdk-repo-linux-emulator-{}.zip".format(build_id))
+    uri = "https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{0}.zip".format(build_id);
+    print("Downloading emulator build {} ({}) to {}".format(build_id, uri, dest))
+    logging.warning("Downloading build from ci server, these builds might not have been tested extensively.")
+    _download(uri, dest)
+    return dest
