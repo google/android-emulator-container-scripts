@@ -224,6 +224,18 @@ It does the following:
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
+You also have the option to mount a /data partition which the emulator will use
+if available. This enables you to use a tmpfs which can give increased
+performance, especially in the nested virtualization scenario.
+
+For example:
+
+    docker run -e ADBKEY="$(cat ~/.android/adbkey)" \
+    --device /dev/kvm \
+    --mount type=tmpfs,destination=/data \
+    --publish 8554:8554/tcp \
+    --publish 5555:5555/tcp <docker-image-id>
+
 ### Running the Docker image with GPU acceleration
 
 We currently only support hardware acceleration for NVIDIA. In order to make use
