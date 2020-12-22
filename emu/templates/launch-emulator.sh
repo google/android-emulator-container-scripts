@@ -113,7 +113,7 @@ install_adb_keys() {
     echo "-----END PRIVATE KEY-----" >>/root/.android/adbkey
   else
     echo "emulator: No adb key provided, creating internal one, you might not be able connect from adb."
-    run adb keygen /root/.android/adbkey
+    run /android/sdk/platform-tools/adb keygen /root/.android/adbkey
   fi
   run chmod 600 /root/.android/adbkey
 }
@@ -181,9 +181,10 @@ initialize_data_part() {
   # Check if we have mounted a data partition (tmpfs, or persistent)
   # and if so, we will use that as our avd directory.
   if  is_mounted /data; then
-    run cp -fr ${ANDROID_AVD_HOME}/ /data
-    export ANDROID_AVD_HOME=/data/android-home
-    echo "emulator: using data directory ${ANDROID_AVD_HOME}"
+    run cp -fr /android-home/ /data
+    ln -sf /data/android-home /root/.android/avd
+  else
+    ln -sf /android-home /root/.android/avd
   fi
 }
 
