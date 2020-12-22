@@ -19,6 +19,7 @@ import itertools
 import logging
 import os
 import sys
+import re
 
 import click
 import colorlog
@@ -84,6 +85,10 @@ def create_docker_image(args):
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
         emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
+    elif re.match("\d+", emuzip[0]):
+        # We must be looking for a build id
+        logging.info("Treating %s as a build id", emuzip[0])
+        emuzip = [emu_downloads_menu.download_build(emuzip[0])]
 
     devices = []
     for (img, emu) in itertools.product(imgzip, emuzip):
@@ -168,7 +173,8 @@ def main():
     )
     create_parser.add_argument(
         "emuzip",
-        help="Zipfile containing the a publicly released emulator, or [canary|stable|all] to use the latest canary or stable, or every release.",
+        help="Zipfile containing the a publicly released emulator, or (canary|stable|[0-9]+) to use the latest canary, stable, or build id of the emulator to use. "
+        "Keep in mind that using a build id can result in downloading an untested pre-release emulator build from the android ci server.",
     )
     create_parser.add_argument(
         "imgzip",
@@ -210,6 +216,7 @@ def main():
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
     create_parser.set_defaults(func=create_docker_image)
+
 
     create_inter = subparsers.add_parser(
         "interactive",
