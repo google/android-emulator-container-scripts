@@ -438,6 +438,11 @@ Keep the following things in mind when you make the emulator accessible over adb
 $ adb connect localhost:5555
 $ adb shell getprop
 ```
+# Creating cloud instances
+
+There is a sample cloud-init script that provides details on how you can configure an instance
+that will automatically launch and configure an emulator on creation. Details on how to do this
+can be found [here](cloud-init/README.MD).
 
 ### Troubleshooting
 
