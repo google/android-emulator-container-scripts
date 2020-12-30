@@ -15,7 +15,6 @@
 # limitations under the License.
 VERBOSE=3
 
-
 # Return the value of a given named variable.
 # $1: variable name
 #
@@ -64,6 +63,10 @@ var_append () {
     fi
 }
 
+is_mounted () {
+    mount | grep "$1"
+}
+
 # Run a command, output depends on verbosity level
 run () {
     if [ "$VERBOSE" -lt 0 ]; then
@@ -110,7 +113,7 @@ install_adb_keys() {
     echo "-----END PRIVATE KEY-----" >>/root/.android/adbkey
   else
     echo "emulator: No adb key provided, creating internal one, you might not be able connect from adb."
-    run adb keygen /root/.android/adbkey
+    run /android/sdk/platform-tools/adb keygen /root/.android/adbkey
   fi
   run chmod 600 /root/.android/adbkey
 }
@@ -144,7 +147,7 @@ install_grpc_certs() {
 clean_up() {
   # Delete any leftovers from hard exits.
   run rm -rf /tmp/*
-  run rm -rf /android-home/Pixel2.avd/*.lock
+  run rm -rf ${ANDROID_AVD_HOME}/Pixel2.avd/*.lock
 
   # Check for core-dumps, that might be left over
   if ls core* 1>/dev/null 2>&1; then
@@ -174,8 +177,20 @@ forward_loggers() {
   cat /tmp/android-unknown/logcat.log | sed -u 's/^/logcat: /g' &
 }
 
+initialize_data_part() {
+  # Check if we have mounted a data partition (tmpfs, or persistent)
+  # and if so, we will use that as our avd directory.
+  if  is_mounted /data; then
+    run cp -fr /android-home/ /data
+    ln -sf /data/android-home /root/.android/avd
+  else
+    ln -sf /android-home /root/.android/avd
+  fi
+}
+
 # Let us log the emulator,script and image version.
 log_version_info
+initialize_data_part
 clean_up
 install_console_tokens
 install_adb_keys
@@ -186,7 +201,7 @@ forward_loggers
 # Override config settings that the user forcefully wants to override.
 if [ ! -z "${AVD_CONFIG}" ]; then
   echo "Adding ${AVD_CONFIG} to config.ini"
-  echo "${AVD_CONFIG}" >>"/android-home/Pixel2.avd/config.ini"
+  echo "${AVD_CONFIG}" >>"${ANDROID_AVD_HOME}/Pixel2.avd/config.ini"
 fi
 
 # Launch internal adb server, needed for our health check.
