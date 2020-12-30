@@ -1,0 +1,106 @@
+## template: jinja
+#cloud-config
+
+# Make sure we have a kvm group.
+groups:
+  - kvm
+
+users:
+- name: aemu
+  uid: 2000
+  groups: kvm
+
+write_files:
+- path: /etc/udev/rules.d/kvm-permissions
+  permissions: 0644
+  owner: root
+  content: |
+    KERNEL=="kvm", GROUP="kvm", MODE="0660"
+
+- path: /run/metadata/aemu
+  permissions: 0644
+  owner: root
+  content: |
+    GRPC_PORT=8554
+    ADB_PORT=5555
+    TURN=
+    # Replace with your own accessible image.
+    EMULATOR_IMG=us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
+    # Replace with your own private adb key
+    ADBKEY="-----BEGIN PRIVATE KEY----- \
+      MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC5k0vjoBVDYb/i \
+      dI491H2/cBsSm1YLEVV10J7XOYuUM+83pkn1eYr05++U235hVchjqTuxih/DObHE \
+      WoIuQNxGpKQ0jsQBLHf1zvqtBW0cnxLRCq5Lkuk5mo21EC++6pfZjAQaPoPOWGUn \
+      mxddLeMbYvJdRh1wjYGDXxZ4pw5GqqY0h9CS6UC4hHOjgAc+tb9ogjRnVoTTeOpr \
+      Y2y5DjNgfgrzLq4o8989AGg1BsrirrCYvK1DjkWD+dvgXo14yJKW9Wr7dTeklQhn \
+      GzEsSpyoJFG9XNRNfpP4u1+qoRz4UTfgS7q/uVq8HSdghTm4USuwEUQFyCwizeBY \
+      BqqTX0FRAgMBAAECggEABUolHNCVhJN85seB3bIwsKgRVHwiJWv9wK9E9M9wiqWZ \
+      ky9xrp4jm2ggTpDcWwnI/cq/T2fnkH70scsu6GK7yKV1IwSiAoLOC08WWv/TaLBB \
+      1vywA8pU7Kn6sbNbugxZrlc473bSVtuTDBBGF+dIwMFG9WjMCmcVLs2DQGaKIBJd \
+      GYJvSh76LTFE2faPlxClJtdQoX9d0sBPZDkQxVttvA/nIaXOYF1LgFCMxyH6T6jp \
+      Iu/xxE8XNudGCxmAS2dMjywb6lLOmPCiwljFcThkyMh2U36DvCnTpf/QCq++Grz7 \
+      iOmgVIZRzUDg5VBqJjtt/DyGblS4y7Z1yZpeVnBEQQKBgQDocjWcFTSpaEmyEWQi \
+      oID9DN8PUW8aoxkYYNwaPU0g+UIo3l1DTegGtg6gqc4HAXJhhYAMxzqrSqeoYDXD \
+      xR9tl2+vDpbt+BJNXQgNAg/0HgBA/Im8M+w3GIsHtsBDVQWaG0UBV9+EfZIIgfd6 \
+      dWvv7zwCN77GI7QOakQr87xdEQKBgQDMYTta+7HTnRUW92tlFaxOSWGXjp6pkATO \
+      XLl2czIx2ML4SJOTGuI0NZHY2rrmuHp+QUel1pzmEWjjfrbcpMDZWxOaCL4g3tmA \
+      VBkdQ0C/WYjrtyjMckM9PBRqfMtJT7BWeuzgQMhPmcdw084MvM7HxvbTfWs8iJpa \
+      9eI6RFGgQQKBgF0/q/gAnc60MpRH28b0YqqhZj6r6YljEqcv/DxeiTmIJR1mDz33 \
+      2/QNRxL269rtnqg2uSbnKccbvOSULB1sT+5UCQ7OKIgws47rmlY1lJbXDj0D0nF4 \
+      1vNHWkbu7nRUgFnRRL6ENPvesB3Pnas3veRUMdul51dvbUU3JkAHmHIxAoGAHzRB \
+      MbT4A40aKTWBah+S/SjrA4683rqkYT V7A4C3CzFDI1FBZtZV7w62w9sxagSEfz5M \
+      SB+qON4zm3g/RxTIdOcY6Q2oqbAcmSE97F/WRODQrNx8GCrh5TmFDHUdPIY0MB/4 \
+      hoydiLm735gW/47cK1hPWx7s/oMEvhqIfcjshYECgYBYye6rOe00jYk9tdLD6bEN \
+      PDSJtPu0un3kl9mnS/i+TZ8y4FWQP3Z3Ya2YsU09FE46CbdtaNCleOWk8gTrlPd4 \
+      WBrShKReUz8myoiEGKznWz7+fjYPBGX4V/tqv+4yBC/ODu6I8ZtAbe0RBA36g7E6 \
+      NhBP5MRzqGMp/A3/WvrZQg== \
+      -----END PRIVATE KEY-----"
+
+- path: /usr/local/bin/append_aemu_metadata
+  permissions: 0755
+  owner: root
+  content: |
+    #/bin/sh
+    override_metadata() {
+      # TODO: Add support for other providers.
+      {% if v1.cloud_name == 'gce' %}
+      local METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes/"
+      local response=$(curl -f --silent "${METADATA_URL}$1" -H "Metadata-Flavor: Google")
+      {% endif %}
+      if [ "$response" ]; then echo $2=$response >> /run/metadata/aemu; fi
+    }
+    override_metadata emulator_grpc_port GRPC_PORT
+    override_metadata emulator_adb_port ADB_PORT
+    override_metadata emulator_image EMULATOR_IMG
+    override_metadata emulator_adbkey ADBKEY
+    override_metadata emulator_turn TURN
+    override_metadata emulator_img EMULATOR_IMG
+
+- path: /etc/systemd/system/aemu.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=Starts the android emulator as a docker service.
+    Requires=docker.service
+    After=docker.service
+    [Service]
+    EnvironmentFile=/run/metadata/aemu
+    ExecStart=/usr/bin/docker run --rm \
+                              --name=my_aemu \
+                              --device /dev/kvm \
+                              -e ADBKEY \
+                              -e TURN \
+                              --publish ${GRPC_PORT}:8554/tcp \
+                              --publish ${ADB_PORT}:5555/tcp \
+                              --mount type=tmpfs,destination=/data \
+                              ${EMULATOR_IMG}
+    ExecStop=/usr/bin/docker stop my_aemu
+    ExecStopPost=/usr/bin/docker rm my_aemu
+
+runcmd:
+- chown root:kvm /dev/kvm
+- chmod 0660 /dev/kvm
+- /usr/local/bin/append_aemu_metadata
+- systemctl daemon-reload
+- systemctl start aemu.service
