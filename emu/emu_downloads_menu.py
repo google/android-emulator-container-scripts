@@ -269,7 +269,14 @@ class SysImgInfo(LicensedObject):
         if self.tag == "default":
             self.tag = "android"
         self.abi = details.find("abi").text
-        self.zip = pkg.find(".//url").text
+
+        # prefer a url for a Linux host in case there are multiple
+        url_element = pkg.find(".//archive[host-os='linux']/complete/url")
+        # fallback is to pick the first url
+        if url_element is None:
+            url_element = pkg.find(".//url")
+        self.zip = url_element.text
+
         self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
 
     def download(self, dest=None):
