@@ -18,6 +18,10 @@ static_resources:
               domains: ["*"]
               routes:
                 # This is the emulator endpoint for grpc requests.
+              - match: { prefix: "/android.emulation.control.Rtc" }
+                route:
+                   cluster: goldfish_rtc_service_grpc
+                   max_grpc_timeout: 0s
               - match: { prefix: "/android.emulation.control" }
                 route:
                    cluster: emulator_service_grpc
@@ -61,6 +65,25 @@ static_resources:
               socket_address:
                 address: host.docker.internal
                 port_value: 8554
+  - name: goldfish_rtc_service_grpc
+    connect_timeout: 0.250s
+    type: strict_dns
+    lb_policy: round_robin
+    upstream_connection_options:
+      tcp_keepalive:
+        keepalive_probes: 1
+        keepalive_time: 10
+        keepalive_interval: 10
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: goldfish_rtc_service_grpc
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: host.docker.internal
+                port_value: 9554
   - name: npm
     connect_timeout: 0.25s
     type: strict_dns

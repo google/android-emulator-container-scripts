@@ -16,7 +16,8 @@ var EMULATOR_GRPC =
   ":" +
   window.location.port;
 if (development) {
-  EMULATOR_GRPC = "http://localhost:8080";
+  EMULATOR_GRPC =  window.location.protocol + "//" +
+  window.location.hostname + ":8080";
 }
 
 export default class App extends Component {
