@@ -14,6 +14,7 @@
 import itertools
 import logging
 import os
+import re
 
 import yaml
 
@@ -39,7 +40,13 @@ def cloud_build(args):
         l.force_accept()
 
     imgzip = [x.download() for x in emu_downloads_menu.find_image(args.img)]
-    emuzip = [x.download() for x in emu_downloads_menu.find_emulator("canary")]
+    emuzip = [args.emuzip]
+    if emuzip[0] in ["stable", "canary", "all"]:
+        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
+    elif re.match("\d+", emuzip[0]):
+        # We must be looking for a build id
+        logging.info("Treating %s as a build id", emuzip[0])
+        emuzip = [emu_downloads_menu.download_build(emuzip[0])]
 
     steps = []
     images = []
@@ -69,6 +76,7 @@ def cloud_build(args):
             device.create_docker_file("", metrics=True, by_copying_zip_files=True)
             steps.append(device.create_cloud_build_step())
             images.append(device.tag)
+            images.append(device.latest)
 
     steps[-1]["waitFor"] = ["-"]
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}

@@ -160,7 +160,7 @@ class AndroidReleaseZip(object):
 
     def build_id(self):
         """The build id, or revision of build id is not available."""
-        if "Pgk.BuildId" in self.props:
+        if "Pkg.BuildId" in self.props:
             return self.props.get("Pkg.BuildId")
         return self.revision()
 
