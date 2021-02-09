@@ -21,12 +21,17 @@ write_files:
   permissions: 0644
   owner: root
   content: |
+    INSTANCE_COUNT=1
     GRPC_PORT=8554
     ADB_PORT=5555
     # Replace with your own turn command (Be careful of escaping ")
     TURN=
+    # Additional emulator parameters
+    EMULATOR_PARAMS=
+    # Additional avd config
+    AVD_CONFIG=
     # Replace with your own accessible image.
-    EMULATOR_IMG=us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
+    IMAGE=us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest
     # Replace with your own private adb key
     ADBKEY="-----BEGIN PRIVATE KEY----- \
       MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC5k0vjoBVDYb/i \
@@ -72,10 +77,44 @@ write_files:
     }
     override_metadata emulator_grpc_port GRPC_PORT
     override_metadata emulator_adb_port ADB_PORT
-    override_metadata emulator_image EMULATOR_IMG
+    override_metadata emulator_image IMAGE
     override_metadata emulator_adbkey ADBKEY
     override_metadata emulator_turn TURN
-    override_metadata emulator_img EMULATOR_IMG
+    override_metadata emulator_avd_config AVD_CONFIG
+    override_metadata emulator_instance_count INSTANCE_COUNT
+    override_metadata emulator_emulator_params EMULATOR_PARAMS
+
+- path: /usr/local/bin/launch_containers
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/sh
+    CONTAINER=
+    for IDX in $(seq 1 $1); do
+        LGRPC_PORT=$(($GRPC_PORT + $IDX - 1))
+        LADB_PORT=$(($ADB_PORT + $IDX - 1))
+        NAME=aemu_$IDX
+        /usr/bin/docker run --rm -d \
+            --name=$NAME \
+            --device /dev/kvm \
+            -e ADBKEY \
+            -e TURN \
+            -e EMULATOR_PARAMS \
+            -e AVD_CONFIG \
+            -p ${LGRPC_PORT}:8554/tcp \
+            -p ${LADB_PORT}:5555/tcp \
+            --mount type=tmpfs,destination=/data \
+            ${IMAGE}
+        CONTAINER="${CONTAINER} ${NAME}"
+    done
+    /usr/bin/docker wait $CONTAINER
+
+- path: /usr/local/bin/stop_containers
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/sh
+    /usr/bin/docker container stop $(/usr/bin/docker container ls -q --filter name="aemu")
 
 - path: /etc/systemd/system/aemu.service
   permissions: 0644
@@ -87,18 +126,8 @@ write_files:
     After=docker.service
     [Service]
     EnvironmentFile=/run/metadata/aemu
-    ExecStart=/usr/bin/docker run --rm \
-                              --name=my_aemu \
-                              --device /dev/kvm \
-                              -e ADBKEY \
-                              -e TURN \
-                              --publish ${GRPC_PORT}:8554/tcp \
-                              --publish ${ADB_PORT}:5555/tcp \
-                              --mount type=tmpfs,destination=/data \
-                              ${EMULATOR_IMG}
-    ExecStop=/usr/bin/docker stop my_aemu
-    ExecStopPost=/usr/bin/docker rm my_aemu
-
+    ExecStart=/usr/local/bin/launch_containers $INSTANCE_COUNT
+    ExecStop=/usr/local/bin/stop_containers
 runcmd:
 - chown root:kvm /dev/kvm
 - chmod 0660 /dev/kvm

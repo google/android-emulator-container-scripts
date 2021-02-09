@@ -16,8 +16,8 @@ Follow the steps to for your cloud provider to create an image with:
 
 - nested virtualization
 - docker
-- and cloud-init
-- tmpfs with at least 8gb at emulator launch.
+- cloud-init
+- tmpfs with at least 8gb per emulator that is launched.
 
 # Overview
 
@@ -25,11 +25,14 @@ The cloud-init file will launch a systemd service that will pull a public docker
 
 Most notable are:
 
-- **GRPC_PORT**: The port where the gRPC service will be running. Defaults to 8554
-- **ADB_PORT**: The port where ADB will be available. Defaults to 5555
+- **GRPC_PORT**: The port where the first instance of the gRPC service will be running. Defaults to 8554. The second instance will be available at 8555, etc.
+- **ADB_PORT**: The port where the first instance of the ADB will be available. Defaults to 5555. The second instance will be available at 5556, etc.
+- **INSTNCE_COUNT**: The number of emulators to start, defaults to 1. By default the emulator uses 4 vcpus, and 12gb per instance (4 gb memory, 8 gb tmpfs).
 - **TURN**: Configuration used to start turn server.
 - **ADBKEY**: The private adb key that will be embedded in the emulator.
-- **EMULATOR_IMG**: The url to a public docker image that will be launched. Defaults to `us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4`
+- **EMULATOR_IMG**: The url to a public docker image that will be launched. Defaults to `us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest`
+- **AVD_CONFIG**: Additional avd configuration that should be added to the configuration
+- **EMULATOR_PARAMS**: Additional emulator parameters that should be added.
 
 First make sure the [cloud-init](cloud-init) file contains all the proper definitions needed for launch.
 
@@ -37,10 +40,13 @@ If you are running in gce you have the option the specify the properties above a
 
 - emulator_grpc_port maps to GRPC_PORT
 - emulator_adb_port maps to ADB_PORT
-- emulator_image maps to EMULATOR_IMG
+- emulator_image maps to $IMAGE
 - emulator_adbkey maps to ADBKEY
 - emulator_turn maps to TURN
+- emulator_instance_count maps to $INSTANCE_COUNT
 
+Emulators are launched using the aemu.service systemd service. This service will start a series of emulators that, named aemu_1, aemu_2, etc.
+Keep in mind that it can take a while to pull and launch the emulator, esp. if you are running more than one emulator.
 # Lauching the instance
 
 For example if you created a gce image with nested virtualization you can launch an instance as follows:
@@ -54,7 +60,7 @@ For example if you created a gce image with nested virtualization you can launch
               --machine-type n1-highcpu-32 \
               --tags=http-server,https-server \
               --metadata-from-file user-data=cloud-init \
-              --emulator_adbkey="$(cat ~/.android/adbkey)",emulator_adb_port=80,emulator_grpc_port=443
+              --metadata=emulator_adbkey="$(cat ~/.android/adbkey)",emulator_adb_port=80,emulator_grpc_port=443
 ```
 
 Next you can connect to the emulator from your local machine as follows:
@@ -65,3 +71,48 @@ adb connect $IP:80
 ```
 
 Your device should now be available for access over adb.
+
+## Building a container optimized os (cos) with kvm enabled.
+
+Google provides a container optimized os for running docker images. Unfortunately the base images do not expose the
+kvm kernels and cannot be used directly for the android emulator. In order to run them on gce you will have to
+build your own cos image, with KVM enabled.
+
+- First obtain the [cos source](https://cloud.google.com/container-optimized-os/docs/how-to/building-from-open-source#obtaining_the_source_code)
+- Next apply the following changes:
+
+```
+diff --git a/project-lakitu/sys-kernel/lakitu-kernel-5_4/files/base.config b/project-lakitu/sys-kernel/lakitu-kernel-5_4/files/base.config
+index e13a9e170e..a31b2b73db 100644
+--- a/project-lakitu/sys-kernel/lakitu-kernel-5_4/files/base.config
++++ b/project-lakitu/sys-kernel/lakitu-kernel-5_4/files/base.config
+@@ -609,7 +609,13 @@ CONFIG_EFI_EARLYCON=y
+
+ CONFIG_HAVE_KVM=y
+ CONFIG_VIRTUALIZATION=y
+-# CONFIG_KVM is not set
++# is not set
++CONFIG_KVM=m
++CONFIG_KVM_INTEL=m
++CONFIG_KVM_MMU_AUDIT=m
++CONFIG_KVM_AMD=m
++CONFIG_VHOST_NET=m
++CONFIG_VHOST_VSOCK=m
+ # CONFIG_VHOST_NET is not set
+ # CONFIG_VHOST_SCSI is not set
+ # CONFIG_VHOST_VSOCK is not set
+```
+
+in ./src/overlays
+
+- Next follow the steps to build to [os](https://cloud.google.com/container-optimized-os/docs/how-to/building-from-open-source#building_a_image)
+- Follow the steps to import the build into a system image in [gce](https://cloud.google.com/container-optimized-os/docs/how-to/building-from-open-source#running_on)
+
+Next we need to create an image with nested virtualizaton enabled. In the steps below we assume that you imported the image as `emu-dev-cos-base` is `us-west1-b`:
+
+    gcloud compute disks create cos-dev-nested-disk --image emu-dev-cos-base  --zone us-west1-b
+    gcloud compute images create cos-dev-nested --source-disk cos-dev-nested-disk --source-disk-zone us-west1-b --licenses "https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx"
+
+Congratulations! You have created a `cos-dev-nested` image with virtualization enabled that can be used in the examples above.
+
+
