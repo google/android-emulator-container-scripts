@@ -258,6 +258,11 @@ def main():
     )
     dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
     dist_parser.add_argument(
+        "emuzip",
+        help="Zipfile containing the a publicly released emulator, or (canary|stable|[0-9]+) to use the latest canary, stable, or build id of the emulator to use. "
+        "Keep in mind that using a build id can result in downloading an untested pre-release emulator build from the android ci server.",
+    )
+    dist_parser.add_argument(
         "img",
         default="P google_apis_playstore x86_64|Q google_apis_playstore x86_64",
         help="A regexp matching the image to retrieve. "

@@ -23,6 +23,7 @@ write_files:
   content: |
     GRPC_PORT=8554
     ADB_PORT=5555
+    # Replace with your own turn command (Be careful of escaping ")
     TURN=
     # Replace with your own accessible image.
     EMULATOR_IMG=us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.3.4
