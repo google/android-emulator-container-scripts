@@ -36,7 +36,7 @@ Arguments = collections.namedtuple("Args", "emuzip, imgzip, dest, tag, start, ex
 
 @pytest.mark.slow
 @pytest.mark.e2e
-@pytest.mark.parametrize('channel, img, gpu', [('all', 'Q google_apis x86_64', True), ('stable', 'P android x86_64', False)])
+@pytest.mark.parametrize('channel, img, gpu', [('all', 'Q google_apis x86_64', True)])
 def test_build_container(channel, img, gpu):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
@@ -53,7 +53,7 @@ def test_build_container(channel, img, gpu):
 @pytest.mark.slow
 @pytest.mark.e2e
 @pytest.mark.linux
-@pytest.mark.parametrize('channel, img, gpu', [('all', 'Q google_apis x86_64', True), ('stable', 'P android x86_64', False)])
+@pytest.mark.parametrize('channel, img, gpu', [('stable', 'P android x86_64', False)])
 def test_run_container(channel, img, gpu):
     assert docker.from_env().ping()
     with TempDir() as tmp:

@@ -122,8 +122,10 @@ class DockerDevice(object):
             tag = self.emulator.build_id()
 
         self.tag = "{}:{}".format(repo, tag)
+        self.latest = "{}:latest".format(repo)
         if not self.TAG_REGEX.match(self.tag):
             raise Exception("The resulting tag: {} is not a valid docker tag.", self.tag)
+
 
         # The following are only set after creating/launching.
         self.container = None
@@ -193,7 +195,7 @@ class DockerDevice(object):
         return identity
 
     def create_cloud_build_step(self):
-        return {"name": "gcr.io/cloud-builders/docker", "args": ["build", "-t", self.tag, os.path.basename(self.dest)]}
+        return {"name": "gcr.io/cloud-builders/docker", "args": ["build", "-t", self.tag, "-t", self.latest, os.path.basename(self.dest)]}
 
     def launch(self, image_sha, port=5555):
         """Launches the container with the given sha, publishing abd on port, and grpc on port 8554

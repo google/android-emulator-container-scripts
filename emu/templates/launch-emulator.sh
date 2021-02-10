@@ -183,6 +183,7 @@ initialize_data_part() {
   if  is_mounted /data; then
     run cp -fr /android-home/ /data
     ln -sf /data/android-home /root/.android/avd
+    echo "path=/root/.android/avd/Pixel2.avd" > /root/.android/avd/Pixel2.ini
   else
     ln -sf /android-home /root/.android/avd
   fi
