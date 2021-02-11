@@ -23,7 +23,8 @@ from packaging import version
 from emu.utils import mkdir_p
 
 import emu
-from emu.emu_downloads_menu import AndroidReleaseZip, PlatformTools
+from emu.android_release_zip import AndroidReleaseZip
+from emu.platform_tools import PlatformTools
 
 
 class TemplateWriter(object):
@@ -40,6 +41,14 @@ class TemplateWriter(object):
         self.env = Environment(loader=PackageLoader("emu", "templates"))
         self.dest = out_dir
 
+    def _jinja_safe_dict(self, props):
+        """Replace all the . with _ in the keys.
+        """
+        normalized = {}
+        for k, v in props.items():
+            normalized[k.replace(".", "_")] = v
+        return normalized
+
     def write_template(self, template_file, template_dict, rename_as=None):
         """Fill out the given template, writing it to the destination directory."""
         dest_name = rename_as if rename_as else template_file
@@ -53,7 +62,8 @@ class TemplateWriter(object):
             directories will be created if the do not yet exist.
         """
         template = self.env.get_template(tmpl_file)
+        safe_dict = self._jinja_safe_dict(template_dict)
         mkdir_p(os.path.dirname(dest_file))
-        logging.info("Writing: %s -> %s with %s", tmpl_file, dest_file, template_dict)
+        logging.info("Writing: %s -> %s with %s", tmpl_file, dest_file, safe_dict)
         with open(dest_file, "wb") as dfile:
-            dfile.write(template.render(template_dict).encode('utf-8'))
+            dfile.write(template.render(safe_dict).encode('utf-8'))

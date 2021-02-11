@@ -19,10 +19,11 @@ import re
 import yaml
 
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.docker_device import DockerDevice
 from emu.template_writer import TemplateWriter
 from emu.process import run
-
+from emu.generators.emulator_docker import EmulatorDockerFile
+from emu.generators.system_image_docker import SystemImageDockerFile
+from emu.utils import mkdir_p
 
 def git_commit_and_push(dest):
     run(["git", "add", "--verbose", "*"], dest)
@@ -39,7 +40,11 @@ def cloud_build(args):
     for l in licenses:
         l.force_accept()
 
-    imgzip = [x.download() for x in emu_downloads_menu.find_image(args.img)]
+    mkdir_p(args.dest)
+    imgzip = [args.img]
+    if not os.path.exists(imgzip[0]):
+        imgzip = [x.download() for x in emu_downloads_menu.find_image(imgzip[0])]
+
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
         emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
@@ -50,35 +55,38 @@ def cloud_build(args):
 
     steps = []
     images = []
-    desserts = set()
     emulators = set()
+    build_step_id = 0
 
     for (img, emu) in itertools.product(imgzip, emuzip):
         logging.info("Processing %s, %s", img, emu)
-        img_rel = emu_downloads_menu.AndroidReleaseZip(img)
-        if not img_rel.is_system_image():
-            logging.warning("{} is not a zip file with a system image (Unexpected description), skipping".format(img))
-            continue
-        emu_rel = emu_downloads_menu.AndroidReleaseZip(emu)
-        if not emu_rel.is_emulator():
-            raise Exception("{} is not a zip file with an emulator".format(emu))
+        sys_docker = SystemImageDockerFile(img, args.repo)
+        dest = os.path.join(args.dest, sys_docker.image_name())
+        logging.info("Generating %s", dest)
+        sys_docker.write(dest)
 
-        emulators.add(emu_rel.build_id())
-        desserts.add(img_rel.codename())
+        build_step_id += 1
+        step = sys_docker.create_cloud_build_step(dest)
+        step["waitFor"] = ["-"]
+        step["id"] = "step_{}".format(build_step_id)
+        steps.append(step)
+        images.append(sys_docker.full_name())
+        images.append(sys_docker.latest_name())
+
         for metrics in [True, False]:
-            name = img_rel.repo_friendly_name()
-            if not metrics:
-                name += "-no-metrics"
+            device = EmulatorDockerFile(emu, sys_docker, args.repo, metrics)
+            emulators.add(device.props["emu_build_id"])
+            dest = os.path.join(args.dest, device.image_name())
+            logging.info("Generating %s-> %s",device.image_name(), dest)
+            device.write(dest)
 
-            dest = os.path.join(args.dest, name)
-            logging.info("Generating %s", name)
-            device = DockerDevice(emu, img, dest, gpu=False, repo=args.repo, tag=emu_rel.build_id(), name=name)
-            device.create_docker_file("", metrics=True, by_copying_zip_files=True)
-            steps.append(device.create_cloud_build_step())
-            images.append(device.tag)
-            images.append(device.latest)
+            step = device.create_cloud_build_step(dest)
+            step['waitFor'] = ["step_{}".format(build_step_id)]
+            steps.append(step)
+            images.append(device.full_name())
+            images.append(device.latest_name())
 
-    steps[-1]["waitFor"] = ["-"]
+
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)

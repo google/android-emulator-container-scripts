@@ -26,7 +26,6 @@ import pytest
 import unittest
 
 import emu.emu_docker as emu_docker
-import emu.docker_device as device
 import emu.emu_downloads_menu as menu
 from utils import TempDir, find_adb, find_free_port
 

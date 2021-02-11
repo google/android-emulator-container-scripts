@@ -1,4 +1,4 @@
-## Android Emulator {{emu_build_id}} running Android-{{dessert}} with {{tag}}
+## Android Emulator {{emu_build_id}} running Android-{{ro_build_version_sdk}} with {{qemu_tag}}
 The Android Emulator simulates Android devices on your computer so that you can test your application on a variety of devices and Android API levels without needing to have each physical device.
 
 The emulator provides almost all of the capabilities of a real Android device. You can simulate incoming phone calls and text messages, specify the location of the device, simulate different network speeds, simulate rotation and other hardware sensors, access the Google Play Store, and much more.
