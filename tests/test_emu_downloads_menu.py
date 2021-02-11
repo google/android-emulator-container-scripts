@@ -51,7 +51,7 @@ class DownloadTest(unittest.TestCase):
         path.return_value = True
         url = "https://foo/bar"
         dest = "/tmp/who/cares"
-        download = menu._download(url, "/tmp/who/cares")
+        download = menu.download(url, "/tmp/who/cares")
         self.assertEqual(download, dest)
         path.assert_called_with(dest)
         get.assert_not_called()
@@ -61,7 +61,7 @@ class DownloadTest(unittest.TestCase):
         url = "https://foo/bar"
         with TempDir() as d:
             dest = os.path.join(d, "down.zip")
-            download = menu._download(url, dest)
+            download = menu.download(url, dest)
             self.assertEqual(download, dest)
             self.assertTrue(os.path.exists(download))
             get.assert_called_with(url)
