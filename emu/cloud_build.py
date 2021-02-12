@@ -21,71 +21,81 @@ import yaml
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.template_writer import TemplateWriter
 from emu.process import run
-from emu.generators.emulator_docker import EmulatorDockerFile
-from emu.generators.system_image_docker import SystemImageDockerFile
+from emu.containers.emulator_container import EmulatorContainer
+from emu.containers.system_image_container import SystemImageContainer
+from emu.emu_downloads_menu import accept_licenses
 from emu.utils import mkdir_p
 
+
 def git_commit_and_push(dest):
+    """Commit and pushes this cloud build to the git repo.
+
+    Note that this can be *EXTREMELY* slow as you will likely
+    have very large objects in your repo.
+
+    Args:
+        dest ({string}): The destination of the git repository.
+    """
     run(["git", "add", "--verbose", "*"], dest)
     run(["git", "commit", "-F", "README.MD"], dest)
     run(["git", "push"], dest)
 
 
-def cloud_build(args):
-    licenses = set(
-        [x.license for x in emu_downloads_menu.get_emus_info()]
-        + [x.license for x in emu_downloads_menu.get_images_info()]
-    )
+def create_build_step(for_container, destination):
+    build_destination = os.path.join(destination, for_container.image_name())
+    logging.info("Generating %s", build_destination)
+    for_container.write(build_destination)
 
-    for l in licenses:
-        l.force_accept()
+    step = for_container.create_cloud_build_step(for_container.image_name())
+    step["waitFor"] = [for_container.depends_on()]
+    step["id"] = for_container.image_name()
+    return step
+
+
+def cloud_build(args):
+    """Prepares the cloud build yaml and all its dependencies.
+
+    The cloud builder will generate a single cloudbuild.yaml and generates the build
+    scripts for every individual container.
+
+    It will construct the proper dependencies as needed.
+    """
+    accept_licenses(True)
 
     mkdir_p(args.dest)
-    imgzip = [args.img]
-    if not os.path.exists(imgzip[0]):
-        imgzip = [x.download() for x in emu_downloads_menu.find_image(imgzip[0])]
+    image_zip = [args.img]
 
-    emuzip = [args.emuzip]
-    if emuzip[0] in ["stable", "canary", "all"]:
-        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
-    elif re.match("\d+", emuzip[0]):
+    # Check if we are building a custom image from a zip file
+    if not os.path.exists(image_zip[0]):
+        # We are using a standard image, we likely won't need to download it.
+        image_zip = emu_downloads_menu.find_image(image_zip[0])
+
+    emulator_zip = [args.emuzip]
+    if emulator_zip[0] in ["stable", "canary", "all"]:
+        emulator_zip = [x.download() for x in emu_downloads_menu.find_emulator(emulator_zip[0])]
+    elif re.match(r"\d+", emulator_zip[0]):
         # We must be looking for a build id
-        logging.info("Treating %s as a build id", emuzip[0])
-        emuzip = [emu_downloads_menu.download_build(emuzip[0])]
+        logging.warning("Treating %s as a build id", emulator_zip[0])
+        emulator_zip = [emu_downloads_menu.download_build(emulator_zip[0])]
 
     steps = []
     images = []
     emulators = set()
-    build_step_id = 0
 
-    for (img, emu) in itertools.product(imgzip, emuzip):
+    for (img, emu) in itertools.product(image_zip, emulator_zip):
         logging.info("Processing %s, %s", img, emu)
-        sys_docker = SystemImageDockerFile(img, args.repo)
-        dest = os.path.join(args.dest, sys_docker.image_name())
-        logging.info("Generating %s", dest)
-        sys_docker.write(dest)
+        system_container = SystemImageContainer(img, args.repo)
 
-        build_step_id += 1
-        step = sys_docker.create_cloud_build_step(dest)
-        step["waitFor"] = ["-"]
-        step["id"] = "step_{}".format(build_step_id)
-        steps.append(step)
-        images.append(sys_docker.full_name())
-        images.append(sys_docker.latest_name())
+        steps.append(create_build_step(system_container, args.dest))
+        images.append(system_container.full_name())
+        images.append(system_container.latest_name())
 
         for metrics in [True, False]:
-            device = EmulatorDockerFile(emu, sys_docker, args.repo, metrics)
-            emulators.add(device.props["emu_build_id"])
-            dest = os.path.join(args.dest, device.image_name())
-            logging.info("Generating %s-> %s",device.image_name(), dest)
-            device.write(dest)
-
-            step = device.create_cloud_build_step(dest)
-            step['waitFor'] = ["step_{}".format(build_step_id)]
-            steps.append(step)
-            images.append(device.full_name())
-            images.append(device.latest_name())
-
+            emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics)
+            emulators.add(emulator_container.props["emu_build_id"])
+            steps.append(create_build_step(emulator_container, args.dest))
+            images.append(emulator_container.full_name())
+            images.append(emulator_container.latest_name())
 
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
@@ -102,7 +112,7 @@ def cloud_build(args):
         {
             "emu_version": ", ".join(emulators),
             "emu_images": "\n".join(["* {}".format(x) for x in images]),
-            "first_image": images[0]
+            "first_image": images[0],
         },
         rename_as="REGISTRY.MD",
     )

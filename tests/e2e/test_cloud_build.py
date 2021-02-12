@@ -17,14 +17,14 @@
 """
 
 import collections
-
 import os
+
 import docker
 import pytest
-
 from emu.cloud_build import cloud_build
 from utils import TempDir
-
+import shutil
+import subprocess
 
 Arguments = collections.namedtuple("Args", "emuzip, img, dest, repo, git")
 
@@ -40,8 +40,14 @@ def test_build_container():
         expected_files = [
             "cloudbuild.yaml",
             "README.MD",
+            "sys-29-google-x64",
             "29-google-x64",
             "29-google-x64-no-metrics",
         ]
-        for fname in expected_files:
-            assert os.path.exists(os.path.join(tmp, fname))
+        for file_name in expected_files:
+            assert os.path.exists(os.path.join(tmp, file_name)), "cannot find {} in {}".format(file_name, tmp)
+
+
+
+
+

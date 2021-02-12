@@ -16,8 +16,8 @@ RUN apk add --update unzip
 
 # Barely changes
 FROM unzipper as sys_unzipper
-COPY {{sysimg_zip}} /tmp/
-RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
+COPY {{system_image_zip}} /tmp/
+RUN unzip -u -o /tmp/{{system_image_zip}} -d /sysimg/
 
 FROM nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04
 ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display
@@ -44,10 +44,11 @@ LABEL maintainer="{{user}}" \
     ro.build.flavor="{{ro_build_flavor}}" \
     ro.product.cpu.abilist="{{ro_product_cpu_abilist}}" \
     ro.build.type="{{ro_build_type}}" \
-    ro.system.build.version.sdk="{{ro_system_build_version_sdk}}" \
     SystemImage.TagId="{{SystemImage_TagId}}" \
     qemu.tag="{{qemu_tag}}" \
-    qemu.cpu="{{qemu_cpu}}"
+    qemu.cpu="{{qemu_cpu}}" \
+    qemu.short_tag="{{qemu_short_tag}}" \
+    qemu.short_abi="{{qemu_short_abi}}"
 
 # We adopt the following naimg convention <ro.build.version.sdk>-<qem>-<ro.product.cpu.abi>
 # SystemImage.TagId in 'aosp', 'google', 'playstore'ß

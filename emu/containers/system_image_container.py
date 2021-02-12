@@ -15,27 +15,24 @@ import logging
 import os
 import shutil
 
-from emu.android_release_zip import AndroidReleaseZip
+from emu.android_release_zip import SystemImageReleaseZip
 from emu.platform_tools import PlatformTools
 from emu.template_writer import TemplateWriter
-from emu.generators.base_docker import BaseDockerObject
+from emu.containers.docker_container import DockerContainer
 from emu.utils import mkdir_p
 from emu.emu_downloads_menu import SysImgInfo
 
-
-class SystemImageDockerFile(BaseDockerObject):
+class SystemImageContainer(DockerContainer):
     def __init__(self, sort, repo="us-docker.pkg.dev/android-emulator-268719/images"):
         super().__init__(repo)
-        self.sysimg = None
-        self.sysimginfo = None
+        self.system_image_zip = None
+        self.system_image_info = None
 
         if type(sort) == SysImgInfo:
-            self.sysimginfo = sort
+            self.system_image_info = sort
         else:
-            self.sysimg = AndroidReleaseZip(sort)
-            if not self.sysimg.is_system_image():
-                raise Exception("{} is not a zip file with a system image".format(sysimg))
-            assert "ro.build.version.incremental" in self.sysimg.props
+            self.system_image_zip = SystemImageReleaseZip(sort)
+            assert "ro.build.version.incremental" in self.system_image_zip.props
 
     def _copy_adb_to(self, dest):
         """Find adb, or download it if needed."""
@@ -44,9 +41,10 @@ class SystemImageDockerFile(BaseDockerObject):
         tools.extract_adb(dest)
 
     def write(self, dest):
+        # We do not really want to overwrite if the files already exist.
         # Make sure the destination directory is empty.
-        if self.sysimg == None:
-            self.sysimg = AndroidReleaseZip(self.sysimginfo.download())
+        if self.system_image_zip is None:
+            self.system_image_zip = SystemImageReleaseZip(self.system_image_info.download(dest))
 
         if os.path.exists(dest):
             shutil.rmtree(dest)
@@ -55,9 +53,9 @@ class SystemImageDockerFile(BaseDockerObject):
         writer = TemplateWriter(dest)
         self._copy_adb_to(dest)
 
-        props = self.sysimg.props
-        dest_zip = os.path.basename(self.sysimg.copy(dest))
-        props['sysimg_zip'] = dest_zip
+        props = self.system_image_zip.props
+        dest_zip = os.path.basename(self.system_image_zip.copy(dest))
+        props["system_image_zip"] = dest_zip
         writer.write_template(
             "Dockerfile.system_image",
             props,
@@ -65,39 +63,27 @@ class SystemImageDockerFile(BaseDockerObject):
         )
 
     def image_name(self):
-        if self.sysimginfo:
-           return self.sysimginfo.image_name()
-        if self.sysimg:
-            return "sys-{}-{}-{}".format(self.sysimg.api(), self.sysimg.tag(), self.sysimg.abi())
-
-    def docker_image(self):
-        client = self.get_client()
-        for img in client.images.list():
-            for tag in img.tags:
-                if self.image_name() in tag:
-                    return img
-        return None
+        if self.system_image_info:
+            return self.system_image_info.image_name()
+        if self.system_image_zip:
+            return "sys-{}-{}-{}".format(
+                self.system_image_zip.api(), self.system_image_zip.short_tag(), self.system_image_zip.short_abi()
+            )
 
     def docker_tag(self):
-        if self.sysimg:
-            return self.sysimg.props["ro.build.version.incremental"]
-        if self.available():
+        if self.system_image_zip:
+            return self.system_image_zip.props["ro.build.version.incremental"]
+        if super().available():
             return self.image_labels()["ro.build.version.incremental"]
 
         # Unknown, revert to latest.
         return "latest"
 
-    def available(self):
-        return self.docker_image() != None
 
     def image_labels(self):
         if self.docker_image():
             return self.docker_image().labels
-        return self.sysimg.props
+        return self.system_image_zip.props
 
-    def build(self, dest):
-        self.write(dest)
-        return self.create_container(dest)
-
-    def can_pull(self):
-        return self.pull(self.image_name(), "latest")
+    def depends_on(self):
+        return "-"

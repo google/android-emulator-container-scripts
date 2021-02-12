@@ -110,6 +110,14 @@ class LicensedObject(object):
 class SysImgInfo(LicensedObject):
     """Provides information about a released system image."""
 
+    SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
+    SHORT_TAG = {
+        "android": "aosp",
+        "google_apis": "google",
+        "google_apis_playstore": "playstore",
+        "google_ndk_playstore": "ndk_playstore",
+    }
+
     def __init__(self, pkg, licenses):
         super(SysImgInfo, self).__init__(pkg, licenses)
         details = pkg.find("type-details")
@@ -139,13 +147,20 @@ class SysImgInfo(LicensedObject):
 
         self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
 
+    def short_tag(self):
+        return self.SHORT_TAG[self.tag]
+
+    def short_abi(self):
+        return self.SHORT_MAP[self.abi]
+
     def image_name(self):
-        return "sys-{}-{}-{}".format(self.api, self.tag, self.abi)
+        return "sys-{}-{}-{}".format(self.api, self.short_tag(), self.short_abi())
+
+    def download_name(self):
+        return "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
 
     def download(self, dest=None):
-        dest = dest or os.path.join(
-            os.getcwd(), "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
-        )
+        dest = os.path.join(dest or os.getcwd(), self.download_name())
         print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
         return super(SysImgInfo, self).download(self.url, dest)
 
@@ -177,9 +192,12 @@ class EmuInfo(LicensedObject):
             hostos = archive.find("host-os").text
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
 
+    def download_name(self):
+        return "emulator-{}.zip".format(self.version)
+
     def download(self, hostos="linux", dest=None):
         """"Downloads the released pacakage for the given os to the dest."""
-        dest = dest or os.path.join(os.getcwd(), "emulator-{}.zip".format(self.version))
+        dest = dest or os.path.join(os.getcwd(), self.download_name())
         print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
         return super(EmuInfo, self).download(self.urls[hostos], dest)
 
@@ -304,3 +322,24 @@ def download_build(build_id, dest=None):
     logging.warning("Downloading build from ci server, these builds might not have been tested extensively.")
     download(uri, dest)
     return dest
+
+
+def accept_licenses(force_accept):
+    licenses = set([x.license for x in get_emus_info()] + [x.license for x in get_images_info()])
+
+    to_accept = [x for x in licenses if not x.is_accepted()]
+
+    if force_accept:
+        for l in to_accept:
+            l.force_accept()
+        return
+
+    if not to_accept:
+        print("\n\n".join([str(l) for l in licenses]))
+        print("You have already accepted all licenses.")
+        return
+
+    print("\n\n".join([str(l) for l in to_accept]))
+    if click.confirm("Do you accept the licenses?"):
+        for l in to_accept:
+            l.force_accept()
