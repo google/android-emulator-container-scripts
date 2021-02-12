@@ -13,60 +13,56 @@
 # limitations under the License.
 import os
 import shutil
-import socket
-import logging
 
 import emu
 from emu.android_release_zip import AndroidReleaseZip
-from emu.platform_tools import PlatformTools
+from emu.containers.docker_container import DockerContainer
 from emu.template_writer import TemplateWriter
-from emu.utils import api_codename, mkdir_p
-
-METRICS_MESSAGE = """
-By using this docker container you authorize Google to collect usage data for the Android Emulator
-— such as how you utilize its features and resources, and how you use it to test applications.
-This data helps improve the Android Emulator and is collected in accordance with
-[Google's Privacy Policy](http://www.google.com/policies/privacy/)
-"""
-NO_METRICS_MESSAGE = "No metrics are collected when running this container."
-import logging
-import os
-import shutil
-
-from emu.android_release_zip import AndroidReleaseZip
-from emu.platform_tools import PlatformTools
-from emu.template_writer import TemplateWriter
-from emu.generators.base_docker import BaseDockerObject
 from emu.utils import mkdir_p
-from emu.emu_downloads_menu import SysImgInfo
 
 
-class EmulatorDockerFile(BaseDockerObject):
-    def __init__(self, emulator, sysdocker, repo=None, metrics=False, extra=""):
-        self.emulator = AndroidReleaseZip(emulator)
+class EmulatorContainer(DockerContainer):
+
+    METRICS_MESSAGE = """
+        By using this docker container you authorize Google to collect usage data for the Android Emulator
+        — such as how you utilize its features and resources, and how you use it to test applications.
+        This data helps improve the Android Emulator and is collected in accordance with
+        [Google's Privacy Policy](http://www.google.com/policies/privacy/)
+        """
+    NO_METRICS_MESSAGE = "No metrics are collected when running this container."
+
+    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra=""):
+        self.emulator_zip = AndroidReleaseZip(emulator)
+        self.system_image_container = system_image_container
+        self.metrics = metrics
 
         if type(extra) is list:
             extra = " ".join(extra)
 
-        cpu = sysdocker.image_labels()["ro.product.cpu.abi"]
+        cpu = system_image_container.image_labels()["ro.product.cpu.abi"]
         self.extra = self._logger_flags(cpu) + " " + extra
 
-        metrics_msg = NO_METRICS_MESSAGE
+        metrics_msg = EmulatorContainer.NO_METRICS_MESSAGE
         if metrics:
             self.extra += " -metrics-collection"
-            metrics_msg = METRICS_MESSAGE
+            metrics_msg = EmulatorContainer.METRICS_MESSAGE
 
-        self.props = sysdocker.image_labels()
+        self.props = system_image_container.image_labels()
         self.props["playstore"] = self.props["qemu.tag"] == "google_apis_playstore"
         self.props["metrics"] = metrics_msg
-        self.props["emu_build_id"] = self.emulator.build_id()
-        self.props["from_base_img"] = sysdocker.full_name()
+        self.props["emu_build_id"] = self.emulator_zip.build_id()
+        self.props["from_base_img"] = system_image_container.full_name()
 
-        assert "ro.system.build.version.sdk" in self.props, self.props
-        assert "qemu.tag" in self.props
-        assert "ro.product.cpu.abi" in self.props
+        for expect in [
+            "ro.build.version.sdk",
+            "qemu.tag",
+            "qemu.short_tag",
+            "qemu.short_abi",
+            "ro.product.cpu.abi",
+        ]:
+            assert expect in self.props, "{} is not in {}".format(expect, self.props)
 
-        super().__init__(repo)
+        super().__init__(repository)
 
     def _logger_flags(self, cpu):
         if "arm" in cpu:
@@ -74,7 +70,7 @@ class EmulatorDockerFile(BaseDockerObject):
         else:
             return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
 
-    def write(self, dest, extra=""):
+    def write(self, dest):
         # Make sure the destination directory is empty.
         if os.path.exists(dest):
             shutil.rmtree(dest)
@@ -91,7 +87,7 @@ class EmulatorDockerFile(BaseDockerObject):
             rename_as="README.MD",
         )
 
-        writer.write_template("launch-emulator.sh", {"extra": self.extra + extra, "version": emu.__version__})
+        writer.write_template("launch-emulator.sh", {"extra": self.extra, "version": emu.__version__})
         writer.write_template("default.pa", {})
 
         writer.write_template(
@@ -100,16 +96,18 @@ class EmulatorDockerFile(BaseDockerObject):
             rename_as="Dockerfile",
         )
 
-        self.emulator.extract(os.path.join(dest, "emu"))
+        self.emulator_zip.extract(os.path.join(dest, "emu"))
 
     def image_name(self):
-        return "{}-{}-{}".format(
-            self.props["ro.system.build.version.sdk"], self.props["qemu.tag"], self.props["ro.product.cpu.abi"]
+        name = "{}-{}-{}".format(
+            self.props["ro.build.version.sdk"], self.props["qemu.short_tag"], self.props["qemu.short_abi"]
         )
+        if not self.metrics:
+            return "{}-no-metrics".format(name)
+        return name
 
     def docker_tag(self):
         return self.props["emu_build_id"]
 
-    def build(self, dest):
-        self.write(dest)
-        return self.create_container(dest)
+    def depends_on(self):
+        return self.system_image_container.image_name()

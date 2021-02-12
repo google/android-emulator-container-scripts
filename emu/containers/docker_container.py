@@ -11,34 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import datetime
 import logging
 import os
 import re
-import shutil
-import socket
 import sys
-import zipfile
+import abc
 
 import docker
-from jinja2 import Environment, PackageLoader
-from packaging import version
 from tqdm import tqdm
-
-import emu
-from emu.android_release_zip import AndroidReleaseZip
-from emu.platform_tools import PlatformTools
-from emu.template_writer import TemplateWriter
-from emu.utils import mkdir_p
-
-METRICS_MESSAGE = """
-By using this docker container you authorize Google to collect usage data for the Android Emulator
-— such as how you utilize its features and resources, and how you use it to test applications.
-This data helps improve the Android Emulator and is collected in accordance with
-[Google's Privacy Policy](http://www.google.com/policies/privacy/)
-"""
-NO_METRICS_MESSAGE = "No metrics are collected when running this container."
-
 
 class ProgressTracker(object):
     """Tracks progress using tqdm for a set of layers that are pushed."""
@@ -81,7 +61,7 @@ class ProgressTracker(object):
             prog["tqdm"].update(diff)
 
 
-class BaseDockerObject(object):
+class DockerContainer(object):
     """A Docker Device is capable of creating and launching docker images.
 
     In order to successfully create and launch a docker image you must either
@@ -89,11 +69,6 @@ class BaseDockerObject(object):
     """
 
     TAG_REGEX = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._-]*:?[a-zA-Z0-9._-]*")
-    GPU_BASEIMG = (
-        "FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04 AS emulator\n"
-        + "ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display"
-    )
-    DEFAULT_BASE_IMG = "FROM debian:stretch-slim AS emulator"
 
     def __init__(self, repo=None):
         self.container = None
@@ -130,10 +105,10 @@ class BaseDockerObject(object):
         except:
             logging.exception("Failed to push image.", exc_info=True)
             logging.warning("You can manually push the image as follows:")
-            logging.warning("docker push {}".format(image))
+            logging.warning("docker push %s", image)
 
     def launch(self, port_map):
-        """Launches the container with the given sha, publishing abd on port, and grpc on port 8554
+        """Launches the container with the given sha, publishing abd on port, and gRPC on port 8554
 
         Returns the container.
         """
@@ -174,7 +149,7 @@ class BaseDockerObject(object):
         except:
             logging.exception("Failed to create container.", exc_info=True)
             logging.warning("You can manually create the container as follows:")
-            logging.warning("docker build {} -t {}".format(dest, image_tag))
+            logging.warning("docker build -t %s %s", image_tag, dest)
 
         return identity
 
@@ -205,7 +180,6 @@ class BaseDockerObject(object):
             return "{}{}:{}".format(self.repo, self.image_name(), "latest")
         return (self.image_name(), "latest")
 
-
     def create_cloud_build_step(self, dest):
         return {
             "name": "gcr.io/cloud-builders/docker",
@@ -218,3 +192,59 @@ class BaseDockerObject(object):
                 os.path.basename(dest),
             ],
         }
+
+    def docker_image(self):
+        """The docker local docker image if any
+
+        Returns:
+            {docker.models.images.Image}: A docker image object, or None.
+        """
+        client = self.get_client()
+        for img in client.images.list():
+            for tag in img.tags:
+                if self.image_name() in tag:
+                    return img
+        return None
+
+    def available(self):
+        """True if this container image is locally available."""
+        return self.docker_image() != None
+
+    def build(self, dest):
+        self.write(dest)
+        return self.create_container(dest)
+
+    def can_pull(self):
+        """True if this container image can be pulled from a registry."""
+        return self.pull(self.image_name(), self.docker_tag())
+
+    @abc.abstractmethod
+    def write(self, destination):
+        """Method responsible for writing the Dockerfile and all necessary files to build a container.
+
+        Args:
+            destination ({string}): A path to a directory where all the container files should reside.
+
+        Raises:
+            NotImplementedError: [description]
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def image_name(self):
+        """The image name without the tag used to uniquely identify this image.
+
+        Raises:
+            NotImplementedError: [description]
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def docker_tag(self):
+        raise NotImplementedError()
+
+
+    @abc.abstractmethod
+    def depends_on(self):
+        """Name of the system image this container is build on."""
+        raise NotImplementedError()

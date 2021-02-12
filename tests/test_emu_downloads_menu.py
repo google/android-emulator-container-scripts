@@ -16,14 +16,12 @@
 """Unit tests for the downloads_meu package.
 
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from emu.platform_tools import PlatformTools
 
 import unittest
 import tempfile
 import os
+from emu.utils import download
 
 try:
     import unittest.mock as mock
@@ -32,6 +30,7 @@ except ImportError:
 
 import shutil
 import emu.emu_downloads_menu as menu
+
 
 
 class TempDir(object):
@@ -51,8 +50,8 @@ class DownloadTest(unittest.TestCase):
         path.return_value = True
         url = "https://foo/bar"
         dest = "/tmp/who/cares"
-        download = menu.download(url, "/tmp/who/cares")
-        self.assertEqual(download, dest)
+        dwnload = download(url, "/tmp/who/cares")
+        self.assertEqual(dwnload, dest)
         path.assert_called_with(dest)
         get.assert_not_called()
 
@@ -61,17 +60,17 @@ class DownloadTest(unittest.TestCase):
         url = "https://foo/bar"
         with TempDir() as d:
             dest = os.path.join(d, "down.zip")
-            download = menu.download(url, dest)
-            self.assertEqual(download, dest)
-            self.assertTrue(os.path.exists(download))
-            get.assert_called_with(url)
+            dwnload = download(url, dest)
+            self.assertEqual(dwnload, dest)
+            self.assertTrue(os.path.exists(dwnload))
+            get.assert_called_with(url, timeout=5, stream=True)
 
 
 class PlatformToolsTestCase(unittest.TestCase):
     @mock.patch("zipfile.ZipFile")
     def test_extract_unzips_something(self, mock_zip):
         """Unzips adb"""
-        test_tool = menu.PlatformTools("/tmp/tools.zip")
+        test_tool = PlatformTools("/tmp/tools.zip")
         test_tool.extract_adb("foo")
 
         mock_zip.assert_called_with("/tmp/tools.zip", "r")
@@ -121,7 +120,7 @@ class RetrieveImages(unittest.TestCase):
         images = menu.find_image("P")
         self.assertGreater(len(images), 0)
         for img in images:
-            self.assertRegexpMatches(str(img), "P")
+            self.assertRegex(str(img), "P")
 
 
 

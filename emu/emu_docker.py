@@ -28,10 +28,8 @@ import emu
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
 from emu.cloud_build import cloud_build
-from emu.utils import mkdir_p
-from emu.android_release_zip import AndroidReleaseZip
-from emu.generators.emulator_docker import EmulatorDockerFile
-from emu.generators.system_image_docker import SystemImageDockerFile
+from emu.containers.emulator_container import EmulatorContainer
+from emu.containers.system_image_container import SystemImageContainer
 
 
 def list_images(args):
@@ -40,20 +38,7 @@ def list_images(args):
 
 
 def accept_licenses(args):
-    licenses = set(
-        [x.license for x in emu_downloads_menu.get_emus_info()]
-        + [x.license for x in emu_downloads_menu.get_images_info()]
-    )
-    to_accept = [x for x in licenses if not x.is_accepted()]
-    if not to_accept:
-        print("\n\n".join([str(l) for l in licenses]))
-        print("You have already accepted all licenses.")
-        return
-
-    print("\n\n".join([str(l) for l in to_accept]))
-    if args.accept or click.confirm("Do you accept the licenses?"):
-        for l in to_accept:
-            l.force_accept()
+  emu_downloads_menu.accept_licenses(args.accept)
 
 
 def create_cloud_build_distribuition(args):
@@ -90,7 +75,7 @@ def create_docker_image(args):
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
         emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
-    elif re.match("\d+", emuzip[0]):
+    elif re.match(r"\d+", emuzip[0]):
         # We must be looking for a build id
         logging.info("Treating %s as a build id", emuzip[0])
         emuzip = [emu_downloads_menu.download_build(emuzip[0])]
@@ -99,13 +84,13 @@ def create_docker_image(args):
     logging.info("Using repo %s", args.repo)
     for (img, emu) in itertools.product(imgzip, emuzip):
         logging.info("Processing %s, %s", img, emu)
-        sys_docker = SystemImageDockerFile(img, args.repo)
+        sys_docker = SystemImageContainer(img, args.repo)
         if not sys_docker.available() and not sys_docker.can_pull():
             sys_docker.build(args.dest)
         if args.push:
             sys_docker.push()
 
-        emu_docker = EmulatorDockerFile(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra)
+        emu_docker = EmulatorContainer(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra)
         emu_docker.build(args.dest)
 
         if args.start:
@@ -113,6 +98,9 @@ def create_docker_image(args):
         if args.push:
             emu_docker.push()
 
+        devices.append(emu_docker)
+
+    return devices
 
 
 def create_docker_image_interactive(args):
@@ -132,11 +120,11 @@ def create_docker_image_interactive(args):
 
     emu_zip = emulator.download("linux")
     logging.info("Processing %s, %s", img, emu)
-    sys_docker = SystemImageDockerFile(img, args.repo)
+    sys_docker = SystemImageContainer(img, args.repo)
     if not sys_docker.available() and not sys_docker.can_pull():
         sys_docker.build(args.dest)
 
-    emu_docker = EmulatorDockerFile(emu_zip, sys_docker, args.repo, metrics)
+    emu_docker = EmulatorContainer(emu_zip, sys_docker, args.repo, metrics)
     emu_docker.build(args.dest)
 
     if args.start:
