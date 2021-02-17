@@ -19,8 +19,8 @@ from emu.android_release_zip import SystemImageReleaseZip
 from emu.platform_tools import PlatformTools
 from emu.template_writer import TemplateWriter
 from emu.containers.docker_container import DockerContainer
-from emu.utils import mkdir_p
 from emu.emu_downloads_menu import SysImgInfo
+
 
 class SystemImageContainer(DockerContainer):
     def __init__(self, sort, repo="us-docker.pkg.dev/android-emulator-268719/images"):
@@ -45,10 +45,6 @@ class SystemImageContainer(DockerContainer):
         # Make sure the destination directory is empty.
         if self.system_image_zip is None:
             self.system_image_zip = SystemImageReleaseZip(self.system_image_info.download(dest))
-
-        if os.path.exists(dest):
-            shutil.rmtree(dest)
-        mkdir_p(dest)
 
         writer = TemplateWriter(dest)
         self._copy_adb_to(dest)
@@ -78,7 +74,6 @@ class SystemImageContainer(DockerContainer):
 
         # Unknown, revert to latest.
         return "latest"
-
 
     def image_labels(self):
         if self.docker_image():

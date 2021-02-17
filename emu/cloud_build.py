@@ -45,10 +45,14 @@ def create_build_step(for_container, destination):
     build_destination = os.path.join(destination, for_container.image_name())
     logging.info("Generating %s", build_destination)
     for_container.write(build_destination)
+    if for_container.can_pull():
+        logging.warning("Container already available, no need to create step.")
+        return {}
 
     step = for_container.create_cloud_build_step(for_container.image_name())
-    step["waitFor"] = [for_container.depends_on()]
+    step["waitFor"] = ["-"]
     step["id"] = for_container.image_name()
+    logging.info("Adding step: %s", step)
     return step
 
 
@@ -81,30 +85,32 @@ def cloud_build(args):
     steps = []
     images = []
     emulators = set()
+    emulator_images = []
 
     for (img, emu) in itertools.product(image_zip, emulator_zip):
         logging.info("Processing %s, %s", img, emu)
         system_container = SystemImageContainer(img, args.repo)
-
-        steps.append(create_build_step(system_container, args.dest))
-        images.append(system_container.full_name())
-        images.append(system_container.latest_name())
-
-        for metrics in [True, False]:
-            emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics)
-            emulators.add(emulator_container.props["emu_build_id"])
-            steps.append(create_build_step(emulator_container, args.dest))
-            images.append(emulator_container.full_name())
-            images.append(emulator_container.latest_name())
+        if args.sys:
+            steps.append(create_build_step(system_container, args.dest))
+        else:
+            for metrics in [True, False]:
+                emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics)
+                emulators.add(emulator_container.props["emu_build_id"])
+                steps.append(create_build_step(emulator_container, args.dest))
+                images.append(emulator_container.full_name())
+                images.append(emulator_container.latest_name())
+                emulator_images.append(emulator_container.full_name())
+                emulator_images.append(emulator_container.latest_name())
 
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
+    logging.info("Writing cloud yaml [%s] in %s", yaml, args.dest)
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
     writer = TemplateWriter(args.dest)
     writer.write_template(
         "cloudbuild.README.MD",
-        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in images])},
+        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in emulator_images])},
         rename_as="README.MD",
     )
     writer.write_template(
@@ -112,7 +118,7 @@ def cloud_build(args):
         {
             "emu_version": ", ".join(emulators),
             "emu_images": "\n".join(["* {}".format(x) for x in images]),
-            "first_image": images[0],
+            "first_image": next(iter(images), None),
         },
         rename_as="REGISTRY.MD",
     )

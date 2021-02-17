@@ -15,10 +15,13 @@ import logging
 import os
 import re
 import sys
+import shutil
 import abc
 
 import docker
 from tqdm import tqdm
+from emu.utils import mkdir_p
+
 
 class ProgressTracker(object):
     """Tracks progress using tqdm for a set of layers that are pushed."""
@@ -71,8 +74,6 @@ class DockerContainer(object):
     TAG_REGEX = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._-]*:?[a-zA-Z0-9._-]*")
 
     def __init__(self, repo=None):
-        self.container = None
-        self.identity = None
         if repo and repo[-1] != "/":
             repo += "/"
         self.repo = repo
@@ -98,7 +99,7 @@ class DockerContainer(object):
         tracker = ProgressTracker()
         try:
             client = docker.from_env()
-            result = client.images.push(image, self.full_name(), stream=True, decode=True)
+            result = client.images.push(image, "latest", stream=True, decode=True)
             for entry in result:
                 tracker.update(entry)
             self.docker_image().tag("{}{}:latest".format(self.repo, self.image_name()))
@@ -112,17 +113,16 @@ class DockerContainer(object):
 
         Returns the container.
         """
-        image_sha = "{}:{}".format(self.image_name(), self.docker_tag())
+        image = self.docker_image()
         client = docker.from_env()
         try:
             container = client.containers.run(
-                image=image_sha,
+                image=image.id,
                 privileged=True,
                 publish_all_ports=True,
                 detach=True,
                 ports=port_map,
             )
-            self.container = container
             print("Launched {} (id:{})".format(container.name, container.id))
             print("docker logs -f {}".format(container.name))
             print("docker stop {}".format(container.name))
@@ -146,12 +146,20 @@ class DockerContainer(object):
                     sys.stdout.write(entry["stream"])
                 if "aux" in entry and "ID" in entry["aux"]:
                     identity = entry["aux"]["ID"]
+            client = docker.from_env()
+            image = client.images.get(identity)
+            image.tag(self.repo + self.image_name(), "latest")
         except:
             logging.exception("Failed to create container.", exc_info=True)
             logging.warning("You can manually create the container as follows:")
             logging.warning("docker build -t %s %s", image_tag, dest)
 
         return identity
+
+    def clean(self, dest):
+        if os.path.exists(dest):
+            shutil.rmtree(dest)
+        mkdir_p(dest)
 
     def pull(self, image, tag):
         """Tries to retrieve the given image and tag.
@@ -243,8 +251,10 @@ class DockerContainer(object):
     def docker_tag(self):
         raise NotImplementedError()
 
-
     @abc.abstractmethod
     def depends_on(self):
         """Name of the system image this container is build on."""
         raise NotImplementedError()
+
+    def __str__(self):
+        return self.image_name() + ":" + self.docker_tag()

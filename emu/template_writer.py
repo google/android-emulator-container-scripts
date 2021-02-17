@@ -36,14 +36,13 @@ class TemplateWriter(object):
     def __init__(self, out_dir):
         """Creates a template writer that writes templates to the out_dir
 
-           The out directory will be created if needed.
+        The out directory will be created if needed.
         """
         self.env = Environment(loader=PackageLoader("emu", "templates"))
         self.dest = out_dir
 
     def _jinja_safe_dict(self, props):
-        """Replace all the . with _ in the keys.
-        """
+        """Replace all the . with _ in the keys."""
         normalized = {}
         for k, v in props.items():
             normalized[k.replace(".", "_")] = v
@@ -54,16 +53,15 @@ class TemplateWriter(object):
         dest_name = rename_as if rename_as else template_file
         return self._write_template_to(template_file, os.path.join(self.dest, dest_name), template_dict)
 
-
     def _write_template_to(self, tmpl_file, dest_file, template_dict):
         """Loads the the given template, writing it to the dest_file
 
-            Note: the template will be written {dest_dir}/{tmpl_file},
-            directories will be created if the do not yet exist.
+        Note: the template will be written {dest_dir}/{tmpl_file},
+        directories will be created if the do not yet exist.
         """
         template = self.env.get_template(tmpl_file)
         safe_dict = self._jinja_safe_dict(template_dict)
         mkdir_p(os.path.dirname(dest_file))
         logging.info("Writing: %s -> %s with %s", tmpl_file, dest_file, safe_dict)
         with open(dest_file, "wb") as dfile:
-            dfile.write(template.render(safe_dict).encode('utf-8'))
+            dfile.write(template.render(safe_dict).encode("utf-8"))

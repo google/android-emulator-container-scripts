@@ -37,6 +37,7 @@ API_LETTER_MAPPING = {
     "30": "R",
 }
 
+
 def mkdir_p(path):
     """Make directories recursively if path not exists."""
     if not os.path.exists(path):
@@ -51,6 +52,7 @@ def download(url, dest):
     if os.path.exists(dest):
         print("  Skipping already downloaded file: {}".format(dest))
         return dest
+    mkdir_p(os.path.dirname(dest))
     logging.info("Get %s -> %s", url, dest)
     with requests.get(url, timeout=5, stream=True) as r:
         with tqdm(r, total=int(r.headers["content-length"]), unit="B", unit_scale=True) as t:
