@@ -61,6 +61,7 @@ API_LETTER_MAPPING = {
 MIN_REL_I386 = "K"
 MIN_REL_X64 = "O"
 
+
 class License(object):
     """Represents a license."""
 
@@ -116,6 +117,7 @@ class SysImgInfo(LicensedObject):
         "google_apis": "google",
         "google_apis_playstore": "playstore",
         "google_ndk_playstore": "ndk_playstore",
+        "android-tv": "tv",
     }
 
     def __init__(self, pkg, licenses):

@@ -65,7 +65,7 @@ class AndroidReleaseZip(object):
 
     def is_system_image(self):
         """True if this zip file contains a system image."""
-        return "System Image" in self.description()
+        return "System Image" in self.description() or "Android SDK Platform" in self.description()
 
     def is_emulator(self):
         """True if this zip file contains the android emulator."""
@@ -115,7 +115,7 @@ class SystemImageReleaseZip(AndroidReleaseZip):
         "google_apis": "google",
         "google_apis_playstore": "playstore",
         "google_ndk_playstore": "ndk_playstore",
-        "android-tv" : "tv",
+        "android-tv": "tv",
     }
 
     def __init__(self, file_name):

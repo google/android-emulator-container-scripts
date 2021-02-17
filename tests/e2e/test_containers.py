@@ -27,12 +27,13 @@ import pytest
 from utils import TempDir, find_adb, find_free_port
 
 linux_only = pytest.mark.skipif(
-    not sys.platform.startswith("Linux"), reason="launching containers requires kvm, only available in linux"
+    not sys.platform.startswith("linux"), reason="launching containers requires kvm, only available in linux"
 )
 
 Arguments = collections.namedtuple(
-    "Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept, metrics, no_metrics, repo, push"
+    "Args", "emuzip, imgzip, dest, tag, start, extra, gpu, accept, metrics, no_metrics, repo, push, sys"
 )
+
 
 def test_has_docker():
     assert docker.from_env().ping()
@@ -45,7 +46,21 @@ def test_build_container(channel, img, gpu):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False, "aemu", False)
+        args = Arguments(
+            channel,
+            img,
+            tmp,
+            None,
+            False,
+            "",
+            gpu,
+            True,
+            False,
+            False,
+            "us-docker.pkg.dev/android-emulator-268719/images",
+            False,
+            False,
+        )
         emu_docker.accept_licenses(args)
         devices = emu_docker.create_docker_image(args)
         assert devices
@@ -61,7 +76,21 @@ def test_build_container(channel, img, gpu):
 @linux_only
 def test_run_container(channel, img, gpu):
     with TempDir() as tmp:
-        args = Arguments(channel, img, tmp, None, False, "", gpu, True, False, False, "aemu", False)
+        args = Arguments(
+            channel,
+            img,
+            tmp,
+            None,
+            False,
+            "",
+            gpu,
+            True,
+            False,
+            False,
+            "us-docker.pkg.dev/android-emulator-268719/images",
+            False,
+            False,
+        )
         emu_docker.accept_licenses(args)
         devices = emu_docker.create_docker_image(args)
         assert devices

@@ -18,7 +18,6 @@ import emu
 from emu.android_release_zip import AndroidReleaseZip
 from emu.containers.docker_container import DockerContainer
 from emu.template_writer import TemplateWriter
-from emu.utils import mkdir_p
 
 
 class EmulatorContainer(DockerContainer):
@@ -72,9 +71,7 @@ class EmulatorContainer(DockerContainer):
 
     def write(self, dest):
         # Make sure the destination directory is empty.
-        if os.path.exists(dest):
-            shutil.rmtree(dest)
-        mkdir_p(dest)
+        self.clean(dest)
 
         writer = TemplateWriter(dest)
         writer.write_template("avd/Pixel2.ini", self.props)
@@ -110,4 +107,7 @@ class EmulatorContainer(DockerContainer):
         return self.props["emu_build_id"]
 
     def depends_on(self):
-        return self.system_image_container.image_name()
+        if not self.system_image_container.can_pull():
+            return self.system_image_container.image_name()
+        else:
+            return "-"

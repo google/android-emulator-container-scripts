@@ -21,7 +21,7 @@ from distutils.spawn import find_executable
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('localhost', 0))
+        s.bind(("localhost", 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
 
@@ -31,6 +31,7 @@ def find_adb():
     if not (os.path.exists(adb_loc) and os.access(adb_loc, os.X_OK)):
         adb_loc = find_executable("adb")
     return adb_loc
+
 
 class TempDir(object):
     """Creates a temporary directory that automatically is deleted."""
