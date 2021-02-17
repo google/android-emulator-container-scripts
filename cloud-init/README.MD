@@ -10,7 +10,8 @@ You must run a base instance which has KVM and docker available. Details on how 
 - Azure: Follow these [instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/nested-virtualization) to enable nested virtualization.
 - GCE: Follow these [instructions](https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances) to enable nested virtualization.
 
-_NOTE_ You cannot use GCE's container optimized OS, as it does not make /dev/kvm available.
+_NOTE_ You cannot use GCE's container optimized OS, as it does not make /dev/kvm available. You can follow the steps at the bottom to create you own
+version of a container optimized os with KVM enabled.
 
 Follow the steps to for your cloud provider to create an image with:
 
@@ -27,12 +28,12 @@ Most notable are:
 
 - **GRPC_PORT**: The port where the first instance of the gRPC service will be running. Defaults to 8554. The second instance will be available at 8555, etc.
 - **ADB_PORT**: The port where the first instance of the ADB will be available. Defaults to 5555. The second instance will be available at 5556, etc.
-- **INSTNCE_COUNT**: The number of emulators to start, defaults to 1. By default the emulator uses 4 vcpus, and 12gb per instance (4 gb memory, 8 gb tmpfs).
+- **INSTANCE_COUNT**: The number of emulators to start, defaults to 1. By default the emulator uses 4 vcpus, and 12gb per instance (4 gb memory, 8 gb tmpfs).
 - **TURN**: Configuration used to start turn server.
 - **ADBKEY**: The private adb key that will be embedded in the emulator.
 - **EMULATOR_IMG**: The url to a public docker image that will be launched. Defaults to `us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:latest`
-- **AVD_CONFIG**: Additional avd configuration that should be added to the configuration
-- **EMULATOR_PARAMS**: Additional emulator parameters that should be added.
+- **AVD_CONFIG**: Additional avd configuration that should be added to the configuration. These parameters will be added to the config.ini of the launched avd.
+- **EMULATOR_PARAMS**: Additional emulator parameters that should be added. These parameters are added to the launch of the emulator executable.
 
 First make sure the [cloud-init](cloud-init) file contains all the proper definitions needed for launch.
 
@@ -45,8 +46,9 @@ If you are running in gce you have the option the specify the properties above a
 - emulator_turn maps to TURN
 - emulator_instance_count maps to $INSTANCE_COUNT
 
-Emulators are launched using the aemu.service systemd service. This service will start a series of emulators that, named aemu_1, aemu_2, etc.
+Emulators are launched using the aemu.service systemd service. This service will start a series of emulators that are  named aemu_1, aemu_2, ..., aemu_n
 Keep in mind that it can take a while to pull and launch the emulator, esp. if you are running more than one emulator.
+
 # Lauching the instance
 
 For example if you created a gce image with nested virtualization you can launch an instance as follows:
