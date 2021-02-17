@@ -32,6 +32,7 @@ SYSIMG_REPOS = [
     "https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml",
     "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-1.xml",
     "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-1.xml",
+    "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-1.xml",
 ]
 
 EMU_REPOS = ["https://dl.google.com/android/repository/repository2-1.xml"]
@@ -93,7 +94,7 @@ class AndroidReleaseZip(object):
 
     ABI_CPU_MAP = {"armeabi-v7a": "arm", "arm64-v8a": "arm64", "x86_64": "x86_64", "x86": "x86"}
     SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
-    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore", "google_ndk_playstore": "ndk_playstore"}
+    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore", "google_ndk_playstore": "ndk_playstore", "android-tv" : "tv"}
 
     def __init__(self, fname):
         self.fname = fname
