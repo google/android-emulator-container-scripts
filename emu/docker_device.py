@@ -103,7 +103,12 @@ class DockerDevice(object):
         "FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04 AS emulator\n"
         + "ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES},display"
     )
-    DEFAULT_BASE_IMG = "FROM debian:stretch-slim AS emulator"
+    DEFAULT_BASE_IMG = (
+        "FROM debian:stretch-slim AS emulator\n"
+        + "RUN "
+        + "printf 'path-exclude=/usr/share/locale/*\npath-exclude=/usr/share/man/*\npath-exclude=/usr/share/doc/*\npath-include=/usr/share/doc/*/copyright\n'"
+        + " > /etc/dpkg/dpkg.cfg.d/01_nodoc && mkdir -p /usr/share/man/man1"
+    )
 
     def __init__(self, emulator, sysimg, dest_dir, gpu=False, repo="", tag="", name=""):
 
@@ -125,7 +130,6 @@ class DockerDevice(object):
         self.latest = "{}:latest".format(repo)
         if not self.TAG_REGEX.match(self.tag):
             raise Exception("The resulting tag: {} is not a valid docker tag.", self.tag)
-
 
         # The following are only set after creating/launching.
         self.container = None
