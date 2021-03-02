@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libxcomposite1 libxcursor1 libxi6 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat \
 # Enable turncfg through usage of curl
-    curl ca-certificates && \
+    curl ca-certificates iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -50,13 +50,13 @@ COPY sys/ /android/sdk/system-images/android/
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
 
 # This is the console port, you usually want to keep this closed.
-EXPOSE 5554
+# EXPOSE 5554
 
 # This is the ADB port, useful.
 EXPOSE 5555
 
 # This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
-EXPOSE 8554
+# EXPOSE 8554
 
 ENV ANDROID_SDK_ROOT /android/sdk
 WORKDIR /android/sdk
