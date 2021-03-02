@@ -50,13 +50,13 @@ COPY sys/ /android/sdk/system-images/android/
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
 
 # This is the console port, you usually want to keep this closed.
-EXPOSE 5554
+# EXPOSE 5554
 
 # This is the ADB port, useful.
 EXPOSE 5555
 
 # This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
-EXPOSE 8554
+# EXPOSE 8554
 
 ENV ANDROID_SDK_ROOT /android/sdk
 ENV ANDROID_AVD_HOME /android-home
