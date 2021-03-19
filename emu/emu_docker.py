@@ -27,9 +27,9 @@ import colorlog
 import emu
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.docker_config import DockerConfig
-from emu.docker_device import DockerDevice
 from emu.cloud_build import cloud_build
-from emu.utils import mkdir_p
+from emu.containers.emulator_container import EmulatorContainer
+from emu.containers.system_image_container import SystemImageContainer
 
 
 def list_images(args):
@@ -38,32 +38,14 @@ def list_images(args):
 
 
 def accept_licenses(args):
-    licenses = set(
-        [x.license for x in emu_downloads_menu.get_emus_info()]
-        + [x.license for x in emu_downloads_menu.get_images_info()]
-    )
-    to_accept = [x for x in licenses if not x.is_accepted()]
-    if not to_accept:
-        print("\n\n".join([str(l) for l in licenses]))
-        print("You have already accepted all licenses.")
-        return
-
-    print("\n\n".join([str(l) for l in to_accept]))
-    if args.accept or click.confirm("Do you accept the licenses?"):
-        for l in to_accept:
-            l.force_accept()
+    emu_downloads_menu.accept_licenses(args.accept)
 
 
 def create_cloud_build_distribuition(args):
     cloud_build(args)
 
 
-def create_docker_image(args):
-    """Create a directory containing all the necessary ingredients to construct a docker image.
-
-    Returns the created DockerDevice objects.
-    """
-
+def metrics_config(args):
     cfg = DockerConfig()
     if args.metrics:
         cfg.set_collect_metrics(True)
@@ -77,37 +59,51 @@ def create_docker_image(args):
             "To opt in or out pass the --metrics or --no-metrics flag\n"
             "Note, that metrics will only be collected if you opt in."
         )
+    return cfg
 
+
+def create_docker_image(args):
+    """Create a directory containing all the necessary ingredients to construct a docker image.
+
+    Returns the created DockerDevice objects.
+    """
+    cfg = metrics_config(args)
     imgzip = [args.imgzip]
     if not os.path.exists(imgzip[0]):
-        imgzip = [x.download() for x in emu_downloads_menu.find_image(imgzip[0])]
+        imgzip = emu_downloads_menu.find_image(imgzip[0])
 
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
         emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
-    elif re.match("\d+", emuzip[0]):
+    elif re.match(r"\d+", emuzip[0]):
         # We must be looking for a build id
         logging.info("Treating %s as a build id", emuzip[0])
         emuzip = [emu_downloads_menu.download_build(emuzip[0])]
 
     devices = []
+    logging.info("Using repo %s", args.repo)
     for (img, emu) in itertools.product(imgzip, emuzip):
         logging.info("Processing %s, %s", img, emu)
-        rel = emu_downloads_menu.AndroidReleaseZip(img)
-        if not rel.is_system_image():
-            raise Exception("{} is not a zip file with a system image".format(img))
-        rel = emu_downloads_menu.AndroidReleaseZip(emu)
-        if not rel.is_emulator():
-            raise Exception("{} is not a zip file with an emulator".format(emu))
-
-        device = DockerDevice(emu, img, args.dest, args.gpu, args.repo, args.tag)
-        device.create_docker_file(args.extra, cfg.collect_metrics())
-        img = device.create_container()
-        if img and args.start:
-            device.launch(img)
+        sys_docker = SystemImageContainer(img, args.repo)
+        if not sys_docker.available() and not sys_docker.can_pull():
+            sys_docker.build(args.dest)
+        else:
+            print("No need to build {}, it's already available".format(sys_docker))
         if args.push:
-            device.push(img)
-        devices.append(device)
+            sys_docker.push()
+
+        if args.sys:
+            continue
+
+        emu_docker = EmulatorContainer(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra)
+        emu_docker.build(args.dest)
+
+        if args.start:
+            emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
+        if args.push:
+            emu_docker.push()
+
+        devices.append(emu_docker)
 
     return devices
 
@@ -127,13 +123,17 @@ def create_docker_image_interactive(args):
         )
     metrics = cfg.collect_metrics()
 
-    img_zip = img.download()
     emu_zip = emulator.download("linux")
-    device = DockerDevice(emu_zip, img_zip, args.dest, args.gpu)
-    device.create_docker_file(args.extra, metrics)
-    img = device.create_container()
-    if img and args.start:
-        device.launch(img)
+    logging.info("Processing %s, %s", img, emu)
+    sys_docker = SystemImageContainer(img, args.repo)
+    if not sys_docker.available() and not sys_docker.can_pull():
+        sys_docker.build(args.dest)
+
+    emu_docker = EmulatorContainer(emu_zip, sys_docker, args.repo, metrics)
+    emu_docker.build(args.dest)
+
+    if args.start:
+        emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
 
 
 def main():
@@ -193,7 +193,11 @@ def main():
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
     create_parser.add_argument("--tag", default="", help="Docker tag, defaults to the emulator build id")
-    create_parser.add_argument("--repo", default="", help="Repo prefix, for example: us.gcr.io/emu-dev/")
+    create_parser.add_argument(
+        "--repo",
+        default="us-docker.pkg.dev/android-emulator-268719/images",
+        help="Repo prefix, for example: us.gcr.io/emu-dev/",
+    )
     create_parser.add_argument(
         "--push",
         action="store_true",
@@ -215,8 +219,8 @@ def main():
         help="Starts the container after creating it. "
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
+    create_parser.add_argument("--sys", action="store_true", help="Process system image layer only.")
     create_parser.set_defaults(func=create_docker_image)
-
 
     create_inter = subparsers.add_parser(
         "interactive",
@@ -252,11 +256,18 @@ def main():
         help="Create a cloud builder distribution. This will create a distribution for publishing container images to a GCE repository."
         "This is likely only useful if you are within Google.",
     )
-    dist_parser.add_argument("--repo", default="", help="Repo prefix, for example: us.gcr.io/emu-dev/")
+    dist_parser.add_argument(
+        "--repo",
+        default="us-docker.pkg.dev/android-emulator-268719/images",
+        help="Repo prefix, for example: us.gcr.io/emu-dev/",
+    )
     dist_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
     dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
+    dist_parser.add_argument(
+        "--sys", action="store_true", help="Write system image steps, otherwise write emulator steps."
+    )
     dist_parser.add_argument(
         "emuzip",
         help="Zipfile containing the a publicly released emulator, or (canary|stable|[0-9]+) to use the latest canary, stable, or build id of the emulator to use. "

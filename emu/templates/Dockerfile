@@ -28,23 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Now we configure the user account under which we will be running the emulator
-RUN mkdir -p /android/sdk/platforms && \
-    mkdir -p /android/sdk/platform-tools && \
-    mkdir -p /android/sdk/system-images/android && \
-    mkdir -p /android-home
+RUN  mkdir -p /android-home
 
 # Make sure to place files that do not change often in the higher layers
 # as this will improve caching.
 COPY launch-emulator.sh /android/sdk/
-COPY platform-tools/adb /android/sdk/platform-tools/adb
 COPY default.pa /etc/pulse/default.pa
 
 RUN gpasswd -a root audio && \
-    chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
+    chmod +x /android/sdk/launch-emulator.sh
 
 COPY emu/ /android/sdk/
 COPY avd/ /android-home
-COPY sys/ /android/sdk/system-images/android/
 # Create an initial snapshot so we will boot fast next time around,
 # This is currently an experimental feature, and is not easily configurable//
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
@@ -58,7 +53,6 @@ EXPOSE 5555
 # This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
 EXPOSE 8554
 
-ENV ANDROID_SDK_ROOT /android/sdk
 WORKDIR /android/sdk
 
 # You will need to make use of the grpc snapshot/webrtc functionality to actually interact with
@@ -72,11 +66,6 @@ HEALTHCHECK --interval=30s \
             --retries=3 \
             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
-# Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
-      SystemImage.Abi={{abi}} \
-      SystemImage.TagId={{tag}} \
-      SystemImage.GpuSupport={{gpu}} \
-      AndroidVersion.ApiLevel={{api}} \
       com.google.android.emulator.description="Pixel 2 Emulator, running API {{api}}" \
       com.google.android.emulator.version="{{tag}}-{{api}}-{{abi}}/{{emu_build_id}}"

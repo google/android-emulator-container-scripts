@@ -24,8 +24,7 @@ import zipfile
 import click
 import requests
 from consolemenu import SelectionMenu
-from tqdm import tqdm
-
+from emu.utils import download
 from emu.docker_config import DockerConfig
 
 SYSIMG_REPOS = [
@@ -61,145 +60,6 @@ API_LETTER_MAPPING = {
 # Older versions might not work as expected.
 MIN_REL_I386 = "K"
 MIN_REL_X64 = "O"
-
-
-# Platform tools, needed to get adb.
-PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
-
-
-def _download(url, dest):
-    """Downloads the given url to the given destination with a progress bar.
-
-    This function will immediately return if the file already exists.
-    """
-    if os.path.exists(dest):
-        print("  Skipping already downloaded file: {}".format(dest))
-        return dest
-    with requests.get(url) as r:
-        with tqdm(r, total=int(r.headers["content-length"]), unit="B", unit_scale=True) as t:
-            with open(dest, "wb") as f:
-                for data in r:
-                    f.write(data)
-                    t.update(len(data))
-    return dest
-
-
-class AndroidReleaseZip(object):
-    """Provides information of released android products.
-
-    Every released zip file contains a source.properties file, this
-    source.properties file contains [key]=[value] pairs with information
-    about the contents of the zip.
-    """
-
-    ABI_CPU_MAP = {"armeabi-v7a": "arm", "arm64-v8a": "arm64", "x86_64": "x86_64", "x86": "x86"}
-    SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
-    SHORT_TAG = {"android": "aosp", "google_apis": "google", "google_apis_playstore": "playstore", "google_ndk_playstore": "ndk_playstore", "android-tv" : "tv"}
-
-    def __init__(self, fname):
-        self.fname = fname
-        if not zipfile.is_zipfile(fname):
-            raise Exception("{} is not a zipfile!".format(fname))
-        with zipfile.ZipFile(fname, "r") as sysimg:
-            props = [x for x in sysimg.infolist() if "source.properties" in x.filename]
-            if not props:
-                raise Exception("{} does not contain source.properties!".format(fname))
-            prop = sysimg.read(props[0]).decode("utf-8").splitlines()
-            self.props = dict([a.split("=") for a in prop if "=" in a])
-
-    def __str__(self):
-        return "{}-{}".format(self.desc(), self.revision())
-
-    def api(self):
-        """The api level, if any."""
-        return self.props.get("AndroidVersion.ApiLevel", "")
-
-    def codename(self):
-        """First letter of the desert, if any."""
-        if 'AndroidVersion.CodeName' in self.props:
-            return self.props['AndroidVersion.CodeName']
-        api = self.api()
-        if api in API_LETTER_MAPPING:
-            return API_LETTER_MAPPING[api]
-        else:
-            return "_"
-
-    def abi(self):
-        """The abi if any."""
-        return self.props.get("SystemImage.Abi", "")
-
-    def short_abi(self):
-        if self.abi() not in self.SHORT_MAP:
-            logging.error("%s not in short map", self)
-        return self.SHORT_MAP[self.abi()]
-
-    def cpu(self):
-        """Returns the cpu architecture, derived from the abi."""
-        return self.ABI_CPU_MAP[self.abi()]
-
-    def gpu(self):
-        """Returns whether or not the system has gpu support."""
-        return self.props.get("SystemImage.GpuSupport")
-
-    def tag(self):
-        """The tag associated with this release."""
-        tag = self.props.get("SystemImage.TagId", "")
-        if tag == "default" or tag.strip() == "":
-            tag = "android"
-        return tag
-
-    def short_tag(self):
-        return self.SHORT_TAG[self.tag()]
-
-    def desc(self):
-        """Descripton of this release."""
-        return self.props.get("Pkg.Desc")
-
-    def revision(self):
-        """The revision of this release."""
-        return self.props.get("Pkg.Revision")
-
-    def build_id(self):
-        """The build id, or revision of build id is not available."""
-        if "Pkg.BuildId" in self.props:
-            return self.props.get("Pkg.BuildId")
-        return self.revision()
-
-    def repo_friendly_name(self):
-        prefix = self.api()
-        if len(prefix) == 0:
-            prefix = self.codename().lower()
-        return "{}-{}-{}".format(prefix, self.short_tag(), self.short_abi())
-
-    def is_system_image(self):
-        return "System Image" in self.desc()
-
-    def is_emulator(self):
-        return "Android Emulator" in self.desc()
-
-    def logger_flags(self):
-        if "arm" in self.cpu():
-            return "-logcat *:V -show-kernel"
-        else:
-            return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
-
-
-class PlatformTools(object):
-    """The platform tools zip file. It will be downloaded on demand."""
-
-    def __init__(self, fname=None):
-        self.platform = fname
-
-    def extract_adb(self, dest):
-        if not self.platform:
-            self.platform = self.download()
-        with zipfile.ZipFile(self.platform, "r") as plzip:
-            plzip.extract("platform-tools/adb", dest)
-
-    def download(self, dest=None):
-        dest = dest or os.path.join(os.getcwd(), "platform-tools-latest-linux.zip")
-        print("Downloading platform tools to {}".format(dest))
-        return _download(PLATFORM_TOOLS_URL, dest)
 
 
 class License(object):
@@ -243,13 +103,22 @@ class LicensedObject(object):
         self.license = licenses[pkg.find("uses-license").attrib["ref"]]
 
     def download(self, url, dest):
-        """"Downloads the released pacakage forto the dest."""
+        """"Downloads the released pacakage to the dest."""
         if self.license.accept():
-            return _download(url, dest)
+            return download(url, dest)
 
 
 class SysImgInfo(LicensedObject):
     """Provides information about a released system image."""
+
+    SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
+    SHORT_TAG = {
+        "android": "aosp",
+        "google_apis": "google",
+        "google_apis_playstore": "playstore",
+        "google_ndk_playstore": "ndk_playstore",
+        "android-tv": "tv",
+    }
 
     def __init__(self, pkg, licenses):
         super(SysImgInfo, self).__init__(pkg, licenses)
@@ -261,7 +130,7 @@ class SysImgInfo(LicensedObject):
             if self.api in API_LETTER_MAPPING:
                 self.letter = API_LETTER_MAPPING[self.api]
             else:
-                self.letter = "A" # A indicates unknown code.
+                self.letter = "A"  # A indicates unknown code.
         else:
             self.letter = codename.text
 
@@ -280,10 +149,20 @@ class SysImgInfo(LicensedObject):
 
         self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
 
+    def short_tag(self):
+        return self.SHORT_TAG[self.tag]
+
+    def short_abi(self):
+        return self.SHORT_MAP[self.abi]
+
+    def image_name(self):
+        return "sys-{}-{}-{}".format(self.api, self.short_tag(), self.short_abi())
+
+    def download_name(self):
+        return "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
+
     def download(self, dest=None):
-        dest = dest or os.path.join(
-            os.getcwd(), "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
-        )
+        dest = os.path.join(dest or os.getcwd(), self.download_name())
         print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
         return super(SysImgInfo, self).download(self.url, dest)
 
@@ -315,9 +194,12 @@ class EmuInfo(LicensedObject):
             hostos = archive.find("host-os").text
             self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
 
+    def download_name(self):
+        return "emulator-{}.zip".format(self.version)
+
     def download(self, hostos="linux", dest=None):
         """"Downloads the released pacakage for the given os to the dest."""
-        dest = dest or os.path.join(os.getcwd(), "emulator-{}.zip".format(self.version))
+        dest = dest or os.path.join(os.getcwd(), self.download_name())
         print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
         return super(EmuInfo, self).download(self.urls[hostos], dest)
 
@@ -369,7 +251,7 @@ def find_image(regexpr):
 def find_emulator(channel):
     """Displayes an interactive menu to select a released emulator binary.
 
-    Returns a ImuInfo object with the choice or None if the user aborts.    """
+    Returns a ImuInfo object with the choice or None if the user aborts."""
     emu_infos = [x for x in get_emus_info() if "linux" in x.urls and (channel == "all" or x.channel == channel)]
     logging.info("Found %s matching images: %s", channel, [str(x) for x in emu_infos])
     if not emu_infos:
@@ -380,7 +262,7 @@ def find_emulator(channel):
 def get_emus_info():
     """Gets all the publicly available emulator builds.
 
-         Returns a list of EmuInfo items that were found.    """
+    Returns a list of EmuInfo items that were found."""
     xml = []
     for url in EMU_REPOS:
         response = requests.get(url)
@@ -398,7 +280,7 @@ def get_emus_info():
 def select_image(arm):
     """Displayes an interactive menu to select a released system image.
 
-    Returns a SysImgInfo object with the choice or None if the user aborts.    """
+    Returns a SysImgInfo object with the choice or None if the user aborts."""
     img_infos = get_images_info(arm)
     display = [
         "{} {} {} ({})".format(img_info.api, img_info.letter, img_info.tag, img_info.abi) for img_info in img_infos
@@ -410,7 +292,7 @@ def select_image(arm):
 def select_emulator():
     """Displayes an interactive menu to select a released emulator binary.
 
-    Returns a ImuInfo object with the choice or None if the user aborts.    """
+    Returns a ImuInfo object with the choice or None if the user aborts."""
     emu_infos = [x for x in get_emus_info() if "linux" in x.urls]
     display = ["EMU {} {}".format(emu_info.channel, emu_info.version) for emu_info in emu_infos]
     selection = SelectionMenu.get_selection(display, title="Select the emulator you wish to use:")
@@ -429,11 +311,37 @@ def list_all_downloads(arm):
         for (hostos, url) in list(emu_info.urls.items()):
             print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
 
+
 def download_build(build_id, dest=None):
     """Download a public build with the given build id."""
     dest = dest or os.path.join(os.getcwd(), "sdk-repo-linux-emulator-{}.zip".format(build_id))
-    uri = "https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{0}.zip".format(build_id);
+    uri = (
+        "https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{0}.zip".format(
+            build_id
+        )
+    )
     print("Downloading emulator build {} ({}) to {}".format(build_id, uri, dest))
     logging.warning("Downloading build from ci server, these builds might not have been tested extensively.")
-    _download(uri, dest)
+    download(uri, dest)
     return dest
+
+
+def accept_licenses(force_accept):
+    licenses = set([x.license for x in get_emus_info()] + [x.license for x in get_images_info()])
+
+    to_accept = [x for x in licenses if not x.is_accepted()]
+
+    if force_accept:
+        for l in to_accept:
+            l.force_accept()
+        return
+
+    if not to_accept:
+        print("\n\n".join([str(l) for l in licenses]))
+        print("You have already accepted all licenses.")
+        return
+
+    print("\n\n".join([str(l) for l in to_accept]))
+    if click.confirm("Do you accept the licenses?"):
+        for l in to_accept:
+            l.force_accept()

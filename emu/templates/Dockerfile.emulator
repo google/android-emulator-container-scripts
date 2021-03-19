@@ -1,4 +1,4 @@
-# Copyright 2020 - The Android Open Source Project
+# Copyright 2019 - The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,24 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# This template is specific for automated creation of cloud builder entries.
-# and is based on having docker unzip the entries. This is a much slower process
-# for creating images.
-FROM alpine AS unzipper
-RUN apk add --update unzip
-
-# Barely changes
-FROM unzipper as sys_unzipper
-COPY {{sysimg_zip}} /tmp/
-RUN unzip -u -o /tmp/{{sysimg_zip}} -d /sysimg/
-
-# Changes per release.
-FROM unzipper as emu_unzipper
-COPY {{emu_zip}} /tmp/
-RUN unzip -u -o /tmp/{{emu_zip}} -d /emu/
-
-FROM debian:stretch-slim AS emulator
+FROM {{from_base_img}} AS emulator
 
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u
@@ -45,19 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Now we configure the user account under which we will be running the emulator
-RUN mkdir -p /android/sdk/platforms && \
-    mkdir -p /android/sdk/platform-tools && \
-    mkdir -p /android/sdk/system-images && \
-    mkdir -p /android-home
+RUN  mkdir -p /android-home
 
 # Make sure to place files that do not change often in the higher layers
 # as this will improve caching.
-COPY platform-tools/adb /android/sdk/platform-tools/adb
+COPY launch-emulator.sh /android/sdk/
 COPY default.pa /etc/pulse/default.pa
-RUN gpasswd -a root audio && \
-    chmod +x  /android/sdk/platform-tools/adb
 
-COPY avd /android-home
+RUN gpasswd -a root audio && \
+    chmod +x /android/sdk/launch-emulator.sh
+
+COPY emu/ /android/sdk/
+COPY avd/ /android-home
 # Create an initial snapshot so we will boot fast next time around,
 # This is currently an experimental feature, and is not easily configurable//
 # RUN --security=insecure cd /android/sdk && ./launch-emulator.sh -quit-after-boot 120
@@ -71,7 +53,6 @@ EXPOSE 5555
 # This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
 EXPOSE 8554
 
-ENV ANDROID_SDK_ROOT /android/sdk
 WORKDIR /android/sdk
 
 # You will need to make use of the grpc snapshot/webrtc functionality to actually interact with
@@ -85,19 +66,5 @@ HEALTHCHECK --interval=30s \
             --retries=3 \
             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
-
-FROM emulator
-
-COPY --from=sys_unzipper /sysimg/ /android/sdk/system-images/android/
-COPY --from=emu_unzipper /emu/ /android/sdk/
-COPY launch-emulator.sh /android/sdk/
-RUN chmod +x /android/sdk/launch-emulator.sh /android/sdk/platform-tools/adb
-
-# Date frequently changes, so we place this in the last layer.
 LABEL maintainer="{{user}}" \
-      SystemImage.Abi={{abi}} \
-      SystemImage.TagId={{tag}} \
-      SystemImage.GpuSupport={{gpu}} \
-      AndroidVersion.ApiLevel={{api}} \
-      com.google.android.emulator.description="Pixel 2 Emulator, running API {{api}}" \
-      com.google.android.emulator.version="{{tag}}-{{api}}-{{abi}}/{{emu_build_id}}"
+      com.google.android.emulator.version="{{emu_build_id}}"

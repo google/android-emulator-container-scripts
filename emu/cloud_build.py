@@ -19,74 +19,98 @@ import re
 import yaml
 
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.docker_device import DockerDevice
 from emu.template_writer import TemplateWriter
 from emu.process import run
+from emu.containers.emulator_container import EmulatorContainer
+from emu.containers.system_image_container import SystemImageContainer
+from emu.emu_downloads_menu import accept_licenses
+from emu.utils import mkdir_p
 
 
 def git_commit_and_push(dest):
+    """Commit and pushes this cloud build to the git repo.
+
+    Note that this can be *EXTREMELY* slow as you will likely
+    have very large objects in your repo.
+
+    Args:
+        dest ({string}): The destination of the git repository.
+    """
     run(["git", "add", "--verbose", "*"], dest)
     run(["git", "commit", "-F", "README.MD"], dest)
     run(["git", "push"], dest)
 
 
+def create_build_step(for_container, destination):
+    build_destination = os.path.join(destination, for_container.image_name())
+    logging.info("Generating %s", build_destination)
+    for_container.write(build_destination)
+    if for_container.can_pull():
+        logging.warning("Container already available, no need to create step.")
+        return {}
+
+    step = for_container.create_cloud_build_step(for_container.image_name())
+    step["waitFor"] = ["-"]
+    step["id"] = for_container.image_name()
+    logging.info("Adding step: %s", step)
+    return step
+
+
 def cloud_build(args):
-    licenses = set(
-        [x.license for x in emu_downloads_menu.get_emus_info()]
-        + [x.license for x in emu_downloads_menu.get_images_info()]
-    )
+    """Prepares the cloud build yaml and all its dependencies.
 
-    for l in licenses:
-        l.force_accept()
+    The cloud builder will generate a single cloudbuild.yaml and generates the build
+    scripts for every individual container.
 
-    imgzip = [x.download() for x in emu_downloads_menu.find_image(args.img)]
-    emuzip = [args.emuzip]
-    if emuzip[0] in ["stable", "canary", "all"]:
-        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
-    elif re.match("\d+", emuzip[0]):
+    It will construct the proper dependencies as needed.
+    """
+    accept_licenses(True)
+
+    mkdir_p(args.dest)
+    image_zip = [args.img]
+
+    # Check if we are building a custom image from a zip file
+    if not os.path.exists(image_zip[0]):
+        # We are using a standard image, we likely won't need to download it.
+        image_zip = emu_downloads_menu.find_image(image_zip[0])
+
+    emulator_zip = [args.emuzip]
+    if emulator_zip[0] in ["stable", "canary", "all"]:
+        emulator_zip = [x.download() for x in emu_downloads_menu.find_emulator(emulator_zip[0])]
+    elif re.match(r"\d+", emulator_zip[0]):
         # We must be looking for a build id
-        logging.info("Treating %s as a build id", emuzip[0])
-        emuzip = [emu_downloads_menu.download_build(emuzip[0])]
+        logging.warning("Treating %s as a build id", emulator_zip[0])
+        emulator_zip = [emu_downloads_menu.download_build(emulator_zip[0])]
 
     steps = []
     images = []
-    desserts = set()
     emulators = set()
+    emulator_images = []
 
-    for (img, emu) in itertools.product(imgzip, emuzip):
+    for (img, emu) in itertools.product(image_zip, emulator_zip):
         logging.info("Processing %s, %s", img, emu)
-        img_rel = emu_downloads_menu.AndroidReleaseZip(img)
-        if not img_rel.is_system_image():
-            logging.warning("{} is not a zip file with a system image (Unexpected description), skipping".format(img))
-            continue
-        emu_rel = emu_downloads_menu.AndroidReleaseZip(emu)
-        if not emu_rel.is_emulator():
-            raise Exception("{} is not a zip file with an emulator".format(emu))
+        system_container = SystemImageContainer(img, args.repo)
+        if args.sys:
+            steps.append(create_build_step(system_container, args.dest))
+        else:
+            for metrics in [True, False]:
+                emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics)
+                emulators.add(emulator_container.props["emu_build_id"])
+                steps.append(create_build_step(emulator_container, args.dest))
+                images.append(emulator_container.full_name())
+                images.append(emulator_container.latest_name())
+                emulator_images.append(emulator_container.full_name())
+                emulator_images.append(emulator_container.latest_name())
 
-        emulators.add(emu_rel.build_id())
-        desserts.add(img_rel.codename())
-        for metrics in [True, False]:
-            name = img_rel.repo_friendly_name()
-            if not metrics:
-                name += "-no-metrics"
-
-            dest = os.path.join(args.dest, name)
-            logging.info("Generating %s", name)
-            device = DockerDevice(emu, img, dest, gpu=False, repo=args.repo, tag=emu_rel.build_id(), name=name)
-            device.create_docker_file("", metrics=True, by_copying_zip_files=True)
-            steps.append(device.create_cloud_build_step())
-            images.append(device.tag)
-            images.append(device.latest)
-
-    steps[-1]["waitFor"] = ["-"]
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
+    logging.info("Writing cloud yaml [%s] in %s", yaml, args.dest)
     with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
     writer = TemplateWriter(args.dest)
     writer.write_template(
         "cloudbuild.README.MD",
-        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in images])},
+        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in emulator_images])},
         rename_as="README.MD",
     )
     writer.write_template(
@@ -94,7 +118,7 @@ def cloud_build(args):
         {
             "emu_version": ", ".join(emulators),
             "emu_images": "\n".join(["* {}".format(x) for x in images]),
-            "first_image": images[0]
+            "first_image": next(iter(images), None),
         },
         rename_as="REGISTRY.MD",
     )
