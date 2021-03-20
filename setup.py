@@ -122,7 +122,7 @@ setup(
     # installed, so they must be valid existing projects.
     install_requires=[
         "requests",
-        "jinja2==2.11.1",
+        "jinja2==2.11.3",
         "console-menu",
         "tqdm",
         "docker",
