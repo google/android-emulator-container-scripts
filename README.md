@@ -224,6 +224,8 @@ It does the following:
 - The gRPC service is used to communicate with the running emulator inside the
   container.
 
+*Note: You can use a public adbkey by injecting the ADBKEY_PUB variable, i.e.: -e ADBKEY_PUB="$(cat ~/.android/adbkey.pub)"*
+
 You also have the option to mount a /data partition which the emulator will use
 if available. This enables you to use a tmpfs which can give increased
 performance, especially in the nested virtualization scenario.

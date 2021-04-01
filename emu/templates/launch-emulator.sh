@@ -112,6 +112,9 @@ install_adb_keys() {
     echo "-----BEGIN PRIVATE KEY-----" >/root/.android/adbkey
     echo $ADBKEY | tr " " "\\n" | sed -n "4,29p" >>/root/.android/adbkey
     echo "-----END PRIVATE KEY-----" >>/root/.android/adbkey
+  elif [ ! -z "${ADBKEY_PUB}" ]; then
+    echo "emulator: Using provided adb public key"
+    echo $ADBKEY_PUB >>/root/.android/adbkey.pub
   else
     echo "emulator: No adb key provided, creating internal one, you might not be able connect from adb."
     run /android/sdk/platform-tools/adb keygen /root/.android/adbkey
