@@ -222,6 +222,7 @@ var_append LAUNCH_CMD -avd Pixel2
 var_append LAUNCH_CMD -ports 5556,5557 -grpc 8554 -no-window
 var_append LAUNCH_CMD -skip-adb-auth -no-snapshot-save -wipe-data -no-boot-anim
 var_append LAUNCH_CMD -shell-serial file:/tmp/android-unknown/kernel.log
+var_append LAUNCH_CMD -logcat "*:V"
 var_append LAUNCH_CMD -logcat-output /tmp/android-unknown/logcat.log
 var_append LAUNCH_CMD -logcat "*:V"
 var_append LAUNCH_CMD -feature AllowSnapshotMigration
