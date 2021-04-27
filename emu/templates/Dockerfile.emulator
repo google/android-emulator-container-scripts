@@ -13,16 +13,18 @@
 # limitations under the License.
 FROM {{from_base_img}} AS emulator
 
+{{run_apt_repo_replace}}
+
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u
 # pulse audio is needed due to some webrtc dependencies.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-# Emulator & video bridge dependencies
+    # Emulator & video bridge dependencies
     libc6 libdbus-1-3 libfontconfig1 libgcc1 \
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \
     libnss3 libxcomposite1 libxcursor1 libxi6 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat \
-# Enable turncfg through usage of curl
+    # Enable turncfg through usage of curl
     curl ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -61,10 +63,10 @@ CMD ["/android/sdk/launch-emulator.sh"]
 
 # Note we should use gRPC status endpoint to check for health once the canary release is out.
 HEALTHCHECK --interval=30s \
-            --timeout=30s \
-            --start-period=30s \
-            --retries=3 \
-            CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
+    --timeout=30s \
+    --start-period=30s \
+    --retries=3 \
+    CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
 LABEL maintainer="{{user}}" \
-      com.google.android.emulator.version="{{emu_build_id}}"
+    com.google.android.emulator.version="{{emu_build_id}}"

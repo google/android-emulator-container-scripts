@@ -30,7 +30,7 @@ class EmulatorContainer(DockerContainer):
         """
     NO_METRICS_MESSAGE = "No metrics are collected when running this container."
 
-    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra=""):
+    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra="", apt_mirror=""):
         self.emulator_zip = AndroidReleaseZip(emulator)
         self.system_image_container = system_image_container
         self.metrics = metrics
@@ -51,6 +51,7 @@ class EmulatorContainer(DockerContainer):
         self.props["metrics"] = metrics_msg
         self.props["emu_build_id"] = self.emulator_zip.build_id()
         self.props["from_base_img"] = system_image_container.full_name()
+        self.props["run_apt_repo_replace"] = apt_mirror
 
         for expect in [
             "ro.build.version.sdk",

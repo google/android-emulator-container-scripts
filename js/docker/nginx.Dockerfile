@@ -2,6 +2,10 @@
 FROM tiangolo/node-frontend:10 as build-stage
 WORKDIR /app
 COPY package*.json /app/
+ARG npm_mirror
+RUN if [ x"${npm_mirror}" != "x" ]; then \
+    npm config set registry ${npm_mirror}; \
+    fi
 RUN npm install
 COPY ./ /app/
 ARG configuration=production

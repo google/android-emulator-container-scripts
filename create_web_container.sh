@@ -15,7 +15,7 @@
 
 DOCKER_YAML=js/docker/docker-compose-build.yaml
 PASSWDS="$USER,hello"
-
+COMPOSE_BUILD_ARGS=""
 # Fancy colors in the terminal
 if [ -t 1 ]; then
     RED=$(tput setaf 1)
@@ -51,6 +51,9 @@ help() {
        -s        start the container after creation.
        -p        list of username password pairs.  Defaults to: [${PASSWDS}]
        -i        install systemd service, with definition in /opt/emulator
+       -n        npm mirror registry.
+       -P        python package mirror index.
+       -A        deb apt source mirror.
 EOF
     exit 1
 }
@@ -73,17 +76,19 @@ generate_keys() {
     fi
 }
 
-while getopts 'hasip:' flag; do
+while getopts 'hasip:n:P:A:' flag; do
     case "${flag}" in
     a) DOCKER_YAML="${DOCKER_YAML} -f js/docker/development.yaml" ;;
     p) PASSWDS="${OPTARG}" ;;
     h) help ;;
     s) START='yes' ;;
     i) INSTALL='yes' ;;
+    n) COMPOSE_BUILD_ARGS="${COMPOSE_BUILD_ARGS} --build-arg npm_mirror=${OPTARG}" ;;
+    P) COMPOSE_BUILD_ARGS="${COMPOSE_BUILD_ARGS} --build-arg pip_index=${OPTARG}" ;;
+    A) COMPOSE_BUILD_ARGS="${COMPOSE_BUILD_ARGS} --build-arg apt_repo_mirror=${OPTARG}" ;;
     *) help ;;
     esac
 done
-
 
 # Create the javascript protobufs
 make -C js deps
@@ -105,7 +110,7 @@ cp ~/.android/adbkey js/docker/certs
 
 # compose the container
 pip install docker-compose >/dev/null
-docker-compose -f ${DOCKER_YAML} build
+docker-compose -f ${DOCKER_YAML} build ${COMPOSE_BUILD_ARGS}
 rm js/docker/certs/adbkey
 
 if [ "${START}" = "yes" ]; then
