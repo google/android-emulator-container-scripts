@@ -94,7 +94,7 @@ def cloud_build(args):
             steps.append(create_build_step(system_container, args.dest))
         else:
             for metrics in [True, False]:
-                emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics)
+                emulator_container = EmulatorContainer(emu, system_container, args.repo, metrics, args.aptmirror)
                 emulators.add(emulator_container.props["emu_build_id"])
                 steps.append(create_build_step(emulator_container, args.dest))
                 images.append(emulator_container.full_name())

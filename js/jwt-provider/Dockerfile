@@ -12,10 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 FROM debian:stretch-slim
-RUN apt-get update -y
-RUN apt-get install -y python-pip python-dev build-essential
+ARG apt_repo_mirror
+RUN if [ x"$apt_repo_mirror" != "x" ]; then \
+    sed -i -E "s#http(s)?://[^\/]+#${apt_repo_mirror}#g" /etc/apt/sources.list;  \
+    fi
+RUN apt-get update -y && \
+    apt-get install -y python-pip python-dev build-essential && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 COPY . /app
 WORKDIR /app
-RUN pip install -r requirements.txt
+ARG pip_index
+RUN if [ x"$pip_index" = "x" ]; then \
+    pip install -r requirements.txt; \
+    else \
+    pip install -i ${pip_index} -r requirements.txt; \
+    fi
 ENTRYPOINT ["python"]
 CMD ["jwt-provider.py"]
