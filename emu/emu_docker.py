@@ -95,7 +95,7 @@ def create_docker_image(args):
         if args.sys:
             continue
 
-        emu_docker = EmulatorContainer(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra)
+        emu_docker = EmulatorContainer(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra, args.aptmirror)
         emu_docker.build(args.dest)
 
         if args.start:
@@ -129,7 +129,7 @@ def create_docker_image_interactive(args):
     if not sys_docker.available() and not sys_docker.can_pull():
         sys_docker.build(args.dest)
 
-    emu_docker = EmulatorContainer(emu_zip, sys_docker, args.repo, metrics)
+    emu_docker = EmulatorContainer(emu_zip, sys_docker, args.repo, metrics, args.aptmirror)
     emu_docker.build(args.dest)
 
     if args.start:
@@ -220,6 +220,12 @@ def main():
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
     create_parser.add_argument("--sys", action="store_true", help="Process system image layer only.")
+    create_parser.add_argument(
+        "--aptmirror",
+        default="",
+        help="Apt repo mirror for apt installing."
+        'For example http://ftp2.cn.debian.org/',
+    )
     create_parser.set_defaults(func=create_docker_image)
 
     create_inter = subparsers.add_parser(
@@ -249,6 +255,12 @@ def main():
         action="store_true",
         help="Display arm images. Note that arm images are not hardware accelerated and are *extremely* slow.",
     )
+    create_inter.add_argument(
+        "--aptmirror",
+        default="",
+        help="Apt repo mirror for apt installing. "
+        'For example http://ftp2.cn.debian.org/',
+    )
     create_inter.set_defaults(func=create_docker_image_interactive)
 
     dist_parser = subparsers.add_parser(
@@ -267,6 +279,12 @@ def main():
     dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
     dist_parser.add_argument(
         "--sys", action="store_true", help="Write system image steps, otherwise write emulator steps."
+    )
+    dist_parser.add_argument(
+        "--aptmirror",
+        default="",
+        help="Apt repo mirror for apt installing."
+        'For example http://ftp2.cn.debian.org/',
     )
     dist_parser.add_argument(
         "emuzip",
