@@ -249,6 +249,11 @@ def main():
         action="store_true",
         help="Display arm images. Note that arm images are not hardware accelerated and are *extremely* slow.",
     )
+    create_inter.add_argument(
+        "--repo",
+        default="us-docker.pkg.dev/android-emulator-268719/images",
+        help="Repo prefix, for example: us.gcr.io/emu-dev/",
+    )
     create_inter.set_defaults(func=create_docker_image_interactive)
 
     dist_parser = subparsers.add_parser(
