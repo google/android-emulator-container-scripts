@@ -53,18 +53,86 @@ EXPOSE 5555
 # This is the gRPC port, also useful, we don't want ADB to incorrectly identify this.
 EXPOSE 8554
 
-WORKDIR /android/sdk
+WORKDIR /root
 
 # You will need to make use of the grpc snapshot/webrtc functionality to actually interact with
 # the emulator.
-CMD ["/android/sdk/launch-emulator.sh"]
+# CMD ["/android/sdk/launch-emulator.sh"]
 
 # Note we should use gRPC status endpoint to check for health once the canary release is out.
+# HEALTHCHECK --interval=30s \
+#             --timeout=30s \
+#             --start-period=30s \
+#             --retries=3 \
+#             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
+
+LABEL maintainer="{{user}}" \
+      com.google.android.emulator.version="{{emu_build_id}}"
+
+RUN apt-get -qqy --no-install-recommends install \
+    openjdk-8-jdk \
+    ca-certificates \
+    tzdata \
+    zip \
+    unzip \
+    curl \
+    wget \
+    libqt5webkit5 \
+    libgconf-2-4 \
+    xvfb \
+    gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64/jre" \
+    PATH=$PATH:$JAVA_HOME/bin
+
+# Install latest nodejs, npm, appium
+ARG APPIUM_VERSION=1.16.0
+ENV APPIUM_VERSION=$APPIUM_VERSION
+
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash && \
+    apt-get -qqy install nodejs && \
+    npm install -g appium@${APPIUM_VERSION} --unsafe-perm=true --allow-root && \
+    exit 0 && \
+    npm cache clean && \
+    apt-get remove --purge -y npm && \
+    apt-get autoremove --purge -y && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    apt-get clean
+
+RUN apt-get --yes update && apt-get --yes install && \
+    apt-get --yes install supervisor && \
+    mkdir -p /var/log/supervisor && \
+    mkdir -p /etc/supervisor/conf.d
+
+ADD supervisor.conf /etc/supervisor.conf
+
+# 4723
+#   Appium port
+#===============
+EXPOSE 4723
+
+
+#====================================================
+# Scripts to run appium and connect to Selenium Grid
+#====================================================
+COPY wireless_connect.sh \
+     wireless_autoconnect.sh \
+     nodeconfig-android.json \
+     /root/
+
+RUN chmod +x /root/wireless_connect.sh && \
+    chmod +x /root/wireless_autoconnect.sh 
+
+#========================================
+# Run xvfb and appium server
+#========================================
+WORKDIR ..
+
 HEALTHCHECK --interval=30s \
             --timeout=30s \
             --start-period=30s \
             --retries=3 \
             CMD /android/sdk/platform-tools/adb shell getprop dev.bootcomplete | grep "1"
 
-LABEL maintainer="{{user}}" \
-      com.google.android.emulator.version="{{emu_build_id}}"
+CMD ["supervisord", "-c", "/etc/supervisor.conf"]
