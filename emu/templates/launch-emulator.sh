@@ -202,7 +202,7 @@ forward_loggers
 # Override config settings that the user forcefully wants to override.
 if [ ! -z "${AVD_CONFIG}" ]; then
   echo "Adding ${AVD_CONFIG} to config.ini"
-  echo "${AVD_CONFIG}" >>"${ANDROID_AVD_HOME}/Pixel2.avd/config.ini"
+  echo "${AVD_CONFIG}" >>"/root/.android/avd/Pixel2.avd/config.ini"
 fi
 
 # Launch internal adb server, needed for our health check.
