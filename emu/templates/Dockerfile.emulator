@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpulse0 libtinfo5 libx11-6 libxcb1 libxdamage1 \
     libnss3 libxcomposite1 libxcursor1 libxi6 \
     libxext6 libxfixes3 zlib1g libgl1 pulseaudio socat \
+    iputils-ping \
 # Enable turncfg through usage of curl
     curl ca-certificates && \
     apt-get clean && \
