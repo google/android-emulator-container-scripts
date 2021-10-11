@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import zipfile
 from pathlib import Path
 
 from emu.utils import download
-
 
 class PlatformTools(object):
     """The platform tools zip file. It will be downloaded on demand."""
 
     # Platform tools, needed to get adb.
     PLATFORM_TOOLS_URL = (
-        "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
+        f'{os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com")}/android/repository/platform-tools_r29.0.5-linux.zip'
     )
     PLATFORM_TOOLS_ZIP = "platform-tools-latest-linux.zip"
 
