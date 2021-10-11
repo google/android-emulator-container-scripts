@@ -17,7 +17,7 @@ import zipfile
 from emu.utils import download
 
 # Platform tools, needed to get adb.
-PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
+PLATFORM_TOOLS_URL = f'{os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com")}/android/repository/platform-tools_r29.0.5-linux.zip'
 
 
 class PlatformTools(object):

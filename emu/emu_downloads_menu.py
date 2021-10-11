@@ -27,14 +27,16 @@ from consolemenu import SelectionMenu
 from emu.utils import download
 from emu.docker_config import DockerConfig
 
+ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com/")
+
 SYSIMG_REPOS = [
-    "https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-1.xml",
+    f"{ANDROID_REPOSITORY}/android/repository/sys-img/android/sys-img2-1.xml",
+    f"{ANDROID_REPOSITORY}/android/repository/sys-img/google_apis/sys-img2-1.xml",
+    f"{ANDROID_REPOSITORY}/android/repository/sys-img/google_apis_playstore/sys-img2-1.xml",
+    f"{ANDROID_REPOSITORY}/android/repository/sys-img/android-tv/sys-img2-1.xml",
 ]
 
-EMU_REPOS = ["https://dl.google.com/android/repository/repository2-1.xml"]
+EMU_REPOS = [f"{ANDROID_REPOSITORY}/android/repository/repository2-1.xml"]
 
 CHANNEL_MAPPING = {"channel-0": "stable", "channel-1": "beta", "channel-2": "dev", "channel-3": "canary"}
 
@@ -147,7 +149,7 @@ class SysImgInfo(LicensedObject):
             url_element = pkg.find(".//url")
         self.zip = url_element.text
 
-        self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
+        self.url = f"{ANDROID_REPOSITORY}/android/repository/sys-img/{self.tag}/{self.zip}"
 
     def short_tag(self):
         return self.SHORT_TAG[self.tag]
@@ -192,7 +194,7 @@ class EmuInfo(LicensedObject):
         for archive in archives:
             url = archive.find(".//url").text
             hostos = archive.find("host-os").text
-            self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
+            self.urls[hostos] = f"{ANDROID_REPOSITORY}/android/repository/{url}"
 
     def download_name(self):
         return "emulator-{}.zip".format(self.version)
