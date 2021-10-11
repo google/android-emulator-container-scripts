@@ -147,7 +147,7 @@ class SysImgInfo(LicensedObject):
             url_element = pkg.find(".//url")
         self.zip = url_element.text
 
-        self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
+        self.url = f"{os.environ.get('ANDROID_REPOSITORY', 'https://dl.google.com')}/android/repository/sys-img/{self.tag}/{self.zip}"
 
     def short_tag(self):
         return self.SHORT_TAG[self.tag]
@@ -192,7 +192,7 @@ class EmuInfo(LicensedObject):
         for archive in archives:
             url = archive.find(".//url").text
             hostos = archive.find("host-os").text
-            self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
+            self.urls[hostos] = f"{os.environ.get('ANDROID_REPOSITORY', 'https://dl.google.com')}/android/repository/{url}"
 
     def download_name(self):
         return "emulator-{}.zip".format(self.version)
