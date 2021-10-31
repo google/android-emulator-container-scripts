@@ -2,6 +2,6 @@ pyjwt
 flask
 flask-cors
 absl-py
-Flask-HTTPAuth
+Flask-HTTPAuth==4.4.0
 Werkzeug
 JWCrypto
