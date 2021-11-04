@@ -74,7 +74,8 @@ def create_docker_image(args):
 
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
-        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
+        emuzip = [x.download()
+                  for x in emu_downloads_menu.find_emulator(emuzip[0])]
     elif re.match(r"\d+", emuzip[0]):
         # We must be looking for a build id
         logging.info("Treating %s as a build id", emuzip[0])
@@ -141,10 +142,12 @@ def main():
     """Entry point that parses the argument, and invokes the proper functions."""
 
     parser = argparse.ArgumentParser(
-        description="List and create emulator docker containers ({}).".format(emu.__version__),
+        description="List and create emulator docker containers ({}).".format(
+            emu.__version__),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Set verbose logging")
+    parser.add_argument("-v", "--verbose", dest="verbose",
+                        action="store_true", help="Set verbose logging")
 
     subparsers = parser.add_subparsers()
 
@@ -162,7 +165,8 @@ def main():
     license_parser = subparsers.add_parser(
         "licenses", help="Lists all licenses and gives you a chance to accept or reject them."
     )
-    license_parser.add_argument("--accept", action="store_true", help="Accept all licensens after displaying them.")
+    license_parser.add_argument(
+        "--accept", action="store_true", help="Accept all licensens after displaying them.")
     license_parser.set_defaults(func=accept_licenses)
 
     create_parser = subparsers.add_parser(
@@ -193,7 +197,8 @@ def main():
     create_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
-    create_parser.add_argument("--tag", default="", help="Docker tag, defaults to the emulator build id")
+    create_parser.add_argument(
+        "--tag", default="", help="Docker tag, defaults to the emulator build id")
     create_parser.add_argument(
         "--repo",
         default="us-docker.pkg.dev/android-emulator-268719/images",
@@ -213,13 +218,16 @@ def main():
         action="store_true",
         help="When enabled, the emulator will send usage metrics to Google when the container exists gracefully.",
     )
-    create_parser.add_argument("--no-metrics", action="store_true", help="Disables the collection of usage metrics.")
+    create_parser.add_argument(
+        "--no-metrics", action="store_true", help="Disables the collection of usage metrics.")
     create_parser.add_argument(
         "--start",
         action="store_true",
         help="Starts the container after creating it. "
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
+    create_parser.add_argument(
+        "--sys", action="store_true", help="Process system image layer only.")
     create_parser.add_argument(
         "--name", help="Name to give image when pushed.", default=None)
     create_parser.set_defaults(func=create_docker_image)
@@ -271,7 +279,8 @@ def main():
     dist_parser.add_argument(
         "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
     )
-    dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
+    dist_parser.add_argument("--git", action="store_true",
+                             help="Create a git commit, and push to destination.")
     dist_parser.add_argument(
         "--sys", action="store_true", help="Write system image steps, otherwise write emulator steps."
     )
@@ -293,7 +302,8 @@ def main():
     # Configure logger.
     lvl = logging.DEBUG if args.verbose else logging.WARNING
     handler = colorlog.StreamHandler()
-    handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(levelname)s:%(message)s"))
+    handler.setFormatter(colorlog.ColoredFormatter(
+        "%(log_color)s%(levelname)s:%(message)s"))
     logging.root = colorlog.getLogger("root")
     logging.root.addHandler(handler)
     logging.root.setLevel(lvl)
