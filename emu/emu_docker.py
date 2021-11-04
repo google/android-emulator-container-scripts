@@ -103,7 +103,7 @@ def create_docker_image(args):
             continue
 
         emu_docker = EmulatorContainer(
-            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra
+            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra, args.name
         )
         emu_docker.build(Path(args.dest) / "emulator")
 
@@ -254,6 +254,9 @@ def main():
     )
     create_parser.add_argument(
         "--sys", action="store_true", help="Process system image layer only."
+    )
+    create_parser.add_argument(
+        "--name", help="Name to give image when pushed.", default=None
     )
     create_parser.set_defaults(func=create_docker_image)
 
