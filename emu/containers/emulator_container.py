@@ -30,10 +30,11 @@ class EmulatorContainer(DockerContainer):
         """
     NO_METRICS_MESSAGE = "No metrics are collected when running this container."
 
-    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra=""):
+    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra="", name=None):
         self.emulator_zip = AndroidReleaseZip(emulator)
         self.system_image_container = system_image_container
         self.metrics = metrics
+        self.name = name
 
         if type(extra) is list:
             extra = " ".join(extra)
@@ -96,6 +97,9 @@ class EmulatorContainer(DockerContainer):
         self.emulator_zip.extract(os.path.join(dest, "emu"))
 
     def image_name(self):
+        if self.name:
+            return self.name
+
         name = "{}-{}-{}".format(
             self.props["ro.build.version.sdk"], self.props["qemu.short_tag"], self.props["qemu.short_abi"]
         )
