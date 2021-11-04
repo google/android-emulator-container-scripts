@@ -75,7 +75,8 @@ def create_docker_image(args):
 
     emuzip = [args.emuzip]
     if emuzip[0] in ["stable", "canary", "all"]:
-        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
+        emuzip = [x.download()
+                  for x in emu_downloads_menu.find_emulator(emuzip[0])]
     elif re.match(r"\d+", emuzip[0]):
         # We must be looking for a build id
         logging.info("Treating %s as a build id", emuzip[0])
@@ -103,8 +104,7 @@ def create_docker_image(args):
             continue
 
         emu_docker = EmulatorContainer(
-            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra
-        )
+            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra, args.name)
         emu_docker.build(Path(args.dest) / "emulator")
 
         if args.start:
@@ -254,6 +254,9 @@ def main():
     )
     create_parser.add_argument(
         "--sys", action="store_true", help="Process system image layer only."
+    )
+    create_parser.add_argument(
+        "--name", help="Name to give image when pushed.", default=None
     )
     create_parser.set_defaults(func=create_docker_image)
 
