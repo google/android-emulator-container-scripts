@@ -8,7 +8,7 @@
     "@material-ui/lab": "^4.0.0-alpha.57",
     "@material-ui/styles": "^4.11.3",
     "android-emulator-webrtc": "^1.0.11",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
     "react-scripts": "^3.4.4"
