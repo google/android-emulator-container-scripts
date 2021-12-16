@@ -55,6 +55,8 @@ API_LETTER_MAPPING = {
     "28": "P",
     "29": "Q",
     "30": "R",
+    "31": "S",
+    "32": "S",
 }
 
 # Older versions might not work as expected.
