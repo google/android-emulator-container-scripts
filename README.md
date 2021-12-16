@@ -284,7 +284,7 @@ Where:
   - _playstore_: A system image that includes the Google Play Store app and access to Google Play services,
     including a Google Play tab in the Extended controls dialog that provides a
     convenient button for updating Google Play services on the device.
-- abi indicates the underlying CPU architecture, which is one of: _x86_, _x64_, _a32_, _a64_.
+- abi indicates the underlying CPU architecture, which is one of: _x86_, _x86_64_, _a32_, _a64_.
   Note that arm images are not hardware accelerated and might not be fast enough.
 
 For example: _29-playstore-x86:30.1.2_ indicates a playstore enabled system
@@ -375,7 +375,7 @@ In order to create the web containers you must have the following tools availabl
 Next you must create a container with the emulator & system image version you wish to
 use. For example:
 
-    . ./configure.sh && emu-docker create canary "P.*x64"
+    . ./configure.sh && emu-docker create canary "P.*x86_64"
 
 ### Running the create script
 
