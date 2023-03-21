@@ -195,8 +195,8 @@ initialize_data_part() {
 
 # Let us log the emulator,script and image version.
 log_version_info
-initialize_data_part
 clean_up
+initialize_data_part
 install_console_tokens
 install_adb_keys
 install_grpc_certs
