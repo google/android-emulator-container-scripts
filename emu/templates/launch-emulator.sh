@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2019 - The Android Open Source Project
 #
@@ -57,11 +57,8 @@ var_append () {
     local _var_append_varname
     _var_append_varname=$1
     shift
-    if test "$(var_value $_var_append_varname)"; then
-        eval $_var_append_varname=\$$_var_append_varname\'\ $(_var_quote_value "$*")\'
-    else
-        eval $_var_append_varname=\'$(_var_quote_value "$*")\'
-    fi
+
+    eval $_var_append_varname+=\('"$@"'\)
 }
 
 is_mounted () {
@@ -233,12 +230,12 @@ if [ ! -z "${EMULATOR_PARAMS}" ]; then
 fi
 
 if [ ! -z "${TURN}" ]; then
-  var_append LAUNCH_CMD -turncfg \'${TURN}\'
+  var_append LAUNCH_CMD -turncfg "${TURN}"
 fi
 
 # Add qemu specific parameters
 var_append LAUNCH_CMD -qemu -append panic=1
 
 # Kick off the emulator
-exec $LAUNCH_CMD
+exec "${LAUNCH_CMD[@]}"
 # All done!
