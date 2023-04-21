@@ -239,7 +239,9 @@ fi
 # Add qemu specific parameters
 var_append LAUNCH_CMD -qemu -append panic=1
 
-export ANDROID_AVD_HOME=/android-home
+if [ ! -z "${ANDROID_AVD_HOME}" ]; then
+  export ANDROID_AVD_HOME=/android-home
+fi
 
 # Kick off the emulator
 exec $LAUNCH_CMD
