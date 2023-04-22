@@ -13,10 +13,9 @@ Please file issues if you notice that anything is not working as expected.
 These demos are intended to be run on a linux OS. Your system must meet the
 following requirements:
 
-- A Python interpreter must be installed.
-- ADB must be available on the path. ADB comes as part of the [Android
-  SDK](http://www.androiddocs.com/sdk/installing/index.html). Note that
-  installing the command line tools is sufficient.
+- A Python interpreter must be installed (python3 with python3-venv to create virtual environments) 
+- ADB must be available on the path. ADB comes as part of th Android SDK.
+  Note that installing the command line tools is sufficient.
 - [Docker](https://docs.docker.com/v17.12/install/) must be installed. Make
   sure you can run it as [non-root
   user](https://docs.docker.com/install/linux/linux-postinstall/)
