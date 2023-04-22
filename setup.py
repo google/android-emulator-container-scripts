@@ -121,7 +121,7 @@ setup(
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
     install_requires=[
-        "urllib3==1.26",
+        "urllib3==1.26.5",
         "markupsafe==2.0.1",
         "requests",
         "jinja2==2.11.1",
