@@ -114,6 +114,7 @@ class SystemImageReleaseZip(AndroidReleaseZip):
         "android": "aosp",
         "google_apis": "google",
         "google_apis_playstore": "playstore",
+        "google_atd": "google_atd",
         "google_ndk_playstore": "ndk_playstore",
         "android-tv": "tv",
     }

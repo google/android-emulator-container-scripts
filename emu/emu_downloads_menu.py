@@ -31,6 +31,7 @@ SYSIMG_REPOS = [
     "https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml",
     "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-1.xml",
     "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-1.xml",
+    "https://dl.google.com/android/repository/sys-img/google_atd/sys-img2-1.xml",
     "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-1.xml",
 ]
 
@@ -118,6 +119,7 @@ class SysImgInfo(LicensedObject):
         "android": "aosp",
         "google_apis": "google",
         "google_apis_playstore": "playstore",
+        "google_atd": "google_atd",
         "google_ndk_playstore": "ndk_playstore",
         "android-tv": "tv",
     }
