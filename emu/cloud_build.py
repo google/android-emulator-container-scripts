@@ -18,6 +18,7 @@ import re
 
 import yaml
 
+from pathlib import Path
 import emu.emu_downloads_menu as emu_downloads_menu
 from emu.template_writer import TemplateWriter
 from emu.process import run
@@ -42,7 +43,7 @@ def git_commit_and_push(dest):
 
 
 def create_build_step(for_container, destination):
-    build_destination = os.path.join(destination, for_container.image_name())
+    build_destination = Path(destination) / for_container.image_name()
     logging.info("Generating %s", build_destination)
     for_container.write(build_destination)
     if for_container.can_pull():

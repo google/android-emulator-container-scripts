@@ -52,7 +52,7 @@ class EmulatorContainer(DockerContainer):
         self.props["playstore"] = self.props["qemu.tag"] == "google_apis_playstore"
         self.props["metrics"] = metrics_msg
         self.props["emu_build_id"] = self.emulator_zip.build_id()
-        self.props["from_base_img"] = system_image_container.full_name()
+        self.props["from_base_img"] = str(system_image_container)
 
         for expect in [
             "ro.build.version.sdk",

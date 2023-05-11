@@ -109,10 +109,12 @@ class DockerContainer(object):
             )
             result = api_client.build(path=str(dest.absolute()), tag=image_tag, rm=True, decode=True)
             for entry in result:
-                if "stream" in entry:
-                    sys.stdout.write(entry["stream"])
+                if "stream" in entry and entry["stream"].strip():
+                    logging.info(entry["stream"])
                 if "aux" in entry and "ID" in entry["aux"]:
                     identity = entry["aux"]["ID"]
+                if "error" in entry:
+                    logging.error(entry["error"])
             client = docker.from_env()
             image = client.images.get(identity)
             image.tag(self.repo + self.image_name(), "latest")
@@ -141,9 +143,7 @@ class DockerContainer(object):
             for entry in result:
                 tracker.update(entry)
         except:
-            logging.info(
-                "Failed to retrieve image, this is not uncommon.", exc_info=True
-            )
+            logging.debug("Unable to pull image %s%s:%s", self.repo, image,tag)
             return False
 
         return True
@@ -167,7 +167,7 @@ class DockerContainer(object):
                 self.full_name(),
                 "-t",
                 self.latest_name(),
-                dest.absolute().parent,
+                os.path.basename(dest)
             ],
         }
 
@@ -189,8 +189,9 @@ class DockerContainer(object):
         return self.docker_image() != None
 
     def build(self, dest: Path):
-        self.write(dest)
-        return self.create_container(dest)
+        logging.info("Building %s in %s", self, dest)
+        self.write(Path(dest))
+        return self.create_container(Path(dest))
 
     def can_pull(self):
         """True if this container image can be pulled from a registry."""

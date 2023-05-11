@@ -89,6 +89,12 @@ def create_docker_image(args):
         if not sys_docker.available() and not sys_docker.can_pull():
             sys_docker.build(args.dest / "sys_img")
         else:
+            logging.info(
+                "Image %s is local: %s, pull: %s",
+                sys_docker,
+                sys_docker.available(),
+                sys_docker.can_pull(),
+            )
             print(f"No need to build {sys_docker}, it's already available")
         if args.push:
             sys_docker.push()
@@ -99,7 +105,7 @@ def create_docker_image(args):
         emu_docker = EmulatorContainer(
             emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra
         )
-        emu_docker.build(args.dest / "emulator")
+        emu_docker.build(Path(args.dest) / "emulator")
 
         if args.start:
             emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
