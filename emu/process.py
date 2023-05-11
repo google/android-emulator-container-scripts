@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2018 - The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the',  help='License');
@@ -13,16 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import logging
-import platform
-
-try:
-    from queue import Queue
-except ImportError:
-    from Queue import Queue
+import os
 import subprocess
 from threading import Thread
+
+from queue import Queue
 
 
 def _reader(pipe, queue):
@@ -54,7 +48,9 @@ def run(cmd, cwd=None, extra_env=None):
     cmd = [str(c) for c in cmd]
 
     logging.info("Running: %s in %s", " ".join(cmd), cwd)
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=extra_env)
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=extra_env
+    )
 
     log_std_out(proc)
     proc.wait()

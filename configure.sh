@@ -18,24 +18,24 @@ if [ "${BASH_SOURCE-}" = "$0" ]; then
     exit 33
 fi
 
-PYTHON=python
+PYTHON=python3
+VENV=.venv
 
-if [ ! -f "./venv/bin/activate" ]; then
+if [ ! -f "./$VENV/bin/activate" ]; then
   # Prefer python3 if it is available.
   if command -v python3 &>/dev/null; then
      echo "Using python 3"
-     PYTHON=python3
-     $PYTHON -m venv venv
-     [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade pip
-     [ -e ./venv/bin/pip ] && ./venv/bin/pip install --upgrade setuptools
+     $PYTHON -m venv $VENV
+     [ -e ./$VENV/bin/pip ] && ./$VENV/bin/pip install --upgrade pip
+     [ -e ./$VENV/bin/pip ] && ./$VENV/bin/pip install --upgrade setuptools
   else
     echo "Using python 2 ----<< Deprecated! See: https://python3statement.org/.."
-    $PYTHON -m virtualenv &>/dev/null || { echo "This script relies on virtualenv, you can install it with 'pip install virtualenv' (https://virtualenv.pypa.io)"; return ; }
-    $PYTHON -m virtualenv venv
+    echo "You need to upgrade to python3"
+    exit 33
   fi
 fi
-if [ -e ./venv/bin/activate ]; then
-   . ./venv/bin/activate
-   $PYTHON setup.py develop
+if [ -e ./$VENV/bin/activate ]; then
+   . ./$VENV/bin/activate
+   pip install -e .
    echo "Ready to run emu-docker!"
 fi

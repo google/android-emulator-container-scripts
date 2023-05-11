@@ -244,5 +244,7 @@ if [ ! -z "${ANDROID_AVD_HOME}" ]; then
 fi
 
 # Kick off the emulator
+echo "emulator: " $(env)
+echo "emulator: $LAUNCH_CMD"
 exec $LAUNCH_CMD
 # All done!
