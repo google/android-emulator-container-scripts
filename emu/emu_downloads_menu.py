@@ -36,7 +36,12 @@ SYSIMG_REPOS = [
 
 EMU_REPOS = ["https://dl.google.com/android/repository/repository2-1.xml"]
 
-CHANNEL_MAPPING = {"channel-0": "stable", "channel-1": "beta", "channel-2": "dev", "channel-3": "canary"}
+CHANNEL_MAPPING = {
+    "channel-0": "stable",
+    "channel-1": "beta",
+    "channel-2": "dev",
+    "channel-3": "canary",
+}
 
 API_LETTER_MAPPING = {
     "10": "G",
@@ -105,7 +110,7 @@ class LicensedObject(object):
         self.license = licenses[pkg.find("uses-license").attrib["ref"]]
 
     def download(self, url, dest):
-        """"Downloads the released pacakage to the dest."""
+        """ "Downloads the released pacakage to the dest."""
         if self.license.accept():
             return download(url, dest)
 
@@ -113,7 +118,12 @@ class LicensedObject(object):
 class SysImgInfo(LicensedObject):
     """Provides information about a released system image."""
 
-    SHORT_MAP = {"armeabi-v7a": "a32", "arm64-v8a": "a64", "x86_64": "x64", "x86": "x86"}
+    SHORT_MAP = {
+        "armeabi-v7a": "a32",
+        "arm64-v8a": "a64",
+        "x86_64": "x64",
+        "x86": "x86",
+    }
     SHORT_TAG = {
         "android": "aosp",
         "google_apis": "google",
@@ -149,7 +159,10 @@ class SysImgInfo(LicensedObject):
             url_element = pkg.find(".//url")
         self.zip = url_element.text
 
-        self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (self.tag, self.zip)
+        self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (
+            self.tag,
+            self.zip,
+        )
 
     def short_tag(self):
         return self.SHORT_TAG[self.tag]
@@ -161,11 +174,17 @@ class SysImgInfo(LicensedObject):
         return "sys-{}-{}-{}".format(self.api, self.short_tag(), self.short_abi())
 
     def download_name(self):
-        return "sys-img-{}-{}-{}-{}.zip".format(self.tag, self.api, self.letter, self.abi)
+        return "sys-img-{}-{}-{}-{}.zip".format(
+            self.tag, self.api, self.letter, self.abi
+        )
 
     def download(self, dest=None):
         dest = os.path.join(dest or os.getcwd(), self.download_name())
-        print("Downloading system image: {} {} {} {} to {}".format(self.tag, self.api, self.letter, self.abi, dest))
+        print(
+            "Downloading system image: {} {} {} {} to {}".format(
+                self.tag, self.api, self.letter, self.abi, dest
+            )
+        )
         return super(SysImgInfo, self).download(self.url, dest)
 
     def __str__(self):
@@ -200,9 +219,11 @@ class EmuInfo(LicensedObject):
         return "emulator-{}.zip".format(self.version)
 
     def download(self, hostos="linux", dest=None):
-        """"Downloads the released pacakage for the given os to the dest."""
+        """ "Downloads the released pacakage for the given os to the dest."""
         dest = dest or os.path.join(os.getcwd(), self.download_name())
-        print("Downloading emulator: {} {} to {}".format(self.channel, self.version, dest))
+        print(
+            "Downloading emulator: {} {} to {}".format(self.channel, self.version, dest)
+        )
         return super(EmuInfo, self).download(self.urls[hostos], dest)
 
     def __str__(self):
@@ -226,8 +247,12 @@ def get_images_info(arm=False):
     # Flatten the list of lists into a system image objects.
     infos = [SysImgInfo(item, licenses) for sublist in xml for item in sublist]
     # Filter only for intel images that we know that work
-    x86_64_imgs = [info for info in infos if info.abi == "x86_64" and info.letter >= MIN_REL_X64]
-    x86_imgs = [info for info in infos if info.abi == "x86" and info.letter >= MIN_REL_I386]
+    x86_64_imgs = [
+        info for info in infos if info.abi == "x86_64" and info.letter >= MIN_REL_X64
+    ]
+    x86_imgs = [
+        info for info in infos if info.abi == "x86" and info.letter >= MIN_REL_I386
+    ]
     slow = []
     if arm:
         slow = [info for info in infos if info.abi.startswith("arm")]
@@ -236,16 +261,27 @@ def get_images_info(arm=False):
     return [i for i in all_imgs if "windows" not in i.url and "darwin" not in i.url]
 
 
+class ImageNotFoundException(Exception):
+    pass
+
+
+class EmulatorNotFoundException(Exception):
+    pass
+
+
 def find_image(regexpr):
     reg = re.compile(regexpr)
     all_images = get_images_info(True)
     matches = [img for img in all_images if reg.match(str(img))]
     logging.info(
-        "Found %s matching images: %s from %s", regexpr, [str(x) for x in matches], [str(x) for x in all_images]
+        "Found %s matching images: %s from %s",
+        regexpr,
+        [str(x) for x in matches],
+        [str(x) for x in all_images],
     )
     if not matches:
-        raise Exception(
-            "No system image found matching {}. Run the list command to list available images".format(regexpr)
+        raise ImageNotFoundException(
+            f"No system image found matching {regexpr}. Run the list command to list available images"
         )
     return matches
 
@@ -254,10 +290,14 @@ def find_emulator(channel):
     """Displayes an interactive menu to select a released emulator binary.
 
     Returns a ImuInfo object with the choice or None if the user aborts."""
-    emu_infos = [x for x in get_emus_info() if "linux" in x.urls and (channel == "all" or x.channel == channel)]
+    emu_infos = [
+        x
+        for x in get_emus_info()
+        if "linux" in x.urls and (channel == "all" or x.channel == channel)
+    ]
     logging.info("Found %s matching images: %s", channel, [str(x) for x in emu_infos])
     if not emu_infos:
-        raise Exception("No emulator found in channel {}".format(channel))
+        raise EmulatorNotFoundException(f"No emulator found in channel {channel}")
     return emu_infos
 
 
@@ -273,7 +313,14 @@ def get_emus_info():
 
     licenses = [License(p) for x in xml for p in ET.fromstring(x).findall("license")]
     licenses = dict([(x.name, x) for x in [y for y in licenses]])
-    xml = [[p for p in ET.fromstring(x).findall("remotePackage") if "emulator" == p.attrib["path"]] for x in xml]
+    xml = [
+        [
+            p
+            for p in ET.fromstring(x).findall("remotePackage")
+            if "emulator" == p.attrib["path"]
+        ]
+        for x in xml
+    ]
     # Flatten the list of lists into a system image objects.
     infos = [EmuInfo(item, licenses) for sublist in xml for item in sublist]
     return infos
@@ -285,9 +332,13 @@ def select_image(arm):
     Returns a SysImgInfo object with the choice or None if the user aborts."""
     img_infos = get_images_info(arm)
     display = [
-        "{} {} {} ({})".format(img_info.api, img_info.letter, img_info.tag, img_info.abi) for img_info in img_infos
+        f"{img_info.api} {img_info.letter} {img_info.tag} ({img_info.abi})"
+        for img_info in img_infos
     ]
-    selection = SelectionMenu.get_selection(display, title="Select the system image you wish to use:")
+
+    selection = SelectionMenu.get_selection(
+        display, title="Select the system image you wish to use:"
+    )
     return img_infos[selection] if selection < len(img_infos) else None
 
 
@@ -296,8 +347,10 @@ def select_emulator():
 
     Returns a ImuInfo object with the choice or None if the user aborts."""
     emu_infos = [x for x in get_emus_info() if "linux" in x.urls]
-    display = ["EMU {} {}".format(emu_info.channel, emu_info.version) for emu_info in emu_infos]
-    selection = SelectionMenu.get_selection(display, title="Select the emulator you wish to use:")
+    display = [f"EMU {emu_info.channel} {emu_info.version}" for emu_info in emu_infos]
+    selection = SelectionMenu.get_selection(
+        display, title="Select the emulator you wish to use:"
+    )
     return emu_infos[selection] if selection < len(emu_infos) else None
 
 
@@ -307,29 +360,39 @@ def list_all_downloads(arm):
     emu_infos = get_emus_info()
 
     for img_info in img_infos:
-        print("SYSIMG {} {} {} {} {}".format(img_info.letter, img_info.tag, img_info.abi, img_info.api, img_info.url))
+        print(
+            "SYSIMG {} {} {} {} {}".format(
+                img_info.letter, img_info.tag, img_info.abi, img_info.api, img_info.url
+            )
+        )
 
     for emu_info in emu_infos:
-        for (hostos, url) in list(emu_info.urls.items()):
-            print("EMU {} {} {} {}".format(emu_info.channel, emu_info.version, hostos, url))
+        for hostos, url in list(emu_info.urls.items()):
+            print(
+                "EMU {} {} {} {}".format(
+                    emu_info.channel, emu_info.version, hostos, url
+                )
+            )
 
 
 def download_build(build_id, dest=None):
     """Download a public build with the given build id."""
-    dest = dest or os.path.join(os.getcwd(), "sdk-repo-linux-emulator-{}.zip".format(build_id))
-    uri = (
-        "https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{0}.zip".format(
-            build_id
-        )
+    dest = dest or os.path.join(
+        os.getcwd(), "sdk-repo-linux-emulator-{}.zip".format(build_id)
     )
-    print("Downloading emulator build {} ({}) to {}".format(build_id, uri, dest))
-    logging.warning("Downloading build from ci server, these builds might not have been tested extensively.")
+    uri = f"https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{build_id}.zip"
+    print(f"Downloading emulator build {build_id} ({uri}) to {dest}")
+    logging.warning(
+        "Downloading build from ci server, these builds might not have been tested extensively."
+    )
     download(uri, dest)
     return dest
 
 
 def accept_licenses(force_accept):
-    licenses = set([x.license for x in get_emus_info()] + [x.license for x in get_images_info()])
+    licenses = set(
+        [x.license for x in get_emus_info()] + [x.license for x in get_images_info()]
+    )
 
     to_accept = [x for x in licenses if not x.is_accepted()]
 

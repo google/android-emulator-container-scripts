@@ -17,51 +17,11 @@ import re
 import sys
 import shutil
 import abc
+from pathlib import Path
 
 import docker
-from tqdm import tqdm
 from emu.utils import mkdir_p
-
-
-class ProgressTracker(object):
-    """Tracks progress using tqdm for a set of layers that are pushed."""
-
-    def __init__(self):
-        # This tracks the information for a given layer id.
-        self.progress = {}
-        self.idx = -1
-
-    def __del__(self):
-        for k in self.progress:
-            self.progress[k]["tqdm"].close()
-
-    def update(self, entry):
-        """Update the progress bars given a an entry.."""
-        if "id" not in entry:
-            return
-
-        identity = entry["id"]
-        if identity not in self.progress:
-            self.idx += 1
-            self.progress[identity] = {
-                "tqdm": tqdm(total=0, position=self.idx, unit="B", unit_scale=True),  # The progress bar
-                "total": 0,  # Total of bytes we are shipping
-                "status": "",  # Status message.
-                "current": 0,  # Current of total already send.
-            }
-        prog = self.progress[identity]
-
-        total = int(entry.get("progressDetail", {}).get("total", -1))
-        current = int(entry.get("progressDetail", {}).get("current", 0))
-        if prog["total"] != total and total != -1:
-            prog["total"] = total
-            prog["tqdm"].reset(total=total)
-        if prog["status"] != entry["status"]:
-            prog["tqdm"].set_description("{0} {1}".format(entry.get("status"), identity))
-        if current != 0:
-            diff = current - prog["current"]
-            prog["current"] = current
-            prog["tqdm"].update(diff)
+from emu.containers.progress_tracker import ProgressTracker
 
 
 class DockerContainer(object):
@@ -86,8 +46,10 @@ class DockerContainer(object):
             api_client = docker.APIClient()
             logging.info(api_client.version())
             return api_client
-        except:
-            logging.exception("Failed to create default client, trying domain socket.", exc_info=True)
+        except Exception as _err:
+            logging.exception(
+                "Failed to create default client, trying domain socket.", exc_info=True
+            )
 
         api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
         logging.info(api_client.version())
@@ -95,16 +57,19 @@ class DockerContainer(object):
 
     def push(self):
         image = self.full_name()
-        print("Pushing docker image: {}.. be patient this can take a while!".format(self.full_name()))
+        print(
+            f"Pushing docker image: {self.full_name()}.. be patient this can take a while!"
+        )
+
         tracker = ProgressTracker()
         try:
             client = docker.from_env()
             result = client.images.push(image, "latest", stream=True, decode=True)
             for entry in result:
                 tracker.update(entry)
-            self.docker_image().tag("{}{}:latest".format(self.repo, self.image_name()))
-        except:
-            logging.exception("Failed to push image.", exc_info=True)
+            self.docker_image().tag(f"{self.repo}{self.image_name()}:latest")
+        except Exception as err:
+            logging.error("Failed to push image due to %s", err, exc_info=True)
             logging.warning("You can manually push the image as follows:")
             logging.warning("docker push %s", image)
 
@@ -123,43 +88,48 @@ class DockerContainer(object):
                 detach=True,
                 ports=port_map,
             )
-            print("Launched {} (id:{})".format(container.name, container.id))
-            print("docker logs -f {}".format(container.name))
-            print("docker stop {}".format(container.name))
+            print(f"Launched {container.name} (id:{container.id})")
+            print(f"docker logs -f {container.name}")
+            print(f"docker stop {container.name}")
             return container
-        except:
-            logging.exception("Unable to run the %s", image_sha)
+        except Exception as err:
+            logging.exception("Unable to run the %s due to %s", image.id, err)
             print("Unable to start the container, try running it as:")
-            print("./run.sh ", image_sha)
+            print(f"./run.sh {image.id}")
 
-    def create_container(self, dest):
+    def create_container(self, dest: Path):
         """Creates the docker container, returning the sha of the container, or None in case of failure."""
         identity = None
         image_tag = self.full_name()
-        print("docker build {} -t {}".format(dest, image_tag))
+        print(f"docker build {dest} -t {image_tag}")
         try:
             api_client = self.get_api_client()
-            logging.info("build(path=%s, tag=%s, rm=True, decode=True)", dest, image_tag)
-            result = api_client.build(path=dest, tag=image_tag, rm=True, decode=True)
+            logging.info(
+                "build(path=%s, tag=%s, rm=True, decode=True)", dest, image_tag
+            )
+            result = api_client.build(path=str(dest.absolute()), tag=image_tag, rm=True, decode=True)
             for entry in result:
-                if "stream" in entry:
-                    sys.stdout.write(entry["stream"])
+                if "stream" in entry and entry["stream"].strip():
+                    logging.info(entry["stream"])
                 if "aux" in entry and "ID" in entry["aux"]:
                     identity = entry["aux"]["ID"]
+                if "error" in entry:
+                    logging.error(entry["error"])
             client = docker.from_env()
             image = client.images.get(identity)
             image.tag(self.repo + self.image_name(), "latest")
-        except:
-            logging.exception("Failed to create container.", exc_info=True)
+        except Exception as err:
+            logging.error("Failed to create container due to %s.", err, exc_info=True)
             logging.warning("You can manually create the container as follows:")
             logging.warning("docker build -t %s %s", image_tag, dest)
 
         return identity
 
-    def clean(self, dest):
-        if os.path.exists(dest):
+    def clean(self, dest: Path):
+        if dest.exists():
             shutil.rmtree(dest)
-        mkdir_p(dest)
+
+        dest.mkdir(parents=True)
 
     def pull(self, image, tag):
         """Tries to retrieve the given image and tag.
@@ -173,22 +143,22 @@ class DockerContainer(object):
             for entry in result:
                 tracker.update(entry)
         except:
-            logging.info("Failed to retrieve image, this is not uncommon.", exc_info=True)
+            logging.debug("Unable to pull image %s%s:%s", self.repo, image,tag)
             return False
 
         return True
 
     def full_name(self):
         if self.repo:
-            return "{}{}:{}".format(self.repo, self.image_name(), self.docker_tag())
+            return f"{self.repo}{self.image_name()}:{self.docker_tag()}"
         return (self.image_name(), self.docker_tag())
 
     def latest_name(self):
         if self.repo:
-            return "{}{}:{}".format(self.repo, self.image_name(), "latest")
+            return f"{self.repo}{self.image_name()}:{self.docker_tag()}"
         return (self.image_name(), "latest")
 
-    def create_cloud_build_step(self, dest):
+    def create_cloud_build_step(self, dest: Path):
         return {
             "name": "gcr.io/cloud-builders/docker",
             "args": [
@@ -197,7 +167,7 @@ class DockerContainer(object):
                 self.full_name(),
                 "-t",
                 self.latest_name(),
-                os.path.basename(dest),
+                os.path.basename(dest)
             ],
         }
 
@@ -218,16 +188,17 @@ class DockerContainer(object):
         """True if this container image is locally available."""
         return self.docker_image() != None
 
-    def build(self, dest):
-        self.write(dest)
-        return self.create_container(dest)
+    def build(self, dest: Path):
+        logging.info("Building %s in %s", self, dest)
+        self.write(Path(dest))
+        return self.create_container(Path(dest))
 
     def can_pull(self):
         """True if this container image can be pulled from a registry."""
         return self.pull(self.image_name(), self.docker_tag())
 
     @abc.abstractmethod
-    def write(self, destination):
+    def write(self, destination: Path):
         """Method responsible for writing the Dockerfile and all necessary files to build a container.
 
         Args:

@@ -1,6 +1,34 @@
-[build-system]
-# Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+[tool.poetry]
+name = "emu-docker"
+version = "0.1.0"
+description = "A script that enables you to create a docker container with a running android emulator"
+authors = ["Erwin Jansen <jansene@google.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{ include = "emu" }]
 
-[tool.black]
-line-length = 120
+[tool.poetry.scripts]
+emu-docker = "emu.emu_docker:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+PyYAML = "^6.0"
+docker = "^6.1.1"
+tqdm = "^4.65.0"
+console-menu = "^0.8.0"
+click = "^8.1.3"
+appdirs = "^1.4.4"
+colorlog = "^6.7.0"
+Jinja2 = "^3.1.2"
+
+[tool.poetry.group.dev.dependencies]
+check-manifest = "^0.49"
+versioneer = "^0.28"
+black = "^23.3.0"
+coverage = "^7.2.5"
+mock = "^5.0.2"
+tox = "^4.5.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2019 - The Android Open Source Project
 #
@@ -15,54 +15,6 @@
 # limitations under the License.
 VERBOSE=3
 ANDROID_AVD_HOME=/root/.android/avd
-
-# Return the value of a given named variable.
-# $1: variable name
-#
-# example:
-#    FOO=BAR
-#    BAR=ZOO
-#    echo `var_value $FOO`
-#    will print 'ZOO'
-#
-var_value () {
-    eval printf %s \"\$$1\"
-}
-
-
-# Return success if variable $1 is set and non-empty, failure otherwise.
-# $1: Variable name.
-# Usage example:
-#   if var_is_set FOO; then
-#      .. Do something the handle FOO condition.
-#   fi
-var_is_set () {
-    test -n "$(var_value $1)"
-}
-
-_var_quote_value () {
-    printf %s "$1" | sed -e "s|'|\\'\"'\"\\'|g"
-}
-
-
-# Append a space-separated list of items to a given variable.
-# $1: Variable name.
-# $2+: Variable value.
-# Example:
-#   FOO=
-#   var_append FOO foo    (FOO is now 'foo')
-#   var_append FOO bar    (FOO is now 'foo bar')
-#   var_append FOO zoo    (FOO is now 'foo bar zoo')
-var_append () {
-    local _var_append_varname
-    _var_append_varname=$1
-    shift
-    if test "$(var_value $_var_append_varname)"; then
-        eval $_var_append_varname=\$$_var_append_varname\'\ $(_var_quote_value "$*")\'
-    else
-        eval $_var_append_varname=\'$(_var_quote_value "$*")\'
-    fi
-}
 
 is_mounted () {
     mount | grep "$1"
@@ -120,6 +72,9 @@ install_adb_keys() {
     run /android/sdk/platform-tools/adb keygen /root/.android/adbkey
   fi
   run chmod 600 /root/.android/adbkey
+
+  unset ADBKEY
+  unset ADBKEY_PUB
 }
 
 # Installs the console tokens, if any. The environment variable |TOKEN| will be
@@ -140,6 +95,8 @@ install_console_tokens() {
     echo "emulator: forwarding the emulator console."
     socat -d tcp-listen:5554,reuseaddr,fork tcp:127.0.0.1:5556 &
   fi
+
+  unset TOKEN
 }
 
 install_grpc_certs() {
@@ -217,32 +174,32 @@ fi
 socat -d tcp-listen:5555,reuseaddr,fork tcp:127.0.0.1:5557 &
 
 # Basic launcher command, additional flags can be added.
-LAUNCH_CMD=emulator/emulator
-var_append LAUNCH_CMD -avd Pixel2
-var_append LAUNCH_CMD -ports 5556,5557 -grpc 8554 -no-window
-var_append LAUNCH_CMD -skip-adb-auth -no-snapshot-save -wipe-data -no-boot-anim
-var_append LAUNCH_CMD -shell-serial file:/tmp/android-unknown/kernel.log
-var_append LAUNCH_CMD -logcat "*:V"
-var_append LAUNCH_CMD -logcat-output /tmp/android-unknown/logcat.log
-var_append LAUNCH_CMD -logcat "*:V"
-var_append LAUNCH_CMD -feature AllowSnapshotMigration
-var_append LAUNCH_CMD -gpu swiftshader_indirect {{extra}}
+LAUNCH_CMD=("emulator/emulator")
+LAUNCH_CMD+=("-avd" "Pixel2")
+LAUNCH_CMD+=("-ports" "5556,5557" "-grpc" "8554" "-no-window")
+LAUNCH_CMD+=("-skip-adb-auth" "-no-snapshot-save" "-wipe-data" "-no-boot-anim")
+LAUNCH_CMD+=("-shell-serial" "file:/tmp/android-unknown/kernel.log")
+LAUNCH_CMD+=("-logcat" "*:V")
+LAUNCH_CMD+=("-feature" "AllowSnapshotMigration")
+LAUNCH_CMD+=("-gpu" "swiftshader_indirect" {{extra}})
 
 if [ ! -z "${EMULATOR_PARAMS}" ]; then
-  var_append LAUNCH_CMD $EMULATOR_PARAMS
+  LAUNCH_CMD+=($EMULATOR_PARAMS)
 fi
 
 if [ ! -z "${TURN}" ]; then
-  var_append LAUNCH_CMD -turncfg \'${TURN}\'
+  LAUNCH_CMD+=("-turncfg" "${TURN}")
 fi
 
 # Add qemu specific parameters
-var_append LAUNCH_CMD -qemu -append panic=1
+LAUNCH_CMD+=("-qemu" "-append" "panic=1")
 
 if [ ! -z "${ANDROID_AVD_HOME}" ]; then
   export ANDROID_AVD_HOME=/android-home
 fi
 
 # Kick off the emulator
-exec $LAUNCH_CMD
+echo "emulator: " $(env)
+echo "emulator: ${LAUNCH_CMD[@]}"
+exec "${LAUNCH_CMD[@]}"
 # All done!

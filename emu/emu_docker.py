@@ -18,18 +18,19 @@ import argparse
 import itertools
 import logging
 import os
-import sys
 import re
+import sys
+from pathlib import Path
 
 import click
 import colorlog
-
-import emu
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.docker_config import DockerConfig
 from emu.cloud_build import cloud_build
 from emu.containers.emulator_container import EmulatorContainer
 from emu.containers.system_image_container import SystemImageContainer
+from emu.docker_config import DockerConfig
+
+import emu
 
 
 def list_images(args):
@@ -82,21 +83,29 @@ def create_docker_image(args):
 
     devices = []
     logging.info("Using repo %s", args.repo)
-    for (img, emu) in itertools.product(imgzip, emuzip):
+    for img, emu in itertools.product(imgzip, emuzip):
         logging.info("Processing %s, %s", img, emu)
         sys_docker = SystemImageContainer(img, args.repo)
         if not sys_docker.available() and not sys_docker.can_pull():
-            sys_docker.build(args.dest)
+            sys_docker.build(args.dest / "sys_img")
         else:
-            print("No need to build {}, it's already available".format(sys_docker))
+            logging.info(
+                "Image %s is local: %s, pull: %s",
+                sys_docker,
+                sys_docker.available(),
+                sys_docker.can_pull(),
+            )
+            print(f"No need to build {sys_docker}, it's already available")
         if args.push:
             sys_docker.push()
 
         if args.sys:
             continue
 
-        emu_docker = EmulatorContainer(emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra)
-        emu_docker.build(args.dest)
+        emu_docker = EmulatorContainer(
+            emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra
+        )
+        emu_docker.build(Path(args.dest) / "emulator")
 
         if args.start:
             emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
@@ -140,15 +149,24 @@ def main():
     """Entry point that parses the argument, and invokes the proper functions."""
 
     parser = argparse.ArgumentParser(
-        description="List and create emulator docker containers ({}).".format(emu.__version__),
+        description="List and create emulator docker containers ({}).".format(
+            emu.__version__
+        ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Set verbose logging")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Set verbose logging",
+    )
 
     subparsers = parser.add_subparsers()
 
     list_parser = subparsers.add_parser(
-        "list", help="list all the available the publicly available emulators and system images."
+        "list",
+        help="list all the available the publicly available emulators and system images.",
     )
 
     list_parser.add_argument(
@@ -159,9 +177,14 @@ def main():
     list_parser.set_defaults(func=list_images)
 
     license_parser = subparsers.add_parser(
-        "licenses", help="Lists all licenses and gives you a chance to accept or reject them."
+        "licenses",
+        help="Lists all licenses and gives you a chance to accept or reject them.",
     )
-    license_parser.add_argument("--accept", action="store_true", help="Accept all licensens after displaying them.")
+    license_parser.add_argument(
+        "--accept",
+        action="store_true",
+        help="Accept all licensens after displaying them.",
+    )
     license_parser.set_defaults(func=accept_licenses)
 
     create_parser = subparsers.add_parser(
@@ -190,9 +213,13 @@ def main():
         nargs=argparse.REMAINDER,
     )
     create_parser.add_argument(
-        "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
+        "--dest",
+        default=Path.cwd() / "bld",
+        help="Destination for the generated docker files",
     )
-    create_parser.add_argument("--tag", default="", help="Docker tag, defaults to the emulator build id")
+    create_parser.add_argument(
+        "--tag", default="", help="Docker tag, defaults to the emulator build id"
+    )
     create_parser.add_argument(
         "--repo",
         default="us-docker.pkg.dev/android-emulator-268719/images",
@@ -204,7 +231,9 @@ def main():
         help="Push the created image to your repository, as marked by the --repo argument.",
     )
     create_parser.add_argument(
-        "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
+        "--gpu",
+        action="store_true",
+        help="Build an image with gpu drivers, providing hardware acceleration",
     )
 
     create_parser.add_argument(
@@ -212,14 +241,20 @@ def main():
         action="store_true",
         help="When enabled, the emulator will send usage metrics to Google when the container exists gracefully.",
     )
-    create_parser.add_argument("--no-metrics", action="store_true", help="Disables the collection of usage metrics.")
+    create_parser.add_argument(
+        "--no-metrics",
+        action="store_true",
+        help="Disables the collection of usage metrics.",
+    )
     create_parser.add_argument(
         "--start",
         action="store_true",
         help="Starts the container after creating it. "
         "All exposed ports are forwarded, and your private adbkey (if available) is injected but not stored.",
     )
-    create_parser.add_argument("--sys", action="store_true", help="Process system image layer only.")
+    create_parser.add_argument(
+        "--sys", action="store_true", help="Process system image layer only."
+    )
     create_parser.set_defaults(func=create_docker_image)
 
     create_inter = subparsers.add_parser(
@@ -233,10 +268,14 @@ def main():
         'For example -turncfg \\"curl -s -X POST https://networktraversal.googleapis.com/v1alpha/iceconfig?key=MySec\\"',
     )
     create_inter.add_argument(
-        "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
+        "--dest",
+        default=os.path.join(os.getcwd(), "src"),
+        help="Destination for the generated docker files",
     )
     create_inter.add_argument(
-        "--gpu", action="store_true", help="Build an image with gpu drivers, providing hardware acceleration"
+        "--gpu",
+        action="store_true",
+        help="Build an image with gpu drivers, providing hardware acceleration",
     )
     create_inter.add_argument(
         "--start",
@@ -267,11 +306,19 @@ def main():
         help="Repo prefix, for example: us.gcr.io/emu-dev/",
     )
     dist_parser.add_argument(
-        "--dest", default=os.path.join(os.getcwd(), "src"), help="Destination for the generated docker files"
+        "--dest",
+        default=os.path.join(os.getcwd(), "src"),
+        help="Destination for the generated docker files",
     )
-    dist_parser.add_argument("--git", action="store_true", help="Create a git commit, and push to destination.")
     dist_parser.add_argument(
-        "--sys", action="store_true", help="Write system image steps, otherwise write emulator steps."
+        "--git",
+        action="store_true",
+        help="Create a git commit, and push to destination.",
+    )
+    dist_parser.add_argument(
+        "--sys",
+        action="store_true",
+        help="Write system image steps, otherwise write emulator steps.",
     )
     dist_parser.add_argument(
         "emuzip",
@@ -291,7 +338,9 @@ def main():
     # Configure logger.
     lvl = logging.DEBUG if args.verbose else logging.WARNING
     handler = colorlog.StreamHandler()
-    handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(levelname)s:%(message)s"))
+    handler.setFormatter(
+        colorlog.ColoredFormatter("%(log_color)s%(levelname)s:%(message)s")
+    )
     logging.root = colorlog.getLogger("root")
     logging.root.addHandler(handler)
     logging.root.setLevel(lvl)

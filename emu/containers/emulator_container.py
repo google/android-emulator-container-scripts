@@ -30,27 +30,29 @@ class EmulatorContainer(DockerContainer):
         """
     NO_METRICS_MESSAGE = "No metrics are collected when running this container."
 
-    def __init__(self, emulator, system_image_container, repository=None, metrics=False, extra=""):
+    def __init__(
+        self, emulator, system_image_container, repository=None, metrics=False, extra=""
+    ):
         self.emulator_zip = AndroidReleaseZip(emulator)
         self.system_image_container = system_image_container
         self.metrics = metrics
 
         if type(extra) is list:
-            extra = " ".join(extra)
+            extra = " ".join([f'"{s}"' for s in extra])
 
         cpu = system_image_container.image_labels()["ro.product.cpu.abi"]
         self.extra = self._logger_flags(cpu) + " " + extra
 
         metrics_msg = EmulatorContainer.NO_METRICS_MESSAGE
         if metrics:
-            self.extra += " -metrics-collection"
+            self.extra += ' "-metrics-collection"'
             metrics_msg = EmulatorContainer.METRICS_MESSAGE
 
         self.props = system_image_container.image_labels()
         self.props["playstore"] = self.props["qemu.tag"] == "google_apis_playstore"
         self.props["metrics"] = metrics_msg
         self.props["emu_build_id"] = self.emulator_zip.build_id()
-        self.props["from_base_img"] = system_image_container.full_name()
+        self.props["from_base_img"] = str(system_image_container)
 
         for expect in [
             "ro.build.version.sdk",
@@ -65,9 +67,9 @@ class EmulatorContainer(DockerContainer):
 
     def _logger_flags(self, cpu):
         if "arm" in cpu:
-            return "-logcat *:V -show-kernel"
+            return '"-logcat" "*:V" "-show-kernel"'
         else:
-            return "-shell-serial file:/tmp/android-unknown/kernel.log -logcat-output /tmp/android-unknown/logcat.log"
+            return '"-shell-serial" "file:/tmp/android-unknown/kernel.log" "-logcat-output" "/tmp/android-unknown/logcat.log"'
 
     def write(self, dest):
         # Make sure the destination directory is empty.
@@ -84,7 +86,9 @@ class EmulatorContainer(DockerContainer):
             rename_as="README.MD",
         )
 
-        writer.write_template("launch-emulator.sh", {"extra": self.extra, "version": emu.__version__})
+        writer.write_template(
+            "launch-emulator.sh", {"extra": self.extra, "version": emu.__version__}
+        )
         writer.write_template("default.pa", {})
 
         writer.write_template(
@@ -97,7 +101,9 @@ class EmulatorContainer(DockerContainer):
 
     def image_name(self):
         name = "{}-{}-{}".format(
-            self.props["ro.build.version.sdk"], self.props["qemu.short_tag"], self.props["qemu.short_abi"]
+            self.props["ro.build.version.sdk"],
+            self.props["qemu.short_tag"],
+            self.props["qemu.short_abi"],
         )
         if not self.metrics:
             return "{}-no-metrics".format(name)

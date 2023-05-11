@@ -13,7 +13,6 @@
 # limitations under the License.
 import logging
 import os
-import shutil
 
 from emu.android_release_zip import SystemImageReleaseZip
 from emu.platform_tools import PlatformTools
@@ -40,17 +39,17 @@ class SystemImageContainer(DockerContainer):
         tools = PlatformTools()
         tools.extract_adb(dest)
 
-    def write(self, dest):
+    def write(self, destination):
         # We do not really want to overwrite if the files already exist.
         # Make sure the destination directory is empty.
         if self.system_image_zip is None:
-            self.system_image_zip = SystemImageReleaseZip(self.system_image_info.download(dest))
+            self.system_image_zip = SystemImageReleaseZip(self.system_image_info.download(destination))
 
-        writer = TemplateWriter(dest)
-        self._copy_adb_to(dest)
+        writer = TemplateWriter(destination)
+        self._copy_adb_to(destination)
 
         props = self.system_image_zip.props
-        dest_zip = os.path.basename(self.system_image_zip.copy(dest))
+        dest_zip = os.path.basename(self.system_image_zip.copy(destination))
         props["system_image_zip"] = dest_zip
         writer.write_template(
             "Dockerfile.system_image",
