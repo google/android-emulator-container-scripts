@@ -15,17 +15,22 @@ import itertools
 import logging
 import os
 import re
+import subprocess
+from pathlib import Path
 
 import yaml
 
-from pathlib import Path
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.template_writer import TemplateWriter
-from emu.process import run
 from emu.containers.emulator_container import EmulatorContainer
 from emu.containers.system_image_container import SystemImageContainer
 from emu.emu_downloads_menu import accept_licenses
-from emu.utils import mkdir_p
+from emu.template_writer import TemplateWriter
+
+
+def mkdir_p(path):
+    """Make directories recursively if path not exists."""
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def git_commit_and_push(dest):
@@ -37,9 +42,9 @@ def git_commit_and_push(dest):
     Args:
         dest ({string}): The destination of the git repository.
     """
-    run(["git", "add", "--verbose", "*"], dest)
-    run(["git", "commit", "-F", "README.MD"], dest)
-    run(["git", "push"], dest)
+    subprocess.check_call(["git", "add", "--verbose", "*"], cwd=dest)
+    subprocess.check_call(["git", "commit", "-F", "README.MD"], cwd=dest)
+    subprocess.check_call(["git", "push"], cwd=dest)
 
 
 def create_build_step(for_container, destination):
@@ -99,26 +104,25 @@ def cloud_build(args):
                 emulators.add(emulator_container.props["emu_build_id"])
                 steps.append(create_build_step(emulator_container, args.dest))
                 images.append(emulator_container.full_name())
-                images.append(emulator_container.latest_name())
                 emulator_images.append(emulator_container.full_name())
-                emulator_images.append(emulator_container.latest_name())
 
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     logging.info("Writing cloud yaml [%s] in %s", yaml, args.dest)
-    with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
+    with open(os.path.join(args.dest, "cloudbuild.yaml"), "w", encoding="utf-8") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
     writer = TemplateWriter(args.dest)
     writer.write_template(
         "cloudbuild.README.MD",
-        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in emulator_images])},
+        {"emu_version": ", ".join(emulators),
+         "emu_images": "\n".join([f"* {x}" for x in emulator_images])},
         rename_as="README.MD",
     )
     writer.write_template(
         "registry.README.MD",
         {
             "emu_version": ", ".join(emulators),
-            "emu_images": "\n".join(["* {}".format(x) for x in images]),
+            "emu_images": "\n".join([f"* {x}" for x in images]),
             "first_image": next(iter(images), None),
         },
         rename_as="REGISTRY.MD",

@@ -15,54 +15,52 @@
 
    This is super expensive..
 """
-
 import collections
 import os
+import shutil
+import subprocess
 
 import docker
 import pytest
-from emu.cloud_build import cloud_build
 from utils import TempDir
-import shutil
-import subprocess
+
+from emu.cloud_build import cloud_build
 
 Arguments = collections.namedtuple("Args", "emuzip, img, dest, repo, git, sys")
 
 
 @pytest.mark.slow
 @pytest.mark.e2e
-def test_build_cloud_only_emu():
+def test_build_cloud_only_emu(temp_dir):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
-    with TempDir() as tmp:
-        args = Arguments(
-            "canary", "Q google_apis x86_64", tmp, "us-docker.pkg.dev/android-emulator-268719/images", False, False
-        )
-        cloud_build(args)
-        expected_files = [
-            "cloudbuild.yaml",
-            "README.MD",
-            "29-google-x64",
-            "29-google-x64-no-metrics",
-        ]
-        for file_name in expected_files:
-            assert os.path.exists(os.path.join(tmp, file_name)), "cannot find {} in {}".format(file_name, tmp)
+    args = Arguments(
+        "canary", "Q google_apis x86_64", temp_dir, "us-docker.pkg.dev/android-emulator-268719/images", False, False
+    )
+    cloud_build(args)
+    expected_files = [
+        "cloudbuild.yaml",
+        "README.MD",
+        "29-google-x64",
+        "29-google-x64-no-metrics",
+    ]
+    for file_name in expected_files:
+        assert (temp_dir / file_name).exists()
 
 
 @pytest.mark.slow
 @pytest.mark.e2e
-def test_build_cloud_only_sys():
+def test_build_cloud_only_sys(temp_dir):
     assert docker.from_env().ping()
     # Make sure we accept all licenses,
-    with TempDir() as tmp:
-        args = Arguments(
-            "canary", "Q google_apis x86_64", tmp, "us-docker.pkg.dev/android-emulator-268719/images", False, True
-        )
-        cloud_build(args)
-        expected_files = [
-            "cloudbuild.yaml",
-            "README.MD",
-            "sys-29-google-x64",
-        ]
-        for file_name in expected_files:
-            assert os.path.exists(os.path.join(tmp, file_name)), "cannot find {} in {}".format(file_name, tmp)
+    args = Arguments(
+        "canary", "Q google_apis x86_64", temp_dir, "us-docker.pkg.dev/android-emulator-268719/images", False, True
+    )
+    cloud_build(args)
+    expected_files = [
+        "cloudbuild.yaml",
+        "README.MD",
+        "sys-29-google-x64",
+    ]
+    for file_name in expected_files:
+        assert (temp_dir / file_name).exists()

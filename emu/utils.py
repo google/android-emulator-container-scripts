@@ -11,48 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import os
 import logging
-from tqdm import tqdm
+from pathlib import Path
+
 import requests
+from tqdm import tqdm
 
 
-API_LETTER_MAPPING = {
-    "10": "G",
-    "15": "I",
-    "16": "J",
-    "17": "J",
-    "18": "J",
-    "19": "K",
-    "21": "L",
-    "22": "L",
-    "23": "M",
-    "24": "N",
-    "25": "N",
-    "26": "O",
-    "27": "O",
-    "28": "P",
-    "29": "Q",
-    "30": "R",
-}
-
-
-def mkdir_p(path):
-    """Make directories recursively if path not exists."""
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-
-def download(url, dest):
+def download(url, dest : Path) -> Path:
     """Downloads the given url to the given destination with a progress bar.
 
     This function will immediately return if the file already exists.
     """
-    if os.path.exists(dest):
-        print("  Skipping already downloaded file: {}".format(dest))
+    dest = Path(dest)
+    if dest.exists():
+        print(f"  Skipping already downloaded file: {dest}")
         return dest
-    mkdir_p(os.path.dirname(dest))
+
+    # Make sure destination directory exists.
+    if not dest.parent.exists():
+        dest.parent.mkdir(parents=True)
+
     logging.info("Get %s -> %s", url, dest)
     with requests.get(url, timeout=5, stream=True) as r:
         with tqdm(r, total=int(r.headers["content-length"]), unit="B", unit_scale=True) as t:
@@ -61,11 +40,3 @@ def download(url, dest):
                     f.write(data)
                     t.update(len(data))
     return dest
-
-
-def api_codename(api):
-    """First letter of the desert, if any."""
-    if api in API_LETTER_MAPPING:
-        return API_LETTER_MAPPING[api]
-    else:
-        return "_"
