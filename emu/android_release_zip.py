@@ -20,7 +20,35 @@ from typing import Dict, Set, Union
 
 from tqdm import tqdm
 
-from emu.utils import api_codename
+API_LETTER_MAPPING = {
+    "10": "G",
+    "15": "I",
+    "16": "J",
+    "17": "J",
+    "18": "J",
+    "19": "K",
+    "21": "L",
+    "22": "L",
+    "23": "M",
+    "24": "N",
+    "25": "N",
+    "26": "O",
+    "27": "O",
+    "28": "P",
+    "29": "Q",
+    "30": "R",
+    "31": "S",
+    "32": "S",
+    "33": "T",
+}
+
+
+def api_codename(api):
+    """First letter of the desert, if any."""
+    if api in API_LETTER_MAPPING:
+        return API_LETTER_MAPPING[api]
+    else:
+        return "_"
 
 
 class NotAZipfile(Exception):

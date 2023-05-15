@@ -15,17 +15,22 @@ import itertools
 import logging
 import os
 import re
+import subprocess
+from pathlib import Path
 
 import yaml
 
-from pathlib import Path
 import emu.emu_downloads_menu as emu_downloads_menu
-from emu.template_writer import TemplateWriter
-from emu.process import run
 from emu.containers.emulator_container import EmulatorContainer
 from emu.containers.system_image_container import SystemImageContainer
 from emu.emu_downloads_menu import accept_licenses
-from emu.utils import mkdir_p
+from emu.template_writer import TemplateWriter
+
+
+def mkdir_p(path):
+    """Make directories recursively if path not exists."""
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def git_commit_and_push(dest):
@@ -37,9 +42,9 @@ def git_commit_and_push(dest):
     Args:
         dest ({string}): The destination of the git repository.
     """
-    run(["git", "add", "--verbose", "*"], dest)
-    run(["git", "commit", "-F", "README.MD"], dest)
-    run(["git", "push"], dest)
+    subprocess.check_call(["git", "add", "--verbose", "*"], cwd=dest)
+    subprocess.check_call(["git", "commit", "-F", "README.MD"], cwd=dest)
+    subprocess.check_call(["git", "push"], cwd=dest)
 
 
 def create_build_step(for_container, destination):

@@ -17,7 +17,6 @@ from emu.emu_downloads_menu import find_image
 from emu.containers.system_image_container import SystemImageContainer
 
 
-@pytest.mark.slow
 @pytest.mark.e2e
 @pytest.mark.parametrize(
     "image",
@@ -39,7 +38,6 @@ def test_can_pull(image):
     assert container.can_pull()
 
 
-@pytest.mark.slow
 @pytest.mark.e2e
 @pytest.mark.parametrize(
     "image",
