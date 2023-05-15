@@ -83,8 +83,8 @@ def create_docker_image(args):
 
     devices = []
     logging.info("Using repo %s", args.repo)
-    for img, emu in itertools.product(imgzip, emuzip):
-        logging.info("Processing %s, %s", img, emu)
+    for img, emulator in itertools.product(imgzip, emuzip):
+        logging.info("Processing %s, %s", img, emulator)
         sys_docker = SystemImageContainer(img, args.repo)
         if not sys_docker.available() and not sys_docker.can_pull():
             sys_docker.build(args.dest / "sys_img")
@@ -103,7 +103,7 @@ def create_docker_image(args):
             continue
 
         emu_docker = EmulatorContainer(
-            emu, sys_docker, args.repo, cfg.collect_metrics(), args.extra
+            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra
         )
         emu_docker.build(Path(args.dest) / "emulator")
 
@@ -269,7 +269,7 @@ def main():
     )
     create_inter.add_argument(
         "--dest",
-        default=os.path.join(os.getcwd(), "src"),
+        default=Path.cwd() / "bld",
         help="Destination for the generated docker files",
     )
     create_inter.add_argument(
@@ -307,7 +307,7 @@ def main():
     )
     dist_parser.add_argument(
         "--dest",
-        default=os.path.join(os.getcwd(), "src"),
+        default=Path.cwd() / "bld",
         help="Destination for the generated docker files",
     )
     dist_parser.add_argument(

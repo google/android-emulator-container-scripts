@@ -99,26 +99,25 @@ def cloud_build(args):
                 emulators.add(emulator_container.props["emu_build_id"])
                 steps.append(create_build_step(emulator_container, args.dest))
                 images.append(emulator_container.full_name())
-                images.append(emulator_container.latest_name())
                 emulator_images.append(emulator_container.full_name())
-                emulator_images.append(emulator_container.latest_name())
 
     cloudbuild = {"steps": steps, "images": images, "timeout": "21600s"}
     logging.info("Writing cloud yaml [%s] in %s", yaml, args.dest)
-    with open(os.path.join(args.dest, "cloudbuild.yaml"), "w") as ymlfile:
+    with open(os.path.join(args.dest, "cloudbuild.yaml"), "w", encoding="utf-8") as ymlfile:
         yaml.dump(cloudbuild, ymlfile)
 
     writer = TemplateWriter(args.dest)
     writer.write_template(
         "cloudbuild.README.MD",
-        {"emu_version": ", ".join(emulators), "emu_images": "\n".join(["* {}".format(x) for x in emulator_images])},
+        {"emu_version": ", ".join(emulators),
+         "emu_images": "\n".join([f"* {x}" for x in emulator_images])},
         rename_as="README.MD",
     )
     writer.write_template(
         "registry.README.MD",
         {
             "emu_version": ", ".join(emulators),
-            "emu_images": "\n".join(["* {}".format(x) for x in images]),
+            "emu_images": "\n".join([f"* {x}" for x in images]),
             "first_image": next(iter(images), None),
         },
         rename_as="REGISTRY.MD",

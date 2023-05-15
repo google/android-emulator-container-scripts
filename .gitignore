@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+bld/
 
 # C extensions
 *.so
@@ -98,7 +99,7 @@ celerybeat-schedule
 
 # Environments
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/

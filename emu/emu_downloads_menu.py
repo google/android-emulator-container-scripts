@@ -19,7 +19,7 @@ import logging
 import os
 import re
 import xml.etree.ElementTree as ET
-import zipfile
+from pathlib import Path
 
 import click
 import requests
@@ -178,13 +178,12 @@ class SysImgInfo(LicensedObject):
             self.tag, self.api, self.letter, self.abi
         )
 
-    def download(self, dest=None):
-        dest = os.path.join(dest or os.getcwd(), self.download_name())
+    def download(self, dest=Path.cwd()):
+        dest = dest / self.download_name()
         print(
-            "Downloading system image: {} {} {} {} to {}".format(
-                self.tag, self.api, self.letter, self.abi, dest
-            )
+            f"Downloading system image: {self.tag} {self.api} {self.letter} {self.abi} to {dest}"
         )
+
         return super(SysImgInfo, self).download(self.url, dest)
 
     def __str__(self):
@@ -219,11 +218,10 @@ class EmuInfo(LicensedObject):
         return "emulator-{}.zip".format(self.version)
 
     def download(self, hostos="linux", dest=None):
-        """ "Downloads the released pacakage for the given os to the dest."""
-        dest = dest or os.path.join(os.getcwd(), self.download_name())
-        print(
-            "Downloading emulator: {} {} to {}".format(self.channel, self.version, dest)
-        )
+        """Downloads the released pacakage for the given os to the dest."""
+        dest = dest or Path.cwd() / self.download_name()
+        print(f"Downloading emulator: {self.channel} {self.version} to {dest}")
+
         return super(EmuInfo, self).download(self.urls[hostos], dest)
 
     def __str__(self):

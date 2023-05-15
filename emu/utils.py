@@ -16,6 +16,7 @@ import os
 import logging
 from tqdm import tqdm
 import requests
+from pathlib import Path
 
 
 API_LETTER_MAPPING = {
@@ -44,15 +45,20 @@ def mkdir_p(path):
         os.makedirs(path)
 
 
-def download(url, dest):
+def download(url, dest : Path) -> Path:
     """Downloads the given url to the given destination with a progress bar.
 
     This function will immediately return if the file already exists.
     """
-    if os.path.exists(dest):
-        print("  Skipping already downloaded file: {}".format(dest))
+    dest = Path(dest)
+    if dest.exists():
+        print(f"  Skipping already downloaded file: {dest}")
         return dest
-    mkdir_p(os.path.dirname(dest))
+
+    # Make sure destination directory exists.
+    if not dest.parent.exists():
+        dest.parent.mkdir(parents=True)
+
     logging.info("Get %s -> %s", url, dest)
     with requests.get(url, timeout=5, stream=True) as r:
         with tqdm(r, total=int(r.headers["content-length"]), unit="B", unit_scale=True) as t:

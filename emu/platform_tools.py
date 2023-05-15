@@ -13,15 +13,19 @@
 # limitations under the License.
 import os
 import zipfile
+from pathlib import Path
 
 from emu.utils import download
-
-# Platform tools, needed to get adb.
-PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
 
 
 class PlatformTools(object):
     """The platform tools zip file. It will be downloaded on demand."""
+
+    # Platform tools, needed to get adb.
+    PLATFORM_TOOLS_URL = (
+        "https://dl.google.com/android/repository/platform-tools_r29.0.5-linux.zip"
+    )
+    PLATFORM_TOOLS_ZIP = "platform-tools-latest-linux.zip"
 
     def __init__(self, fname=None):
         self.platform = fname
@@ -33,6 +37,7 @@ class PlatformTools(object):
             plzip.extract("platform-tools/adb", dest)
 
     def download(self, dest=None):
-        dest = dest or os.path.join(os.getcwd(), "platform-tools-latest-linux.zip")
-        print("Downloading platform tools to {}".format(dest))
-        return download(PLATFORM_TOOLS_URL, dest)
+        """Downloads the platform tools zip to the given destination"""
+        dest = dest or Path.cwd() / PlatformTools.PLATFORM_TOOLS_ZIP
+        print(f"Downloading platform tools to {dest}")
+        return download(PlatformTools.PLATFORM_TOOLS_URL, dest)

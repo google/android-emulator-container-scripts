@@ -27,7 +27,7 @@ class SystemImageContainer(DockerContainer):
         self.system_image_zip = None
         self.system_image_info = None
 
-        if type(sort) == SysImgInfo:
+        if isinstance(sort, SysImgInfo):
             self.system_image_info = sort
         else:
             self.system_image_zip = SystemImageReleaseZip(sort)
@@ -43,7 +43,10 @@ class SystemImageContainer(DockerContainer):
         # We do not really want to overwrite if the files already exist.
         # Make sure the destination directory is empty.
         if self.system_image_zip is None:
-            self.system_image_zip = SystemImageReleaseZip(self.system_image_info.download(destination))
+            logging.info("Downloading zip file to %s", destination)
+            self.system_image_zip = SystemImageReleaseZip(
+                self.system_image_info.download(destination)
+            )
 
         writer = TemplateWriter(destination)
         self._copy_adb_to(destination)
@@ -61,13 +64,12 @@ class SystemImageContainer(DockerContainer):
         if self.system_image_info:
             return self.system_image_info.image_name()
         if self.system_image_zip:
-            return "sys-{}-{}-{}".format(
-                self.system_image_zip.api(), self.system_image_zip.short_tag(), self.system_image_zip.short_abi()
-            )
+            return f"sys-{self.system_image_zip.api()}-{self.system_image_zip.short_tag()}-{self.system_image_zip.short_abi()}"
 
     def docker_tag(self):
         if self.system_image_zip:
             return self.system_image_zip.props["ro.build.version.incremental"]
+
         if super().available():
             return self.image_labels()["ro.build.version.incremental"]
 
