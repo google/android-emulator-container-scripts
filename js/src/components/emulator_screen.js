@@ -210,12 +210,13 @@ class EmulatorScreen extends React.Component {
                   muted={muted}
                   volume={volume}
                   gps={gps}
+                  width={400}
                 />
                 <p>State: {emuState} </p>
               </Container>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <LogcatView uri={uri} auth={auth} />
+              {/* <LogcatView uri={uri} auth={auth} /> */}
             </Grid>
           </Grid>
         </div>

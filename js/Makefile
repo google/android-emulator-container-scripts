@@ -20,13 +20,21 @@ CURRENT_DIR :=  $(abspath $(MAKEFILE_PATH)/..)
 
 all: develop
 
-deps:
+
+deps: src/config.js
 	@npm install
+
+
+# This transforms your firebase_config.json into the settings file
+# and fixes up you envoy settings to enable token validation.
+src/config.js:
+	python config_gen.py firebase_config.json
+
 
 develop:
 	./develop.sh
 
-build-release:  protoc system-check
+build-release:  deps
 	 docker-compose -f docker/docker-compose.yaml build
 
 run-release: build-release

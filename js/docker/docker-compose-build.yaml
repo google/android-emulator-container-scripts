@@ -29,19 +29,6 @@ services:
     shm_size: 128M
     expose:
       - "8554"
-
-  jwt_signer:
-    image: emulator_jwt_signer:latest
-    build:
-      context: ../jwt-provider
-      dockerfile: Dockerfile
-    networks:
-      envoymesh:
-        aliases:
-          - jwt_signer
-    expose:
-      - "8080"
-
   nginx:
     image: emulator_nginx:latest
     build:

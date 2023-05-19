@@ -24,5 +24,5 @@ echo "Make sure you are running the android emulator & video bridge"
 echo "Launch the video bridge with 'goldfish-webrtc-bridge --port 9554'"
 
 docker rm emu-dev-grpc-web
-docker run  -p 8080:8080 -p 8001:8001  --name emu-dev-grpc-web emu-dev-web &
+docker run  --rm -p 8080:8080 -p 8001:8001  --name emu-dev-grpc-web emu-dev-web &
 npm start
