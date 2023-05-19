@@ -1,10 +1,11 @@
-import "./App.css";
-
-import { NoAuthService, TokenAuthService } from "./service/auth_service";
-import React, { Component } from "react";
-
+import React, { useState, useEffect } from "react";
+import { TokenProviderService } from "./service/auth_service";
 import EmulatorScreen from "./components/emulator_screen";
-import LoginPage from "./components/login_page";
+import LoginPage from "./components/login_firebase";
+import { ThemeProvider,  makeStyles } from '@mui/styles';
+import { createTheme } from '@mui/material/styles';
+
+import "./App.css";
 
 const development =
   !process.env.NODE_ENV || process.env.NODE_ENV === "development";
@@ -16,38 +17,44 @@ var EMULATOR_GRPC =
   ":" +
   window.location.port;
 if (development) {
-  EMULATOR_GRPC =  window.location.protocol + "//" +
-  window.location.hostname + ":8080";
+  EMULATOR_GRPC = window.location.protocol + "//" +
+    window.location.hostname + ":8080";
 }
 
-export default class App extends Component {
-  constructor(props) {
-    super(props);
-    if (development) {
-      this.auth = new NoAuthService();
-    } else {
-      this.auth = new TokenAuthService(EMULATOR_GRPC + "/token");
-    }
 
-    this.state = {
-      authorized: this.auth.authorized(),
+console.log(`Connecting to grpc at ${EMULATOR_GRPC}`);
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    // some CSS that accesses the theme
+  }
+}));
+
+const theme = createTheme({
+
+});
+
+const auth = new TokenProviderService();
+
+export default function App() {
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const handleAuthorization = (a) => {
+      setAuthorized(a);
     };
-this.auth.on("authorized", a => {
-      this.setState({ authorized: a });
-    });
-  }
+
+    auth.on("authorized", handleAuthorization);
+  }, []);
 
 
-  render() {
-    const { authorized } = this.state;
-    return (
-      <div>
-        {authorized ? (
-          <EmulatorScreen uri={EMULATOR_GRPC} auth={this.auth} />
-        ) : (
-          <LoginPage auth={this.auth} />
-        )}
-      </div>
-    );
-  }
+  return (
+    <ThemeProvider theme={theme}>
+      {authorized ? (
+        <EmulatorScreen uri={EMULATOR_GRPC} auth={auth} />
+      ) : (
+        <LoginPage auth={auth} />
+      )}
+    </ThemeProvider>
+  );
 }

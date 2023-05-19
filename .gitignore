@@ -9,6 +9,7 @@ bld/
 
 # Distribution / packaging
 .Python
+.docker-venv/
 build/
 develop-eggs/
 dist/
@@ -130,3 +131,7 @@ dmypy.json
 # Files used by our scripts
 *.zip
 /src
+
+# vscode's git plugin is not recursive.
+**/node_modules/
+**/config.js

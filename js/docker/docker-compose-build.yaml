@@ -10,16 +10,14 @@ services:
     expose:
       - "8080"
       - "8001"
-      - "8443"
     ports:
-      - "80:8080"
-      - "443:8443"
+      - "8080:8080"
       - "8001:8001"
 
   emulator:
     image: emulator_emulator:latest
     build:
-      context: ../../src
+      context: ../../bld/emulator
       dockerfile: Dockerfile
     networks:
       envoymesh:
@@ -29,19 +27,6 @@ services:
     shm_size: 128M
     expose:
       - "8554"
-
-  jwt_signer:
-    image: emulator_jwt_signer:latest
-    build:
-      context: ../jwt-provider
-      dockerfile: Dockerfile
-    networks:
-      envoymesh:
-        aliases:
-          - jwt_signer
-    expose:
-      - "8080"
-
   nginx:
     image: emulator_nginx:latest
     build:

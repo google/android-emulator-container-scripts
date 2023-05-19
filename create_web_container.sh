@@ -14,7 +14,6 @@
 # limitations under the License.
 
 DOCKER_YAML=js/docker/docker-compose-build.yaml
-PASSWDS="$USER,hello"
 
 # Fancy colors in the terminal
 if [ -t 1 ]; then
@@ -43,13 +42,15 @@ approve() {
 
 help() {
     cat <<EOF
-       usage: create_web_container.sh [-h] [-a] [-s] [-i] -p user1,pass1,user2,pass2,...
+       usage: create_web_container.sh [-h] [-a] [-s] [-i]
+
+        make sure you ran emu-docker to create the emulator container you want to use
+        before running this
 
        optional arguments:
        -h        show this help message and exit.
        -a        expose adb. Requires ~/.android/adbkey to be available at container launch
        -s        start the container after creation.
-       -p        list of username password pairs.  Defaults to: [${PASSWDS}]
        -i        install systemd service, with definition in /opt/emulator
 EOF
     exit 1
@@ -73,10 +74,9 @@ generate_keys() {
     fi
 }
 
-while getopts 'hasip:' flag; do
+while getopts 'hasi:' flag; do
     case "${flag}" in
     a) DOCKER_YAML="${DOCKER_YAML} -f js/docker/development.yaml" ;;
-    p) PASSWDS="${OPTARG}" ;;
     h) help ;;
     s) START='yes' ;;
     i) INSTALL='yes' ;;
@@ -91,20 +91,14 @@ make -C js deps
 # Make sure we have all we need for adb to succeed.
 generate_keys
 
-. ./configure.sh >/dev/null
-
-# Now generate the public/private keys and salt the password
-cd js/jwt-provider
-pip install -r requirements.txt >/dev/null
-python gen-passwords.py --pairs "${PASSWDS}" || exit 1
-cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
-cd ../..
 
 # Copy the private adbkey over
 cp ~/.android/adbkey js/docker/certs
 
 # compose the container
-pip install docker-compose >/dev/null
+python -m venv .docker-venv
+source .docker-venv/bin/activate
+pip install docker-compose
 docker-compose -f ${DOCKER_YAML} build
 rm js/docker/certs/adbkey
 

@@ -1,9 +1,25 @@
 JavaScript WebRTC samples
 =========================
 
-This document describes the gRPC/WebRTC example. You can find instructions in [README](../README.MD) if you wis to run the web version. This document outlines the how you can extend or develop the web version further.
+This document descibes how to run the gRPC/WebRTC example. Support for WebRTC is officially only available on linux releases.
+This sample expects the emulator to be running in a server like environment:
 
-The web version relies on the following technologies;
+- There is a Webserver hosting the HTML/JS
+- There is a [gRPC web proxy](https://grpc.io/blog/state-of-grpc-web/)
+- The udp ports required for WebRTC are open, or a turn service is configured.
+
+These services should be accessible for the browsers that want to interact with the emulator. For example a publicly visible GCE/AWS server should work fine.
+
+This sample is based on ReactJS and provides the following set of components:
+
+- Emulator: This component displays the emulator and will send mouse & keyboard events to it.
+- LogcatView: A view that displays the current output of logcat. This currently relies on the material-ui theme.
+
+Both components require the following properties to be set:
+
+- `emulator`: This property must contain an `EmulatorControllerService` object.
+
+You will likely need to modify `App.js` and `index.html` to suit your needs.
 
 - There is a Webserver hosting the HTML/JS, we are using [NodeJs](https://nodejs.org/en/) for development.
 - We are using [ReactJS](https://reactjs.org/) as our component framework.
@@ -12,7 +28,42 @@ The web version relies on the following technologies;
 
 For fast video over [WebRTC](www.webrtc.org):
 
-- The udp ports required for WebRTC are open, or a turn service is configured.
+- You are using linux.
+- You have android sdk installed, and the environment variable `ANDROID_SDK_ROOT` is set properly. The easiest way to install the sdk is by installing [Android Studio](https://developer.android.com/studio/install).
+- An emulator build newer than 5769853. You can either:
+  - Check if your current installed version will work. Run:
+   ```sh
+    $ $ANDROID_SDK_ROOT/emulator/emulator -version | head -n 1
+    ```
+    and make sure that the reported build_id is higher than 5769853
+  - Build one from source yourself.
+  - Obtain one from the [build bots](http://go/ab/emu-master-dev). Make sure to get sdk-repo-linux-emulator-XXXX.zip where XXXX is the build number. You can unzip the contents to `$ANDROID_SDK_ROOT`. For example:
+  ```sh
+    $ unzip ~/Downloads/sdk-repo-linux-emulator-5775474.zip -d $ANDROID_SDK_ROOT
+  ```
+- A valid virtual device to run inside the emulator. Instructions on how to create a virtual device can be found [here](https://developer.android.com/studio/run/managing-avds). Any virtual device can be used.
+- [Node.js](https://nodejs.org/en/) Stable version 10.16.1 LTS or later.
+- A [protobuf](https://developers.google.com/protocol-buffers/) compiler, version 3.6 or higher is supported.
+- [Docker](https://www.docker.com). We will use the container infrastructure for easy deployment. Follow the instructions [here](http://go/installdocker) if you are within Google.
+
+
+# Configure the emulator
+
+Make sure you are able to launch the emulator from the command line with a valid avd. Instructions on how to create a virtual device can be found [here](https://developer.android.com/studio/run/managing-avds).
+
+For example if you created a avd with the name P, you should be able to launch it as follows:
+
+```sh
+  $ $ANDROID_SDK_ROOT/emulator/emulator @P
+```
+
+Make sure that the emulator is working properly, and that can use the desired avd.
+
+WebRTC support will be activated if the emulator is launched with the `-grpc <port>` flag. The current demos expect the gRPC endpoint to be available at `localhost:8554`. This port only needs to be accessible by the gRPC proxy that is being used. There is no need for this port to be publicly visible.
+
+```sh
+  $ $ANDROID_SDK_ROOT/emulator/emulator @P -grpc 8554
+```
 
 ### Do I need TURN?
 
