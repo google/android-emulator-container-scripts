@@ -9,6 +9,7 @@ bld/
 
 # Distribution / packaging
 .Python
+.docker-venv/
 build/
 develop-eggs/
 dist/

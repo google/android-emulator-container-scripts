@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM envoyproxy/envoy:v1.16-latest
+FROM envoyproxy/envoy:v1.26-latest
 
 # Workaround for linux missing host.docker.internal
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
-CMD echo "172.17.0.1 host.docker.internal" >> /etc/hosts && /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
+RUN chmod go+r /etc/envoy/envoy.yaml
+CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml

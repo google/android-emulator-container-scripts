@@ -44,6 +44,9 @@ help() {
     cat <<EOF
        usage: create_web_container.sh [-h] [-a] [-s] [-i]
 
+        make sure you ran emu-docker to create the emulator container you want to use
+        before running this
+
        optional arguments:
        -h        show this help message and exit.
        -a        expose adb. Requires ~/.android/adbkey to be available at container launch
@@ -71,7 +74,7 @@ generate_keys() {
     fi
 }
 
-while getopts 'hasip:' flag; do
+while getopts 'hasi:' flag; do
     case "${flag}" in
     a) DOCKER_YAML="${DOCKER_YAML} -f js/docker/development.yaml" ;;
     h) help ;;
@@ -88,13 +91,14 @@ make -C js deps
 # Make sure we have all we need for adb to succeed.
 generate_keys
 
-. ./configure.sh >/dev/null
 
 # Copy the private adbkey over
 cp ~/.android/adbkey js/docker/certs
 
 # compose the container
-pip install docker-compose >/dev/null
+python -m venv .docker-venv
+source .docker-venv/bin/activate
+pip install docker-compose
 docker-compose -f ${DOCKER_YAML} build
 rm js/docker/certs/adbkey
 

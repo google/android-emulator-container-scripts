@@ -15,6 +15,5 @@
 FROM envoyproxy/envoy:v1.26-latest
 
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
-ADD certs/self_sign.crt /etc/cert.crt
-ADD certs/self_sign.key /etc/key.key
+RUN chmod go+r /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
