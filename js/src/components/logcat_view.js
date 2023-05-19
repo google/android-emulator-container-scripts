@@ -15,9 +15,9 @@
  */
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemText from "@material-ui/core/ListItemText";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
 import { Logcat } from "android-emulator-webrtc/emulator";
 /**
  * A very simple logcat viewer. It displays all logcat items in a material list.

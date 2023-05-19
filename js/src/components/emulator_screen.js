@@ -1,26 +1,26 @@
-import { withStyles } from "@material-ui/core/styles";
+import withStyles from '@mui/styles/withStyles';
 
-import AppBar from "@material-ui/core/AppBar";
-import Box from "@material-ui/core/Box";
-import Container from "@material-ui/core/Container";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
 import Copyright from "./copyright";
 import { Emulator } from "android-emulator-webrtc/emulator";
 import LogcatView from "./logcat_view";
-import ExitToApp from "@material-ui/icons/ExitToApp";
-import Grid from "@material-ui/core/Grid";
-import IconButton from "@material-ui/core/IconButton";
-import ImageIcon from "@material-ui/icons/Image";
-import OndemandVideoIcon from "@material-ui/icons/OndemandVideo";
-import Slider from "@material-ui/core/Slider";
-import VolumeDown from "@material-ui/icons/VolumeDown";
-import VolumeUp from "@material-ui/icons/VolumeUp";
-import LocationOnIcon from "@material-ui/icons/LocationOn";
+import ExitToApp from "@mui/icons-material/ExitToApp";
+import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
+import ImageIcon from "@mui/icons-material/Image";
+import OndemandVideoIcon from "@mui/icons-material/OndemandVideo";
+import Slider from "@mui/material/Slider";
+import VolumeDown from "@mui/icons-material/VolumeDown";
+import VolumeUp from "@mui/icons-material/VolumeUp";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PropTypes from "prop-types";
 import React from "react";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import Snackbar from "@material-ui/core/Snackbar";
-import Alert from "@material-ui/lab/Alert";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from '@mui/material/Alert';
 
 const styles = (theme) => ({
   root: {
@@ -167,21 +167,21 @@ class EmulatorScreen extends React.Component {
                 aria-label="Get current location"
                 color="inherit"
                 onClick={this.updateLocation}
-              >
+                size="large">
                 <LocationOnIcon />
               </IconButton>
               <IconButton
                 aria-label="Switch to webrtc"
                 color="inherit"
                 onClick={() => this.setState({ view: "webrtc" })}
-              >
+                size="large">
                 <OndemandVideoIcon />
               </IconButton>
               <IconButton
                 aria-label="Switch to screenshots"
                 color="inherit"
                 onClick={() => this.setState({ view: "png" })}
-              >
+                size="large">
                 <ImageIcon />
               </IconButton>
               <IconButton
@@ -189,7 +189,7 @@ class EmulatorScreen extends React.Component {
                 aria-label="logout"
                 color="inherit"
                 onClick={() => auth.logout()}
-              >
+                size="large">
                 <ExitToApp />
               </IconButton>
             </div>
@@ -210,13 +210,13 @@ class EmulatorScreen extends React.Component {
                   muted={muted}
                   volume={volume}
                   gps={gps}
-                  width={400}
+                  width={200}
                 />
                 <p>State: {emuState} </p>
               </Container>
             </Grid>
             <Grid item xs={12} sm={6}>
-              {/* <LogcatView uri={uri} auth={auth} /> */}
+              <LogcatView uri={uri} auth={auth} />
             </Grid>
           </Grid>
         </div>
