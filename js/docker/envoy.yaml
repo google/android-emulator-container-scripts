@@ -96,10 +96,16 @@ static_resources:
               socket_address:
                 address: googleapis.com
                 port_value: 443
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: googleapis.com
   - name: emulator_service_grpc
     connect_timeout: 0.250s
-    type: strict_dns
-    lb_policy: round_robin
+    type: STRICT_DNS
+    http2_protocol_options: {}
+    lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: emulator_service_grpc
       endpoints:
@@ -111,8 +117,9 @@ static_resources:
                 port_value: 8554
   - name: nginx
     connect_timeout: 0.25s
-    type: strict_dns
-    lb_policy: round_robin
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    http2_protocol_options: {}
     load_assignment:
       cluster_name: nginx
       endpoints:
@@ -128,4 +135,3 @@ admin:
     socket_address:
       address: 0.0.0.0
       port_value: 8001
-
