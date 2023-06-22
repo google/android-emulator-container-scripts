@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #FROM envoyproxy/envoy:latest
-FROM envoyproxy/envoy:v1.26-latest
 
+FROM envoyproxy/envoy:v1.26-latest
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
+EXPOSE 8080
 RUN chmod go+r /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml
