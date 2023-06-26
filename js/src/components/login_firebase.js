@@ -86,7 +86,6 @@ class SignIn extends React.Component {
                             firebase.auth().currentUser.getIdToken().then(function (token) {
                                 auth.setToken(`Bearer ${token}`);
                             });
-
                         }
                     }}
                 </FirebaseAuthConsumer>

@@ -37,7 +37,7 @@ static_resources:
               - match:
                   prefix: "/"
                 route:
-                  cluster: npm
+                  cluster: nginx
               cors:
                 allow_origin_string_match:
                   - safe_regex:
@@ -104,7 +104,6 @@ static_resources:
   - name: emulator_service_grpc
     connect_timeout: 0.250s
     type: STRICT_DNS
-    http2_protocol_options: {}
     lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: emulator_service_grpc
@@ -113,22 +112,21 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: host.docker.internal
+                address: emulator
                 port_value: 8554
-  - name: npm
+  - name: nginx
     connect_timeout: 0.25s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
-    http2_protocol_options: {}
     load_assignment:
-      cluster_name: npm
+      cluster_name: nginx
       endpoints:
       - lb_endpoints:
         - endpoint:
             address:
               socket_address:
-                address: host.docker.internal
-                port_value: 3000
+                address: nginx
+                port_value: 80
 admin:
   access_log_path: "/dev/stdout"
   address:

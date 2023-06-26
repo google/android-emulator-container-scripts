@@ -15,5 +15,6 @@ FROM envoyproxy/envoy:v1.26-latest
 
 # Workaround for linux missing host.docker.internal
 COPY ./envoy.yaml /etc/envoy/envoy.yaml
+EXPOSE 8080
 RUN chmod go+r /etc/envoy/envoy.yaml
 CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml

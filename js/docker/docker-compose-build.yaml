@@ -10,10 +10,11 @@ services:
     expose:
       - "8080"
       - "8001"
+      - "8443"
     ports:
-      - "8080:8080"
+      - "80:8080"
+      - "443:8443"
       - "8001:8001"
-
   emulator:
     image: emulator_emulator:latest
     build:

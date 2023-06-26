@@ -38,6 +38,7 @@ services:
 
   nginx:
     image: emulator_nginx:latest
+    network_mode: "host"
     container_name: emulator_nginx
     networks:
       envoymesh:
