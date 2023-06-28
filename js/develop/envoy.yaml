@@ -28,7 +28,7 @@ static_resources:
                   max_stream_duration:
                     grpc_timeout_header_max: 0s
               - match:
-                  prefix: "/android.emulation.control"
+                  prefix: "/android.emulation.control.EmulatorController"
                 route:
                   cluster: emulator_service_grpc
                   timeout: 0s
@@ -105,6 +105,7 @@ static_resources:
     connect_timeout: 0.250s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    http2_protocol_options: {}
     load_assignment:
       cluster_name: emulator_service_grpc
       endpoints:

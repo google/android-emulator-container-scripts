@@ -15,7 +15,9 @@ var EMULATOR_GRPC =
   "//" +
   window.location.hostname +
   ":" +
-  window.location.port;
+  // For some reason, process.env.NODE_ENV either doesn't exist or is equal to "development", causing EMULATOR_GRPC to equal/point to "localhost:" verus "localhost:8080" which is where Envoy is listening for gRPC-Web requests. Hard-coding the appendation of ":8080" as we've done here restores some functionality, as now both the WebRTC and PNG views return a status of "connecting" and the JavaScript console no longer logs any 'JWT is missing' errors. However, the WebRTC and PNG views never return a status of "connected" so video and audio of the emulator cannot be seen/heard.
+  "8080";
+  // window.location.port;
 if (development) {
   EMULATOR_GRPC = window.location.protocol + "//" +
     window.location.hostname + ":8080";

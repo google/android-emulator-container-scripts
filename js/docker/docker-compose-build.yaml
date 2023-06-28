@@ -15,6 +15,7 @@ services:
       - "80:8080"
       - "443:8443"
       - "8001:8001"
+      - "8080:8080"
   emulator:
     image: emulator_emulator:latest
     build:
