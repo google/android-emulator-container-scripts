@@ -211,6 +211,8 @@ class EmulatorScreen extends React.Component {
                   volume={volume}
                   gps={gps}
                   width={200}
+                  // For some reason, height was not defined. Maybe it was accidentally omitted? Omitting this property will cause the Emulator HTML element that displays the emulator screen not to render since only the width will be rendered.
+                  // height={500}
                 />
                 <p>State: {emuState} </p>
               </Container>

@@ -8,12 +8,11 @@ services:
     expose:
       - "8080"
       - "8001"
-      - "8443"
     ports:
       - "80:8080"
-      - "443:8443"
+      - "443:8080"
       - "8001:8001"
-
+      - "8080:8080"
   emulator:
     image: emulator_emulator:latest
     container_name: emulator_emulator
@@ -25,20 +24,19 @@ services:
     shm_size: 128M
     expose:
       - "8554"
-
-  jwt_signer:
-    image: emulator_jwt_signer:latest
-    container_name: emulator_jwt_signer
-    networks:
-      envoymesh:
-        aliases:
-          - jwt_signer
-    expose:
-      - "8080"
+  #jwt_signer:
+  #  image: emulator_jwt_signer:latest
+  #  container_name: emulator_jwt_signer
+  #  networks:
+  #    envoymesh:
+  #      aliases:
+  #        - jwt_signer
+  #  expose:
+  #    - "8080"
 
   nginx:
     image: emulator_nginx:latest
-    network_mode: "host"
+    # network_mode: "host"
     container_name: emulator_nginx
     networks:
       envoymesh:
