@@ -65,7 +65,7 @@ class DockerContainer:
             logging.warning("docker push %s", image)
 
     def launch(self, port_map) -> Image:
-        """Launches the container with the given sha, publishing abd on port, and gRPC on port 8554
+        """Launches the container with the given sha, publishing adb on port 5555, and gRPC on port 8554
 
         Returns the container.
         """
@@ -198,7 +198,7 @@ class DockerContainer:
     def available(self):
         """True if this container image is locally available."""
         if self.docker_image():
-            logging.info("%s is avaliable", self.docker_image().tags)
+            logging.info("%s is available", self.docker_image().tags)
             return True
         return False
 
