@@ -13,7 +13,7 @@ emu-docker = "emu.emu_docker:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 PyYAML = "^6.0"
-docker = "^6.1.1"
+docker = "^7.1.0"
 tqdm = "^4.65.0"
 console-menu = "^0.8.0"
 click = "^8.1.3"
