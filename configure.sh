@@ -18,6 +18,7 @@ if [ "${BASH_SOURCE-}" = "$0" ]; then
     exit 33
 fi
 
+# prefer <= python3.12 if available.
 PYTHON=python3
 VENV=.venv
 

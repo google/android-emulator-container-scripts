@@ -186,7 +186,7 @@ Given an emulator zip file and a system image zip file, we can build a directory
 that can be sent to `docker build` via the following invocation of `emu-docker`:
 
     emu-docker create <emulator-zip> <system-image-zip>  [--dest docker-src-dir
-    (getcwd()/src by default)]
+    (getcwd()/bld/emulator by default)]
 
 This places all the right elements to run a docker image, but does not build,
 run or publish yet. A Linux emulator zip file must be used.
@@ -195,7 +195,7 @@ run or publish yet. A Linux emulator zip file must be used.
 
 To build the Docker image corresponding to these emulators and system images:
 
-    docker build <docker-src-dir, either ./src or specified argument to
+    docker build <docker-src-dir, either ./bld/emulator or specified argument to
     emu_docker.py>
 
 A Docker image ID will output; save this image ID.
