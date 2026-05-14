@@ -13,6 +13,17 @@
 # limitations under the License.
 FROM {{from_base_img}} AS emulator
 
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ focal main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::https::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    apt-get update --fix-missing
+
 # Install all the required emulator dependencies.
 # You can get these by running ./android/scripts/unix/run_tests.sh --verbose --verbose --debs | grep apt | sort -u
 # pulse audio is needed due to some webrtc dependencies.

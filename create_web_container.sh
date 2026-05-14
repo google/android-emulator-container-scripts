@@ -95,18 +95,27 @@ generate_keys
 # Copy the private adbkey over
 cp ~/.android/adbkey js/docker/certs
 
+# compose v1 (`docker-compose`) is no longer receiving updates,
+# default to compose v2 (`docker compose`) if available.
+if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    DOCKER_COMPOSE="docker-compose"
+fi
+
+
 # compose the container
 python -m venv .docker-venv
 source .docker-venv/bin/activate
 pip install docker-compose
-docker-compose -f ${DOCKER_YAML} build
+$DOCKER_COMPOSE -f ${DOCKER_YAML} build
 rm js/docker/certs/adbkey
 
 if [ "${START}" = "yes" ]; then
-    docker-compose -f ${DOCKER_YAML} up
+    $DOCKER_COMPOSE -f ${DOCKER_YAML} up
 else
     echo "Created container, you can launch it as follows:"
-    echo "docker-compose -f ${DOCKER_YAML} up"
+    echo "$DOCKER_COMPOSE -f ${DOCKER_YAML} up"
 fi
 
 if [ "${INSTALL}" = "yes" ]; then
