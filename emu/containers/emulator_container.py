@@ -105,6 +105,8 @@ class EmulatorContainer(DockerContainer):
             self.props["qemu.short_tag"],
             self.props["qemu.short_abi"],
         )
+        if self.props.get("qemu.is_16k") == "true":
+            name = "{}-ps16k".format(name)
         if not self.metrics:
             return "{}-no-metrics".format(name)
         return name

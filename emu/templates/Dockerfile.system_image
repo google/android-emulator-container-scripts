@@ -48,7 +48,8 @@ LABEL maintainer="{{user}}" \
     qemu.tag="{{qemu_tag}}" \
     qemu.cpu="{{qemu_cpu}}" \
     qemu.short_tag="{{qemu_short_tag}}" \
-    qemu.short_abi="{{qemu_short_abi}}"
+    qemu.short_abi="{{qemu_short_abi}}" \
+    qemu.is_16k="{{qemu_is_16k}}"
 
 # We adopt the following naimg convention <ro.build.version.sdk>-<qem>-<ro.product.cpu.abi>
 # SystemImage.TagId in 'aosp', 'google', 'playstore'ß

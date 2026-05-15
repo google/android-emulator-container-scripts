@@ -64,7 +64,8 @@ class SystemImageContainer(DockerContainer):
         if self.system_image_info:
             return self.system_image_info.image_name()
         if self.system_image_zip:
-            return f"sys-{self.system_image_zip.api()}-{self.system_image_zip.short_tag()}-{self.system_image_zip.short_abi()}"
+            suffix = "-ps16k" if self.system_image_zip.is_16k() else ""
+            return f"sys-{self.system_image_zip.api()}-{self.system_image_zip.short_tag()}-{self.system_image_zip.short_abi()}{suffix}"
 
     def docker_tag(self):
         if self.system_image_zip:

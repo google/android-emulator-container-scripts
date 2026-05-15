@@ -28,11 +28,11 @@ from emu.utils import download
 from emu.docker_config import DockerConfig
 
 SYSIMG_REPOS = [
-    "https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/google_atd/sys-img2-1.xml",
-    "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-1.xml",
+    "https://dl.google.com/android/repository/sys-img/android/sys-img2-5.xml",
+    "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-5.xml",
+    "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-5.xml",
+    "https://dl.google.com/android/repository/sys-img/google_atd/sys-img2-5.xml",
+    "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-5.xml",
 ]
 
 EMU_REPOS = ["https://dl.google.com/android/repository/repository2-1.xml"]
@@ -63,11 +63,17 @@ API_LETTER_MAPPING = {
     "30": "R",
     "31": "S",
     "32": "S",
+    "33": "T",
+    "34": "U",
+    "35": "V",
+    "36": "B",
+    "37": "C",
 }
 
-# Older versions might not work as expected.
-MIN_REL_I386 = "K"
-MIN_REL_X64 = "O"
+# Older versions might not work as expected. Keyed on the major API
+# integer so new API levels need no code change to be filtered correctly.
+MIN_API_I386 = 19  # K
+MIN_API_X64 = 26   # O
 
 
 class License(object):
@@ -137,21 +143,43 @@ class SysImgInfo(LicensedObject):
     def __init__(self, pkg, licenses):
         super(SysImgInfo, self).__init__(pkg, licenses)
         details = pkg.find("type-details")
+        # api-level is "36", "36.1", "37.0", or "36x" (ext-SDK). Keep the
+        # original string for display/uniqueness and derive a major int
+        # for filter thresholds.
         self.api = details.find("api-level").text
+        m = re.match(r"\d+", self.api)
+        self.api_major = int(m.group()) if m else 0
 
+        # Derive the (sort, is_16k) pair from the path's third segment
+        # (system-images;<api_or_codename>;<sort>;<abi>). Tag elements in
+        # the XML can be multi-valued and ordered arbitrarily, so the
+        # path is the only deterministic source.
+        path_parts = pkg.attrib.get("path", "").split(";")
+        sort = path_parts[2] if len(path_parts) > 2 else ""
+        self.is_16k = sort.endswith("_ps16k")
+        sort_base = sort[: -len("_ps16k")] if self.is_16k else sort
+
+        # Pre-release builds carry a codename (Baklava, CinnamonBun, CANARY,
+        # ...). They get filtered out at listing time so users only see
+        # stable/released images by default.
         codename = details.find("codename")
-        if codename is None:
-            if self.api in API_LETTER_MAPPING:
-                self.letter = API_LETTER_MAPPING[self.api]
-            else:
-                self.letter = "A"  # A indicates unknown code.
+        self.is_preview = codename is not None and bool(codename.text)
+        # ext-SDK system images (api-level "33x", "34x", "36x", ...) ship
+        # the same target SDK with additional extension APIs. They are
+        # filtered out at listing time to keep the list uncluttered.
+        self.is_ext_sdk = self.api.endswith("x")
+        if self.api in API_LETTER_MAPPING:
+            self.letter = API_LETTER_MAPPING[self.api]
+        elif str(self.api_major) in API_LETTER_MAPPING:
+            self.letter = API_LETTER_MAPPING[str(self.api_major)]
         else:
-            self.letter = codename.text
+            self.letter = self.api
 
-        self.tag = details.find("tag").find("id").text
-
-        if self.tag == "default":
-            self.tag = "android"
+        # The legacy sort segment "default" is served from the "android"
+        # subdirectory and surfaced to users as the "android" tag.
+        if sort_base == "default":
+            sort_base = "android"
+        self.tag = sort_base or details.find("tag").find("id").text
         self.abi = details.find("abi").text
 
         # prefer a url for a Linux host in case there are multiple
@@ -161,35 +189,45 @@ class SysImgInfo(LicensedObject):
             url_element = pkg.find(".//url")
         self.zip = url_element.text
 
+        # The zip lives under sys-img/<sort_base>/, regardless of how
+        # the <tag> element is labelled — for 16KB variants the path
+        # sort is e.g. google_apis_ps16k, served from .../google_apis/.
+        url_dir = sort_base or self.tag
         self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (
-            self.tag,
+            url_dir,
             self.zip,
         )
 
     def short_tag(self):
-        return self.SHORT_TAG[self.tag]
+        return self.SHORT_TAG.get(self.tag, self.tag)
 
     def short_abi(self):
-        return self.SHORT_MAP[self.abi]
+        return self.SHORT_MAP.get(self.abi, self.abi)
 
     def image_name(self):
-        return "sys-{}-{}-{}".format(self.api, self.short_tag(), self.short_abi())
+        suffix = "-ps16k" if self.is_16k else ""
+        return "sys-{}-{}-{}{}".format(
+            self.api, self.short_tag(), self.short_abi(), suffix
+        )
 
     def download_name(self):
-        return "sys-img-{}-{}-{}-{}.zip".format(
-            self.tag, self.api, self.letter, self.abi
+        suffix = "-ps16k" if self.is_16k else ""
+        return "sys-img-{}-{}-{}-{}{}.zip".format(
+            self.tag, self.api, self.letter, self.abi, suffix
         )
 
     def download(self, dest=Path.cwd()):
         dest = dest / self.download_name()
+        variant = " ps16k" if self.is_16k else ""
         print(
-            f"Downloading system image: {self.tag} {self.api} {self.letter} {self.abi} to {dest}"
+            f"Downloading system image: {self.tag} {self.api} {self.letter} {self.abi}{variant} to {dest}"
         )
 
         return super(SysImgInfo, self).download(self.url, dest)
 
     def __str__(self):
-        return "{} {} {}".format(self.letter, self.tag, self.abi)
+        suffix = " ps16k" if self.is_16k else ""
+        return "{} {} {}{}".format(self.letter, self.tag, self.abi, suffix)
 
 
 class EmuInfo(LicensedObject):
@@ -246,17 +284,24 @@ def get_images_info(arm=False):
     xml = [ET.fromstring(x).findall("remotePackage") for x in xml]
     # Flatten the list of lists into a system image objects.
     infos = [SysImgInfo(item, licenses) for sublist in xml for item in sublist]
-    # Filter only for intel images that we know that work
+    # Drop pre-release builds (Baklava / CinnamonBun / CANARY etc.) and
+    # ext-SDK images (api-level "36x" etc.) to keep the list uncluttered.
+    infos = [info for info in infos if not info.is_preview and not info.is_ext_sdk]
+    # Filter only for intel images that we know that work. Filtering on
+    # the integer api_major so new API levels don't need a code change.
     x86_64_imgs = [
-        info for info in infos if info.abi == "x86_64" and info.letter >= MIN_REL_X64
+        info for info in infos if info.abi == "x86_64" and info.api_major >= MIN_API_X64
     ]
     x86_imgs = [
-        info for info in infos if info.abi == "x86" and info.letter >= MIN_REL_I386
+        info for info in infos if info.abi == "x86" and info.api_major >= MIN_API_I386
     ]
     slow = []
     if arm:
         slow = [info for info in infos if info.abi.startswith("arm")]
-    all_imgs = sorted(x86_64_imgs + x86_imgs + slow, key=lambda x: x.api + x.tag)
+    all_imgs = sorted(
+        x86_64_imgs + x86_imgs + slow,
+        key=lambda x: (x.api_major, x.api, x.tag, x.abi, x.is_16k),
+    )
     # Filter out windows/darwin images.
     return [i for i in all_imgs if "windows" not in i.url and "darwin" not in i.url]
 
@@ -332,7 +377,7 @@ def select_image(arm):
     Returns a SysImgInfo object with the choice or None if the user aborts."""
     img_infos = get_images_info(arm)
     display = [
-        f"{img_info.api} {img_info.letter} {img_info.tag} ({img_info.abi})"
+        f"{img_info.api} {img_info.letter} {img_info.tag} ({img_info.abi}){' ps16k' if img_info.is_16k else ''}"
         for img_info in img_infos
     ]
 
@@ -360,9 +405,15 @@ def list_all_downloads(arm):
     emu_infos = get_emus_info()
 
     for img_info in img_infos:
+        variant = " ps16k" if img_info.is_16k else ""
         print(
-            "SYSIMG {} {} {} {} {}".format(
-                img_info.letter, img_info.tag, img_info.abi, img_info.api, img_info.url
+            "SYSIMG {} {} {} {}{} {}".format(
+                img_info.letter,
+                img_info.tag,
+                img_info.abi,
+                img_info.api,
+                variant,
+                img_info.url,
             )
         )
 
