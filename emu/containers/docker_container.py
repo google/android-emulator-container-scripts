@@ -33,8 +33,10 @@ class DockerContainer:
         return docker.from_env()
 
     def get_api_client(self) -> docker.APIClient:
+        # Honor DOCKER_HOST so Docker Desktop, podman, and other rootless or
+        # non-default daemon sockets work without symlinking /var/run/docker.sock.
         try:
-            api_client = docker.APIClient()
+            api_client = docker.APIClient(base_url=os.environ.get("DOCKER_HOST"))
             logging.info(api_client.version())
             return api_client
         except Exception as _err:
@@ -42,7 +44,7 @@ class DockerContainer:
                 "Failed to create default client, trying domain socket.", exc_info=True
             )
 
-        api_client = docker.APIClient(base_url="unix://var/run/docker.sock")
+        api_client = docker.APIClient(base_url="unix:///var/run/docker.sock")
         logging.info(api_client.version())
         return api_client
 
