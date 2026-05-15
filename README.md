@@ -146,38 +146,32 @@ of:
 - Available and currently Docker-compatible system images
 - Currently published and advertised emulator binaries
 
-For each system image, the API level, variant, ABI, and URL are displayed. For
-each emulator, the update channel (stable vs canary), version, host os, and URL
+For each system image, the codename letter, sort tag, ABI, API level (with a
+trailing `ps16k` for 16 KB-page variants), and URL are displayed. For each
+emulator, the update channel (stable, dev, ...), version, host os, and URL
 are displayed.
 
 Example output:
 
-    SYSIMG android 21 L x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-21_r05.zip
-    SYSIMG android 22 L x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-22_r06.zip
-    SYSIMG android 23 M x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-23_r10.zip
-    SYSIMG android 24 N x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip
-    SYSIMG android 25 N x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-25_r01.zip
-    SYSIMG android 26 O x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-26_r01.zip
-    SYSIMG android 27 O x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-27_r01.zip
-    SYSIMG android 28 P x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-28_r04.zip
-    SYSIMG android 28 Q x86_64 https://dl.google.com/android/repository/sys-img/android/x86_64-Q_r04.zip
-    SYSIMG google_apis 21 L x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-21_r30.zip
-    SYSIMG google_apis 22 L x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-22_r24.zip
-    SYSIMG google_apis 23 M x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-23_r31.zip
-    SYSIMG google_apis 24 N x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-24_r25.zip
-    SYSIMG google_apis 25 N x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-25_r16.zip
-    SYSIMG google_apis 26 O x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-26_r13.zip
-    SYSIMG google_apis 28 P x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r09.zip
-    SYSIMG google_apis 28 Q x86_64 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-Q_r04.zip
-    SYSIMG google_apis_playstore 28 P x86_64 https://dl.google.com/android/repository/sys-img/google_apis_playstore/x86_64-28_r08.p
-    SYSIMG google_apis_playstore 28 Q x86_64 https://dl.google.com/android/repository/sys-img/google_apis_playstore/x86_64-Q_r04.zp
-    EMU stable 29.0.11 windows https://dl.google.com/android/repository/emulator-windows-5598178.zip
-    EMU stable 29.0.11 macosx https://dl.google.com/android/repository/emulator-darwin-5598178.zip
-    EMU stable 29.0.11 linux https://dl.google.com/android/repository/emulator-linux-5598178.zip
-    EMU stable 28.0.25 windows https://dl.google.com/android/repository/emulator-windows-5395263.zip
-    EMU canary 29.0.12 windows https://dl.google.com/android/repository/emulator-windows-5613046.zip
-    EMU canary 29.0.12 macosx https://dl.google.com/android/repository/emulator-darwin-5613046.zip
-    EMU canary 29.0.12 linux https://dl.google.com/android/repository/emulator-linux-5613046.zip
+    SYSIMG R google_apis x86_64 30 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-30_r16.zip
+    SYSIMG S google_apis x86_64 31 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-31_r14.zip
+    SYSIMG T google_apis_playstore x86_64 33 https://dl.google.com/android/repository/sys-img/google_apis_playstore/x86_64-33_r09.zip
+    SYSIMG U google_apis x86_64 34 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-34_r14.zip
+    SYSIMG V google_apis x86_64 35 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-35_r09.zip
+    SYSIMG V google_apis x86_64 35 ps16k https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-35_r05.zip
+    SYSIMG B google_apis x86_64 36 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-36_r07.zip
+    SYSIMG B google_apis x86_64 36 ps16k https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-36_r07.zip
+    SYSIMG B google_apis_playstore x86_64 36 https://dl.google.com/android/repository/sys-img/google_apis_playstore/x86_64-36_r07.zip
+    SYSIMG B google_apis_playstore x86_64 36 ps16k https://dl.google.com/android/repository/sys-img/google_apis_playstore/x86_64-playstore-ps16k-36_r07.zip
+    SYSIMG C google_apis x86_64 37.0 ps16k https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-37.0_r04.zip
+    EMU stable 36.5.11 linux https://dl.google.com/android/repository/emulator-linux_x64-15261927.zip
+    EMU dev 36.6.8 linux https://dl.google.com/android/repository/emulator-linux_x64-15368433.zip
+
+A `ps16k` suffix marks a 16 KB page-size variant of the same `(api, sort, abi)`;
+the regular 4 KB variant continues to appear without the suffix. Pre-release
+codename builds (Baklava, CinnamonBun, ...) and ext-SDK images are filtered out
+to keep the list uncluttered; pass them as a direct zip path to
+`emu-docker create` if you need to build a container from one.
 
 One can then use tools like `wget` or a browser to download a desired emulator
 and system image. After the two are obtained, we can build a Docker image.

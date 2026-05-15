@@ -181,6 +181,7 @@ class SystemImageReleaseZip(AndroidReleaseZip):
         self.props["qemu.tag"] = self.tag()
         self.props["qemu.short_tag"] = self.short_tag()
         self.props["qemu.short_abi"] = self.short_abi()
+        self.props["qemu.is_16k"] = "true" if self.is_16k() else "false"
 
     def api(self) -> str:
         """The api level, if any."""
@@ -211,11 +212,23 @@ class SystemImageReleaseZip(AndroidReleaseZip):
         return self.props.get("SystemImage.GpuSupport")
 
     def tag(self) -> str:
-        """The tag associated with this release."""
-        tag = self.props.get("SystemImage.TagId", "")
+        """The canonical sort tag associated with this release.
+
+        SystemImage.TagId can be multi-valued (comma-joined) for 16 KB-page
+        variants -- typically "google_apis,page_size_16kb". Reduce to the
+        non-page-size component so downstream lookups still work.
+        """
+        raw = self.props.get("SystemImage.TagId", "")
+        parts = [p for p in raw.split(",") if p and p != "page_size_16kb"]
+        tag = parts[0] if parts else ""
         if tag == "default" or tag.strip() == "":
             tag = "android"
         return tag
+
+    def is_16k(self) -> bool:
+        """True if this is a 16 KB page-size system image variant."""
+        raw = self.props.get("SystemImage.TagId", "")
+        return "page_size_16kb" in raw.split(",")
 
     def short_tag(self) -> str:
         """A shorthand tag."""
