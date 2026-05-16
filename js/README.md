@@ -72,6 +72,37 @@ The most important thing to is to figure out if you need a [Turn Server](https:/
 Most of the time there is no need for a turn server. If you do have needs for a turn server you can follow the steps in the
 [README](turn/README.MD).
 
+# Authentication
+
+The web demo supports two authentication backends:
+
+## Self-hosted JWT (recommended for deployments)
+
+The `docker/` stack ships a token service (`jwt-provider/`) that mints JWTs signed by a keypair you control. This is the production path — no third-party identity provider, no shared sign-in quota, no external dependency. See `docker/` and `jwt-provider/` for the setup.
+
+## Firebase / Google sign-in (quick-start demo only)
+
+A lightweight on-ramp for "click sign-in, see the emulator." You bring your own Firebase project — this repo does not ship a usable one. Setup:
+
+1. **Create a Firebase project** at https://console.firebase.google.com. Any name works (e.g. `my-aemu-demo`).
+2. **Enable Google sign-in**: Authentication → Sign-in method → Google → Enable, set a project support email, Save.
+3. **Add a web app**: Project settings (gear icon) → Your apps → Web → register the app, copy the `firebaseConfig` object.
+4. **Save the config locally**:
+   ```sh
+   cp firebase_config.example.json firebase_config.json
+   ```
+   Open `firebase_config.json` and replace each placeholder value with the matching field from your project's web app config.
+5. **Generate the derived files**:
+   ```sh
+   python3 config_gen.py firebase_config.json
+   ```
+   This writes `src/config.js` and renders `develop/envoy.yaml` + `docker/envoy.yaml` from their `.template.yaml` siblings, substituting your project ID into the envoy JWT issuer/audience.
+6. **Start the dev stack** as described under *As a Developer* below.
+
+`firebase_config.json`, `src/config.js`, and the rendered `envoy.yaml` files are gitignored — each contributor configures their own project. The `.template.yaml` files are the source of truth; rerun `config_gen.py` after changing them.
+
+Firebase web API keys are not secrets — they're public identifiers, see [Firebase docs](https://firebase.google.com/docs/projects/api-keys). But your project *owns* every sign-in (PII, quota, abuse). Don't paste someone else's config, and don't commit yours.
+
 # Internal Organization
 
 This sample is based on ReactJS and uses the android-emulator-webrtc module to display the emulator.
