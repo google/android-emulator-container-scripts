@@ -190,10 +190,16 @@ class DockerContainer:
         Returns:
             {docker.models.images.Image}: A docker image object, or None.
         """
+        target = self.image_name()
         client = self.get_client()
         for img in client.images.list():
             for tag in img.tags:
-                if self.image_name() in tag:
+                # Tags can be "<name>", "<name>:<version>", or
+                # "<repo>/<name>:<version>". Match against the bare name
+                # segment so e.g. "36-google-x64" does not accidentally
+                # pick up "sys-36-google-x64".
+                name_part = tag.split("/")[-1].split(":")[0]
+                if name_part == target:
                     return img
         return None
 
