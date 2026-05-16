@@ -56,9 +56,9 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
               providers:
                 firebase_jwt:
-                  issuer: https://securetoken.google.com/android-emulator-webrtc-demo
+                  issuer: https://securetoken.google.com/__FIREBASE_PROJECT_ID__
                   audiences:
-                  - android-emulator-webrtc-demo
+                  - __FIREBASE_PROJECT_ID__
                   remote_jwks:
                     http_uri:
                       uri: https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com

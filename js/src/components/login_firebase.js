@@ -21,6 +21,15 @@ import Typography from "@mui/material/Typography";
 
 import { config } from "../config";
 
+if (!config.apiKey || !config.projectId || config.projectId === "YOUR_PROJECT_ID") {
+    throw new Error(
+        "Firebase config is missing or unconfigured. " +
+        "Copy firebase_config.example.json to firebase_config.json, " +
+        "fill in your Firebase project's web app config, then run: " +
+        "python3 config_gen.py firebase_config.json"
+    );
+}
+
 // Initialize the Firebase app once at module load.
 const firebaseApp = initializeApp(config);
 const firebaseAuth = getAuth(firebaseApp);
