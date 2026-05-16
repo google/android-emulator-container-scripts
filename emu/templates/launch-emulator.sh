@@ -181,7 +181,7 @@ LAUNCH_CMD+=("-skip-adb-auth" "-no-snapshot-save" "-wipe-data" "-no-boot-anim")
 LAUNCH_CMD+=("-shell-serial" "file:/tmp/android-unknown/kernel.log")
 LAUNCH_CMD+=("-logcat" "*:V")
 LAUNCH_CMD+=("-feature" "AllowSnapshotMigration")
-LAUNCH_CMD+=("-gpu" "swiftshader_indirect" {{extra}})
+LAUNCH_CMD+=({{extra}})
 
 if [ ! -z "${EMULATOR_PARAMS}" ]; then
   LAUNCH_CMD+=($EMULATOR_PARAMS)
