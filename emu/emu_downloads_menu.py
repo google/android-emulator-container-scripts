@@ -27,7 +27,7 @@ from consolemenu import SelectionMenu
 from emu.utils import download
 from emu.docker_config import DockerConfig
 
-ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com/")
+ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com").rstrip("/")
 
 SYSIMG_REPOS = [
     "%s/android/repository/sys-img/android/sys-img2-5.xml" % ANDROID_REPOSITORY,

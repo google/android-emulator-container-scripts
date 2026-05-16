@@ -17,7 +17,7 @@ from pathlib import Path
 
 from emu.utils import download
 
-ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com")
+ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com").rstrip("/")
 
 class PlatformTools(object):
     """The platform tools zip file. It will be downloaded on demand."""
