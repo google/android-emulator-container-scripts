@@ -19,9 +19,8 @@ The docker images have the following requirements:
     - AWS provides [bare
       metal](https://aws.amazon.com/about-aws/whats-new/2019/02/introducing-five-new-amazon-ec2-bare-metal-instances/)
       instances that provide access to KVM.
-    - Azure: Follow these
-      [instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/nested-virtualization)
-      to enable nested virtualization.
+    - Azure: pick a [VM size that supports nested virtualization](https://learn.microsoft.com/en-us/azure/virtual-machines/acu)
+      (the `acu` table flags supported families). KVM is then available inside the VM.
     - GCE: Follow these
       [instructions](https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances)
       to enable nested virtualization.
@@ -52,7 +51,7 @@ The following environment variables are accepted by the emulator:
 The following ports are available:
 
  - 5555: The [Android Debug Bridge (adb)](https://developer.android.com/studio/command-line/adb) port
- - 8555: The gRPC port. This can be used by android studio and javascript endpoints.
+ - 8554: The gRPC port. This can be used by android studio and javascript endpoints.
 
 An example invocation making the console, adb and the gRPC endpoint available:
 ```sh

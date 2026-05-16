@@ -1,8 +1,8 @@
 # Android Emulator Container Scripts
 
 This is a set of minimal scripts to run the emulator in a container for various
-systems such as Docker, for external consumption. The scripts are compatible
-with both Python version 2 and 3.
+systems such as Docker, for external consumption. Requires Python 3.10 or
+newer.
 
 \*Note that this is still an experimental feature and we recommend installing
 this tool in a [python virtual environment](https://docs.python.org/3/tutorial/venv.html).
@@ -19,7 +19,9 @@ following requirements:
 - [Docker](https://docs.docker.com/v17.12/install/) must be installed. Make
   sure you can run it as [non-root
   user](https://docs.docker.com/install/linux/linux-postinstall/)
-- [Docker-compose](https://docs.docker.com/compose/install/) must be installed.
+- [Docker Compose](https://docs.docker.com/compose/install/) must be installed
+  — either the v2 `docker compose` plugin (preferred) or the legacy
+  `docker-compose` v1 command works.
 - KVM must be available. You can get access to KVM by running on "bare metal",
   or on a (virtual) machine that provides nested virtualization. If you are planning to run
   this in the cloud (gce/azure/aws/etc..) you first must make sure you have
@@ -36,7 +38,7 @@ following requirements:
     to enable nested virtualization.
 
 Keep in mind that you will see reduced performance if you are making use of
-nested virtualization. The containers have been tested under Debian and Ubuntu running kernel 5.2.17.
+nested virtualization. The containers have been tested under Debian and Ubuntu.
 
 _NOTE: The images will not run in docker on mac or windows_
 
@@ -240,7 +242,7 @@ a minimal X installation if you are using a cloud instance. For example
 [Xvfb](https://en.wikipedia.org/wiki/Xvfb) can be used. You must build the
 containers by passing in the --gpu flag:
 
-    emu-docker create stable Q --gpu
+    emu-docker create stable U --gpu
 
 You can now launch the emulator with the `run-with-gpu.sh` script:
 
@@ -279,13 +281,13 @@ Where:
 - abi indicates the underlying CPU architecture, which is one of: _x86_, _x86_64_, _a32_, _a64_.
   Note that arm images are not hardware accelerated and might not be fast enough.
 
-For example: _29-playstore-x86:30.1.2_ indicates a playstore enabled system
-image with Q running on 32-bit x86.
+For example: _34-playstore-x64:36.5.11_ indicates a playstore enabled system
+image with U (API 34) running on 64-bit x86_64.
 
-An example invocation for publishing all Q images to google cloud repo could be:
+An example invocation for publishing all U (API 34) images to google cloud repo could be:
 
 ```sh
-    emu-docker -v create --push --repo us.gcr.io/emulator-project/ stable "Q"
+    emu-docker -v create --push --repo us.gcr.io/emulator-project/ stable "U"
 ```
 
 Images that have been pushed to a repository can be launched directly from the repository.
@@ -293,7 +295,7 @@ For example:
 
 ```sh
     docker run --device /dev/kvm --publish 8554:8554/tcp --publish 5555:5555/tcp \
-    us.gcr.io/emulator-project/29-playstore-x86:30.1.2
+    us.gcr.io/emulator-project/34-playstore-x64:36.5.11
 ```
 
 ## Communicating with the emulator in the container
