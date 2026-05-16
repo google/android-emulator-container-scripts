@@ -76,8 +76,8 @@ class EmulatorContainer(DockerContainer):
         self.clean(dest)
 
         writer = TemplateWriter(dest)
-        writer.write_template("avd/Pixel2.ini", self.props)
-        writer.write_template("avd/Pixel2.avd/config.ini", self.props)
+        writer.write_template("avd/MediumPhone.ini", self.props)
+        writer.write_template("avd/MediumPhone.avd/config.ini", self.props)
 
         # Include a README.MD message.
         writer.write_template(
