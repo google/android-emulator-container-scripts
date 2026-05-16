@@ -27,15 +27,17 @@ from consolemenu import SelectionMenu
 from emu.utils import download
 from emu.docker_config import DockerConfig
 
+ANDROID_REPOSITORY = os.environ.get("ANDROID_REPOSITORY", "https://dl.google.com").rstrip("/")
+
 SYSIMG_REPOS = [
-    "https://dl.google.com/android/repository/sys-img/android/sys-img2-5.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-5.xml",
-    "https://dl.google.com/android/repository/sys-img/google_apis_playstore/sys-img2-5.xml",
-    "https://dl.google.com/android/repository/sys-img/google_atd/sys-img2-5.xml",
-    "https://dl.google.com/android/repository/sys-img/android-tv/sys-img2-5.xml",
+    "%s/android/repository/sys-img/android/sys-img2-5.xml" % ANDROID_REPOSITORY,
+    "%s/android/repository/sys-img/google_apis/sys-img2-5.xml" % ANDROID_REPOSITORY,
+    "%s/android/repository/sys-img/google_apis_playstore/sys-img2-5.xml" % ANDROID_REPOSITORY,
+    "%s/android/repository/sys-img/google_atd/sys-img2-5.xml" % ANDROID_REPOSITORY,
+    "%s/android/repository/sys-img/android-tv/sys-img2-5.xml" % ANDROID_REPOSITORY,
 ]
 
-EMU_REPOS = ["https://dl.google.com/android/repository/repository2-1.xml"]
+EMU_REPOS = ["%s/android/repository/repository2-1.xml" % ANDROID_REPOSITORY]
 
 CHANNEL_MAPPING = {
     "channel-0": "stable",
@@ -193,7 +195,8 @@ class SysImgInfo(LicensedObject):
         # the <tag> element is labelled — for 16KB variants the path
         # sort is e.g. google_apis_ps16k, served from .../google_apis/.
         url_dir = sort_base or self.tag
-        self.url = "https://dl.google.com/android/repository/sys-img/%s/%s" % (
+        self.url = "%s/android/repository/sys-img/%s/%s" % (
+            ANDROID_REPOSITORY,
             url_dir,
             self.zip,
         )
@@ -252,7 +255,7 @@ class EmuInfo(LicensedObject):
         for archive in archives:
             url = archive.find(".//url").text
             hostos = archive.find("host-os").text
-            self.urls[hostos] = "https://dl.google.com/android/repository/%s" % url
+            self.urls[hostos] = "%s/android/repository/%s" % (ANDROID_REPOSITORY, url)
 
     def download_name(self):
         return "emulator-{}.zip".format(self.version)
