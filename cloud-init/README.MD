@@ -7,7 +7,7 @@
 You must run a base instance which has KVM and docker available. Details on how to get access to KVM on the various cloud providers can be found here:
 
 - AWS provides [bare metal](https://aws.amazon.com/about-aws/whats-new/2019/02/introducing-five-new-amazon-ec2-bare-metal-instances/) instances that provide access to KVM.
-- Azure: Follow these [instructions](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/nested-virtualization) to enable nested virtualization.
+- Azure: pick a [VM size that supports nested virtualization](https://learn.microsoft.com/en-us/azure/virtual-machines/acu) (the `acu` table flags supported families). KVM is then available inside the VM.
 - GCE: Follow these [instructions](https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances) to enable nested virtualization.
 
 _NOTE_ You cannot use GCE's container optimized OS, as it does not make /dev/kvm available. You can follow the steps at the bottom to create you own

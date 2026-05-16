@@ -37,14 +37,14 @@ For fast video over [WebRTC](www.webrtc.org):
     ```
     and make sure that the reported build_id is higher than 5769853
   - Build one from source yourself.
-  - Obtain one from the [build bots](http://go/ab/emu-master-dev). Make sure to get sdk-repo-linux-emulator-XXXX.zip where XXXX is the build number. You can unzip the contents to `$ANDROID_SDK_ROOT`. For example:
+  - Obtain one via `emu-docker list` (which prints download URLs for the publicly published emulator builds) or `emu-docker create <build-id>` to fetch a specific build. Then unzip the contents to `$ANDROID_SDK_ROOT`. For example:
   ```sh
     $ unzip ~/Downloads/sdk-repo-linux-emulator-5775474.zip -d $ANDROID_SDK_ROOT
   ```
 - A valid virtual device to run inside the emulator. Instructions on how to create a virtual device can be found [here](https://developer.android.com/studio/run/managing-avds). Any virtual device can be used.
 - [Node.js](https://nodejs.org/en/) Stable version 10.16.1 LTS or later.
 - A [protobuf](https://developers.google.com/protocol-buffers/) compiler, version 3.6 or higher is supported.
-- [Docker](https://www.docker.com). We will use the container infrastructure for easy deployment. Follow the instructions [here](http://go/installdocker) if you are within Google.
+- [Docker](https://www.docker.com). We will use the container infrastructure for easy deployment. Follow the [install instructions](https://docs.docker.com/get-docker/).
 
 
 # Configure the emulator
