@@ -87,7 +87,7 @@ def create_docker_image(args):
         logging.info("Processing %s, %s", img, emulator)
         sys_docker = SystemImageContainer(img, args.repo)
         if not sys_docker.available() and not sys_docker.can_pull():
-            sys_docker.build(args.dest / "sys_img")
+            sys_docker.build(Path(args.dest) / "sys_img")
         else:
             logging.info(
                 "Image %s is local: %s, pull: %s",
