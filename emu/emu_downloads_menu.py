@@ -335,14 +335,22 @@ def find_image(regexpr):
 
 
 def find_emulator(channel):
-    """Displayes an interactive menu to select a released emulator binary.
+    """Finds the released emulator binaries for the given channel.
 
-    Returns a ImuInfo object with the choice or None if the user aborts."""
-    emu_infos = [
-        x
-        for x in get_emus_info()
-        if "linux" in x.urls and (channel == "all" or x.channel == channel)
-    ]
+    As with sdkmanager, a channel includes the more stable channels below it:
+    "canary" gives the newest emulator published on any channel, "stable" the
+    newest stable one. "all" gives every published emulator.
+
+    Returns a list of EmuInfo objects."""
+    emu_infos = [x for x in get_emus_info() if "linux" in x.urls]
+    if channel != "all":
+        channels = list(CHANNEL_MAPPING.values())
+        included = channels[: channels.index(channel) + 1] if channel in channels else []
+        emu_infos = [x for x in emu_infos if x.channel in included]
+        # Only the newest one, so a channel still stands for a single emulator.
+        emu_infos = sorted(
+            emu_infos, key=lambda x: [int(n) for n in x.version.split(".")], reverse=True
+        )[:1]
     logging.info("Found %s matching images: %s", channel, [str(x) for x in emu_infos])
     if not emu_infos:
         raise EmulatorNotFoundException(f"No emulator found in channel {channel}")
