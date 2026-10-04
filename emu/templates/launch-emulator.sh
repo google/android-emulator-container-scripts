@@ -192,7 +192,14 @@ if [ ! -z "${TURN}" ]; then
 fi
 
 # Add qemu specific parameters
+{% if preview_emulator %}
+# The Emulator Preview builds its own qemu command line, which already carries
+# an -append with the guest kernel arguments. Passing another one through
+# -qemu makes its (much newer) qemu fail with "requires an argument", so the
+# panic=1 kernel argument is not set for preview builds.
+{% else %}
 LAUNCH_CMD+=("-qemu" "-append" "panic=1")
+{% endif %}
 
 if [ ! -z "${ANDROID_AVD_HOME}" ]; then
   export ANDROID_AVD_HOME=/android-home
