@@ -88,7 +88,14 @@ class EmulatorContainer(DockerContainer):
         )
 
         writer.write_template(
-            "launch-emulator.sh", {"extra": self.extra, "version": emu.__version__}
+            "launch-emulator.sh",
+            {
+                "extra": self.extra,
+                "version": emu.__version__,
+                # The Emulator Preview runs on a much newer qemu that rejects
+                # some of the passthrough arguments the regular emulator takes.
+                "preview_emulator": self.emulator_zip.is_preview_emulator(),
+            },
         )
         writer.write_template("default.pa", {})
 

@@ -39,6 +39,12 @@ SYSIMG_REPOS = [
 
 EMU_REPOS = ["%s/android/repository/repository2-1.xml" % ANDROID_REPOSITORY]
 
+# The regular emulator is published under the "emulator" path; the Emulator
+# Preview under "emulators;latest" and "emulators;<build-id>".
+EMU_PATH = "emulator"
+EMU_PREVIEW_PATH_PREFIX = "emulators;"
+EMU_PREVIEW_LATEST_PATH = "emulators;latest"
+
 CHANNEL_MAPPING = {
     "channel-0": "stable",
     "channel-1": "beta",
@@ -76,6 +82,12 @@ API_LETTER_MAPPING = {
 # integer so new API levels need no code change to be filtered correctly.
 MIN_API_I386 = 19  # K
 MIN_API_X64 = 26   # O
+
+# The Emulator Preview ("emulators;latest" and the pinned "emulators;<build-id>"
+# packages) requires features on the system images that are right now only
+# available in the API 37+ system images. It is what those images get by
+# default, and it is not offered below that.
+MIN_API_PREVIEW_EMULATOR = 37
 
 
 class License(object):
@@ -243,13 +255,29 @@ class EmuInfo(LicensedObject):
         rev_major = rev.find("major").text
         rev_minor = rev.find("minor").text
         rev_micro = rev.find("micro").text
+        # The Emulator Preview packages carry a <preview> build id and share the
+        # same 0.0.1 major/minor/micro, so without it every preview release
+        # would present itself as plain "0.0.1".
+        rev_preview = rev.find("preview")
 
         archives = pkg.find("archives")
         channel = pkg.find("channelRef")
 
         self.channel = CHANNEL_MAPPING[channel.attrib["ref"]]
 
+        # "emulator" is the regular emulator; "emulators;latest" and
+        # "emulators;<build-id>" are the Emulator Preview.
+        self.path = pkg.attrib.get("path", "")
+        self.is_preview = self.path.startswith(EMU_PREVIEW_PATH_PREFIX)
+
+        display_name = pkg.find("display-name")
+        self.display_name = (
+            display_name.text if display_name is not None else "Android Emulator"
+        )
+
         self.version = "%s.%s.%s" % (rev_major, rev_minor, rev_micro)
+        if rev_preview is not None and rev_preview.text:
+            self.version = "%s-%s" % (self.version, rev_preview.text)
         self.urls = {}
 
         for archive in archives:
@@ -258,6 +286,10 @@ class EmuInfo(LicensedObject):
             self.urls[hostos] = "%s/android/repository/%s" % (ANDROID_REPOSITORY, url)
 
     def download_name(self):
+        # The two emulators are versioned independently, and an existing file
+        # is not downloaded again, so they must not share a name.
+        if self.is_preview:
+            return "emulator-preview-{}.zip".format(self.version)
         return "emulator-{}.zip".format(self.version)
 
     def download(self, hostos="linux", dest=None):
@@ -268,6 +300,8 @@ class EmuInfo(LicensedObject):
         return super(EmuInfo, self).download(self.urls[hostos], dest)
 
     def __str__(self):
+        if self.is_preview:
+            return "preview {}".format(self.version)
         return "{} {}".format(self.channel, self.version)
 
 
@@ -334,15 +368,37 @@ def find_image(regexpr):
     return matches
 
 
-def find_emulator(channel):
-    """Finds the released emulator binaries for the given channel.
+def find_emulator(channel, api_major=None):
+    """Finds the released emulator binaries to use for the given channel.
 
     As with sdkmanager, a channel includes the more stable channels below it:
     "canary" gives the newest emulator published on any channel, "stable" the
     newest stable one. "all" gives every published emulator.
 
+    If the api level of the system image is given and it is
+    MIN_API_PREVIEW_EMULATOR or higher, the latest Emulator Preview is returned
+    whatever the channel, as that is the emulator those images should run on.
+
     Returns a list of EmuInfo objects."""
     emu_infos = [x for x in get_emus_info() if "linux" in x.urls]
+    if api_major is not None and api_major >= MIN_API_PREVIEW_EMULATOR:
+        latest = [x for x in emu_infos if x.path == EMU_PREVIEW_LATEST_PATH]
+        if latest:
+            logging.info(
+                "Using the Emulator Preview %s for API %s (%s+ system images use it instead of %s)",
+                latest[0].version,
+                api_major,
+                MIN_API_PREVIEW_EMULATOR,
+                channel,
+            )
+            return latest[:1]
+        logging.warning(
+            "No Emulator Preview found for API %s, using the %s emulator",
+            api_major,
+            channel,
+        )
+
+    emu_infos = [x for x in emu_infos if not x.is_preview]
     if channel != "all":
         channels = list(CHANNEL_MAPPING.values())
         included = channels[: channels.index(channel) + 1] if channel in channels else []
@@ -373,7 +429,8 @@ def get_emus_info():
         [
             p
             for p in ET.fromstring(x).findall("remotePackage")
-            if "emulator" == p.attrib["path"]
+            if p.attrib["path"] == EMU_PATH
+            or p.attrib["path"].startswith(EMU_PREVIEW_PATH_PREFIX)
         ]
         for x in xml
     ]
@@ -398,12 +455,45 @@ def select_image(arm):
     return img_infos[selection] if selection < len(img_infos) else None
 
 
-def select_emulator():
+def emulator_supports_image(emu_info, sys_img_info):
+    """True if this emulator can be paired with the given system image.
+
+    The Emulator Preview requires features on the system images that are right
+    now only available in the API 37+ system images, so it is not offered below
+    MIN_API_PREVIEW_EMULATOR.
+    """
+    if not emu_info.is_preview or sys_img_info is None:
+        return True
+    return sys_img_info.api_major >= MIN_API_PREVIEW_EMULATOR
+
+
+def select_emulator(sys_img_info=None):
     """Displayes an interactive menu to select a released emulator binary.
 
-    Returns a ImuInfo object with the choice or None if the user aborts."""
-    emu_infos = [x for x in get_emus_info() if "linux" in x.urls]
-    display = [f"EMU {emu_info.channel} {emu_info.version}" for emu_info in emu_infos]
+    If a system image is given, emulators that cannot run it are left out of
+    the menu, so an unsupported pairing cannot be picked. When the Emulator
+    Preview is offered it is listed first, latest on top.
+
+    Returns a EmuInfo object with the choice or None if the user aborts."""
+    emu_infos = [
+        x
+        for x in get_emus_info()
+        if "linux" in x.urls and emulator_supports_image(x, sys_img_info)
+    ]
+    if sys_img_info is not None:
+        emu_infos.sort(
+            key=lambda x: (not x.is_preview, x.path != EMU_PREVIEW_LATEST_PATH)
+        )
+    display = [
+        f"EMU {'preview' if emu_info.is_preview else emu_info.channel} "
+        f"{emu_info.version} ({emu_info.display_name})"
+        for emu_info in emu_infos
+    ]
+    if sys_img_info is not None and not any(x.is_preview for x in emu_infos):
+        print(
+            f"Note: the Emulator Preview is not offered for API {sys_img_info.api}; "
+            f"it requires API {MIN_API_PREVIEW_EMULATOR} or higher."
+        )
     selection = SelectionMenu.get_selection(
         display, title="Select the emulator you wish to use:"
     )
@@ -429,12 +519,9 @@ def list_all_downloads(arm):
         )
 
     for emu_info in emu_infos:
+        channel = "preview" if emu_info.is_preview else emu_info.channel
         for hostos, url in list(emu_info.urls.items()):
-            print(
-                "EMU {} {} {} {}".format(
-                    emu_info.channel, emu_info.version, hostos, url
-                )
-            )
+            print("EMU {} {} {} {}".format(channel, emu_info.version, hostos, url))
 
 
 def download_build(build_id, dest=None):

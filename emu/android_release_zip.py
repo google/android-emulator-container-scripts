@@ -114,6 +114,15 @@ class AndroidReleaseZip(object):
         """True if this zip file contains the android emulator."""
         return "Android Emulator" in self.description()
 
+    def is_preview_emulator(self) -> bool:
+        """True if this zip contains the Emulator Preview rather than the regular emulator.
+
+        The preview requires features on the system images that are right now
+        only available in the API 37+ system images. Its Pkg.Desc is
+        "Android Emulator (Preview)".
+        """
+        return self.is_emulator() and "(Preview)" in (self.description() or "")
+
     def copy(self, destination: str) -> str:
         """Copy the zipfile to the given destination.
 

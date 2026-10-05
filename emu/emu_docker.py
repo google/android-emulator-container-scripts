@@ -15,7 +15,6 @@
 """Minimal dependency script to create a Dockerfile for a particular combination of emulator and system image."""
 
 import argparse
-import itertools
 import logging
 import os
 import re
@@ -25,6 +24,7 @@ from pathlib import Path
 import click
 import colorlog
 import emu.emu_downloads_menu as emu_downloads_menu
+from emu.android_release_zip import AndroidReleaseZip
 from emu.cloud_build import cloud_build
 from emu.containers.emulator_container import EmulatorContainer
 from emu.containers.system_image_container import SystemImageContainer
@@ -63,6 +63,34 @@ def metrics_config(args):
     return cfg
 
 
+def _api_major(sys_docker):
+    """The integer api level of the system image in the given container."""
+    if sys_docker.system_image_info is not None:
+        return sys_docker.system_image_info.api_major
+    match = re.match(r"\d+", sys_docker.system_image_zip.api() or "")
+    return int(match.group()) if match else 0
+
+
+def _check_emulator_supports_image(emulator, sys_docker):
+    """Refuse an emulator/system-image pairing that cannot work.
+
+    The Emulator Preview requires features on the system images that are right
+    now only available in the API 37+ system images, so it is rejected below
+    MIN_API_PREVIEW_EMULATOR. Checked from the emulator zip itself so it also
+    covers locally supplied files, not just menu selections.
+    """
+    if not AndroidReleaseZip(emulator).is_preview_emulator():
+        return
+    api_major = _api_major(sys_docker)
+    if api_major < emu_downloads_menu.MIN_API_PREVIEW_EMULATOR:
+        raise Exception(
+            f"The Emulator Preview requires an API "
+            f"{emu_downloads_menu.MIN_API_PREVIEW_EMULATOR}+ system image, "
+            f"but {os.path.basename(str(emulator))} was paired with API {api_major}. "
+            f"Use the regular emulator for this image."
+        )
+
+
 def create_docker_image(args):
     """Create a directory containing all the necessary ingredients to construct a docker image.
 
@@ -73,18 +101,32 @@ def create_docker_image(args):
     if not os.path.exists(imgzip[0]):
         imgzip = emu_downloads_menu.find_image(imgzip[0])
 
-    emuzip = [args.emuzip]
-    if emuzip[0] in ["stable", "canary", "all"]:
-        emuzip = [x.download() for x in emu_downloads_menu.find_emulator(emuzip[0])]
-    elif re.match(r"\d+", emuzip[0]):
-        # We must be looking for a build id
-        logging.info("Treating %s as a build id", emuzip[0])
-        emuzip = [emu_downloads_menu.download_build(emuzip[0])]
+    # A channel resolves to a different emulator depending on the system image
+    # (API 37+ images get the Emulator Preview), so it is looked up per image.
+    emuzip = {}
+
+    def emulators_for(sys_docker):
+        if args.emuzip in ["stable", "beta", "dev", "canary", "all"]:
+            api_major = _api_major(sys_docker)
+            preview = api_major >= emu_downloads_menu.MIN_API_PREVIEW_EMULATOR
+            if preview not in emuzip:
+                emuzip[preview] = [
+                    x.download()
+                    for x in emu_downloads_menu.find_emulator(args.emuzip, api_major)
+                ]
+            return emuzip[preview]
+        if None not in emuzip:
+            emuzip[None] = [args.emuzip]
+            if re.match(r"\d+", args.emuzip):
+                # We must be looking for a build id
+                logging.info("Treating %s as a build id", args.emuzip)
+                emuzip[None] = [emu_downloads_menu.download_build(args.emuzip)]
+        return emuzip[None]
 
     devices = []
     logging.info("Using repo %s", args.repo)
-    for img, emulator in itertools.product(imgzip, emuzip):
-        logging.info("Processing %s, %s", img, emulator)
+    for img in imgzip:
+        logging.info("Processing %s", img)
         sys_docker = SystemImageContainer(img, args.repo)
         if not sys_docker.available() and not sys_docker.can_pull():
             sys_docker.build(Path(args.dest) / "sys_img")
@@ -102,17 +144,21 @@ def create_docker_image(args):
         if args.sys:
             continue
 
-        emu_docker = EmulatorContainer(
-            emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra, args.name
-        )
-        emu_docker.build(Path(args.dest) / "emulator")
+        for emulator in emulators_for(sys_docker):
+            logging.info("Processing %s, %s", img, emulator)
+            _check_emulator_supports_image(emulator, sys_docker)
 
-        if args.start:
-            emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
-        if args.push:
-            emu_docker.push()
+            emu_docker = EmulatorContainer(
+                emulator, sys_docker, args.repo, cfg.collect_metrics(), args.extra, args.name
+            )
+            emu_docker.build(Path(args.dest) / "emulator")
 
-        devices.append(emu_docker)
+            if args.start:
+                emu_docker.launch({"5555/tcp": 5555, "8554/tcp": 8554})
+            if args.push:
+                emu_docker.push()
+
+            devices.append(emu_docker)
 
     return devices
 
@@ -120,7 +166,7 @@ def create_docker_image(args):
 def create_docker_image_interactive(args):
     """Interactively create a docker image by selecting the desired combination from a menu."""
     img = emu_downloads_menu.select_image(args.arm) or sys.exit(1)
-    emulator = emu_downloads_menu.select_emulator() or sys.exit(1)
+    emulator = emu_downloads_menu.select_emulator(img) or sys.exit(1)
     cfg = DockerConfig()
     metrics = False
 
@@ -197,6 +243,8 @@ def main():
     create_parser.add_argument(
         "emuzip",
         help="Zipfile containing the a publicly released emulator, or (canary|stable|[0-9]+) to use the latest canary, stable, or build id of the emulator to use. "
+        "For API 37+ system images, canary and stable select the latest Emulator Preview; pass a zipfile to use another emulator. "
+        "The Emulator Preview requires features on the system images that are right now only available in the API 37+ system images. "
         "Keep in mind that using a build id can result in downloading an untested pre-release emulator build from the android ci server.",
     )
     create_parser.add_argument(
@@ -326,6 +374,8 @@ def main():
     dist_parser.add_argument(
         "emuzip",
         help="Zipfile containing the a publicly released emulator, or (canary|stable|[0-9]+) to use the latest canary, stable, or build id of the emulator to use. "
+        "For API 37+ system images, canary and stable select the latest Emulator Preview; pass a zipfile to use another emulator. "
+        "The Emulator Preview requires features on the system images that are right now only available in the API 37+ system images. "
         "Keep in mind that using a build id can result in downloading an untested pre-release emulator build from the android ci server.",
     )
     dist_parser.add_argument(
