@@ -529,7 +529,7 @@ def download_build(build_id, dest=None):
     dest = dest or os.path.join(
         os.getcwd(), "sdk-repo-linux-emulator-{}.zip".format(build_id)
     )
-    uri = f"https://ci.android.com/builds/submitted/{0}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{build_id}.zip"
+    uri = f"https://ci.android.com/builds/submitted/{build_id}/sdk_tools_linux/latest/raw/sdk-repo-linux-emulator-{build_id}.zip"
     print(f"Downloading emulator build {build_id} ({uri}) to {dest}")
     logging.warning(
         "Downloading build from ci server, these builds might not have been tested extensively."

@@ -45,3 +45,21 @@ def test_downloads_if_not_exist(temp_dir, monkeypatch):
 
     assert dwnload == dest
     assert dwnload.exists()
+
+
+def test_download_build_asks_for_the_requested_build_id(temp_dir, monkeypatch):
+    """The build id belongs in the url, not a leftover format placeholder."""
+    seen = {}
+
+    def mock_download(url, dest):
+        seen["url"] = url
+        return dest
+
+    monkeypatch.setattr(menu, "download", mock_download)
+
+    dest = temp_dir / "emu.zip"
+    assert menu.download_build("12345678", dest) == dest
+    assert seen["url"] == (
+        "https://ci.android.com/builds/submitted/12345678/sdk_tools_linux/latest"
+        "/raw/sdk-repo-linux-emulator-12345678.zip"
+    )
